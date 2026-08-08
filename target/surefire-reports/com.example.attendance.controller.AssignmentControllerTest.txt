@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.attendance.controller.AssignmentControllerTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.065 s -- in com.example.attendance.controller.AssignmentControllerTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.693 s -- in com.example.attendance.controller.AssignmentControllerTest

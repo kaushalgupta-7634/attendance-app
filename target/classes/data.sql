@@ -23,4 +23,4 @@ MERGE INTO enrollments (id, student_id, class_course_id, enrolled_at) KEY(id) VA
 
 -- 5. Seed 1 Active Class Session
 MERGE INTO class_sessions (id, teacher_id, class_course_id, class_name, start_time, end_time, classroom_lat, classroom_lng, radius_meters, active) KEY(id) VALUES 
-(1, 1, 1, 'CS101 - Algorithms & Data Structures', '2026-08-01 00:00:00', '2026-12-31 23:59:59', 12.9716, 77.5946, 100.0, true);
+(1, 1, 1, 'CS101 - Algorithms & Data Structures', '2026-08-01 00:00:00', '2026-12-31 23:59:59', 12.9716, 77.5946, 0.0, true);

@@ -425,6 +425,13 @@
                     <input type="hidden" id="classroomLat" value="12.9716">
                     <input type="hidden" id="classroomLng" value="77.5946">
 
+                    <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                        <div id="teacherGpsBadge" style="font-size: 0.825rem; font-weight: 600; color: #7dd3fc; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                            <span>📍 Acquiring Classroom GPS Location...</span>
+                            <button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh GPS</button>
+                        </div>
+                    </div>
+
                     <div class="form-group full-width">
                         <label class="form-label" for="radiusMeters">Allowed Radius (Meters - Recommended: 75–100m for indoor classrooms)</label>
                         <input type="number" id="radiusMeters" class="form-input" value="100" required placeholder="Recommended: 75–100m for indoor GPS accuracy">
@@ -736,6 +743,54 @@
         const endTimeInput = document.getElementById('endTime');
         if (startTimeInput) startTimeInput.value = formatDateForInput(now);
         if (endTimeInput) endTimeInput.value = formatDateForInput(nextHour);
+
+        function toggleTestingMode(cb) {
+            const radiusInput = document.getElementById('radiusMeters');
+            if (cb.checked) {
+                radiusInput.value = 0;
+                radiusInput.disabled = true;
+            } else {
+                radiusInput.value = 100;
+                radiusInput.disabled = false;
+            }
+        }
+
+        function detectGPSLocation() {
+            const latInput = document.getElementById('classroomLat');
+            const lngInput = document.getElementById('classroomLng');
+            const gpsBadge = document.getElementById('teacherGpsBadge');
+
+            if (!navigator.geolocation) {
+                if (gpsBadge) gpsBadge.innerHTML = '<span>📍 GPS Not Supported (Using Default 12.9716, 77.5946)</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Retry GPS</button>';
+                return;
+            }
+
+            if (gpsBadge) gpsBadge.innerHTML = '<span>📍 Acquiring Classroom GPS Location...</span>';
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    if (latInput) latInput.value = lat;
+                    if (lngInput) lngInput.value = lng;
+                    if (gpsBadge) {
+                        gpsBadge.style.color = '#86efac';
+                        gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+                        gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                        gpsBadge.innerHTML = `<span>📍 Classroom GPS Acquired (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh GPS</button>`;
+                    }
+                },
+                (err) => {
+                    if (gpsBadge) {
+                        gpsBadge.style.color = '#fcd34d';
+                        gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                        gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        gpsBadge.innerHTML = '<span>📍 GPS Permission Denied (Using Default 12.9716, 77.5946 or check Testing Mode below)</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Retry GPS</button>';
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
 
         // Auto detect GPS, active session, and load courses on page load
         detectGPSLocation();
