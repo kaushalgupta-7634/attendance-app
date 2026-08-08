@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Teacher Dashboard - Class Session & Live Attendance Tracking">
+    <title>Teacher Dashboard | Smart Attendance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            padding: 1.5rem;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .role-badge {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid var(--accent-purple);
+            color: #c4b5fd;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .btn-secondary {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(239, 68, 68, 0.35);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.75rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-purple);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.8rem;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: #ffffff;
+            padding: 0.75rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-excel:hover {
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .location-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .location-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .dot.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .dot.error {
+            background: var(--accent-red);
+        }
+
+        .qr-section {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            border: 1px dashed var(--card-border);
+        }
+
+        .qr-frame {
+            width: 220px;
+            height: 220px;
+            margin: 1rem auto;
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--accent-green);
+            color: #6ee7b7;
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-present {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 2rem 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="user-info">
+            <h2 id="teacherNameDisplay">Teacher Dashboard</h2>
+            <span class="role-badge">TEACHER</span>
+        </div>
+        <button class="btn-secondary" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <!-- CREATE & MANAGE CLASS COURSES CARD -->
+        <div class="card full-width" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                My Class Courses & Unique Student Join Codes
+            </h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- CREATE CLASS FORM -->
+                <div>
+                    <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--accent-cyan); font-weight: 600;">Create New Class Course</h4>
+                    <form id="createClassCourseForm" onsubmit="handleCreateClassCourse(event)">
+                        <div class="form-group">
+                            <label class="form-label" for="newClassName">Class / Course Name</label>
+                            <input type="text" id="newClassName" class="form-input" placeholder="e.g. CS101 - Algorithms & Data Structures" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="newSubject">Subject Name</label>
+                            <input type="text" id="newSubject" class="form-input" placeholder="e.g. Computer Science" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="newClassCode">Custom Unique Class Code (Optional)</label>
+                            <input type="text" id="newClassCode" class="form-input" placeholder="Leave blank to auto-generate e.g. CS101-A" style="text-transform: uppercase;">
+                        </div>
+                        <button type="submit" id="createCourseBtn" class="btn-primary" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));">
+                            ➕ Create Class & Generate Unique Code
+                        </button>
+                    </form>
+                    <div id="createCourseAlert" style="display: none; margin-top: 0.75rem; padding: 0.6rem; border-radius: 8px; font-size: 0.85rem; text-align: center;"></div>
+                </div>
+
+                <!-- CREATED CLASSES LIST WITH UNIQUE CODES -->
+                <div>
+                    <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: #c4b5fd; font-weight: 600;">Active Classes & Shareable Unique Codes</h4>
+                    <div id="myCoursesListContainer" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Loading your created classes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEFT: CREATE SESSION FORM & ACTIVE SESSION QR -->
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Start Class Session
+            </h3>
+
+            <!-- AUTOMATIC GPS STATUS DISPLAY -->
+            <div class="location-banner">
+                <div class="location-status">
+                    <span id="locationDot" class="dot"></span>
+                    <span id="locationStatusText">Acquiring Classroom GPS...</span>
+                </div>
+                <button type="button" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.8rem; cursor: pointer;" onclick="detectGPSLocation()">Refresh GPS</button>
+            </div>
+
+            <form id="startSessionForm" onsubmit="handleStartSession(event)">
+                <div class="form-group">
+                    <label class="form-label" for="courseSelect">Select Created Class (Optional)</label>
+                    <select id="courseSelect" class="form-input" onchange="onCourseSelectChange(this)">
+                        <option value="">-- Choose one of your Created Classes --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="className">Course / Class Name</label>
+                    <input type="text" id="className" class="form-input" placeholder="e.g. CS101 - Computer Science" required>
+                    <input type="hidden" id="selectedClassCourseId" value="">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="sessionSubject">Subject Name</label>
+                    <input type="text" id="sessionSubject" class="form-input" placeholder="e.g. Data Structures / Mathematics" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="startTime">Start Time</label>
+                        <input type="datetime-local" id="startTime" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="endTime">End Time</label>
+                        <input type="datetime-local" id="endTime" class="form-input" required>
+                    </div>
+
+                    <!-- Hidden Lat/Lng Inputs Auto-Filled via GPS -->
+                    <input type="hidden" id="classroomLat" value="12.9716">
+                    <input type="hidden" id="classroomLng" value="77.5946">
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="radiusMeters">Allowed Radius (Meters - Recommended: 75–100m for indoor classrooms)</label>
+                        <input type="number" id="radiusMeters" class="form-input" value="100" required placeholder="Recommended: 75–100m for indoor GPS accuracy">
+                        <div style="margin-top: 0.4rem; font-size: 0.8rem; color: #6ee7b7; display: flex; align-items: center; gap: 0.4rem;">
+                            <input type="checkbox" id="testingModeCheckbox" onchange="toggleTestingMode(this)">
+                            <label for="testingModeCheckbox" style="cursor: pointer;">Testing Mode: Allow attendance from any location (Radius = 0)</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="expectedWifiSsid">Campus WiFi Network Name / SSID (Optional Soft Check)</label>
+                        <input type="text" id="expectedWifiSsid" class="form-input" placeholder="e.g. Campus_Student_WiFi / Eduroam">
+                    </div>
+                </div>
+
+                <button type="submit" id="startBtn" class="btn-primary">Launch Active Session</button>
+            </form>
+
+            <!-- ACTIVE QR DISPLAY PANEL -->
+            <div id="activeSessionPanel" style="display: none; margin-top: 1.5rem;">
+                <div class="qr-section">
+                    <h4 id="activeClassName" style="font-size: 1.1rem; color: #ffffff;">Active Class Session</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Scan QR code or enter 6-digit passcode</p>
+
+                    <!-- PASSCODE & SESSION ID DISPLAY -->
+                    <div style="background: rgba(139, 92, 246, 0.2); border: 1px solid var(--accent-purple); border-radius: 12px; padding: 0.6rem 1rem; margin: 0.8rem 0; display: inline-block;">
+                        <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #c4b5fd; font-weight: 600;">6-Digit Token Number:</span>
+                        <div id="activePasscodeDisplay" style="font-size: 1.8rem; font-weight: 700; color: #7dd3fc; letter-spacing: 0.15em; font-family: monospace;">------</div>
+                    </div>
+                    
+                    <div class="qr-frame">
+                        <img id="qrImageDisplay" class="qr-image" src="" alt="Live QR Code">
+                    </div>
+
+
+                    <div id="rotationTimerBadge" class="timer-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        Rotating in <span id="countdown">20</span>s
+                    </div>
+
+                    <!-- END SESSION, CANCEL SESSION & DELETE SESSION BUTTONS -->
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                        <button id="endSessionBtn" class="btn-danger" style="flex: 1;" onclick="handleEndSession()">End Class Session</button>
+                        <button id="cancelActiveSessionBtn" class="btn-secondary" style="background: rgba(245, 158, 11, 0.25); border-color: #f59e0b; color: #fcd34d; padding: 0.75rem 1rem;" onclick="handleCancelActiveSession()">🚫 Cancel Session</button>
+                        <button id="deleteActiveSessionBtn" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.75rem 1rem;" onclick="handleDeleteActiveSession()">🗑️ Delete Session</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: LIVE ATTENDANCE MONITOR -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="card-title" style="margin-bottom: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Live Attendance Feed
+                </h3>
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button id="exportExcelBtn" class="btn-excel" style="display: none;" onclick="exportAttendanceCsv()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Export Excel / CSV
+                    </button>
+                    <span id="attendanceCountBadge" class="timer-badge" style="background: rgba(6, 182, 212, 0.15); border-color: var(--accent-cyan); color: #7dd3fc;">0 Students</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Time Marked</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        <tr>
+                            <td colspan="4" class="empty-state">No active session selected. Launch a session to track attendance live.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MANUAL OVERRIDE MODAL -->
+        <div id="overrideModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: #1e293b; border: 1px solid var(--card-border); border-radius: 16px; width: 90%; max-width: 450px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+                <h3 style="font-size: 1.1rem; color: #f8fafc; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    ✏️ Manual Attendance Override
+                </h3>
+                <p id="overrideStudentInfo" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;"></p>
+
+                <form id="overrideForm" onsubmit="handleManualOverrideSubmit(event)">
+                    <input type="hidden" id="overrideStudentId">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="overrideStatusSelect">Attendance Status</label>
+                        <select id="overrideStatusSelect" class="form-input" required style="background: #0f172a;">
+                            <option value="PRESENT">PRESENT</option>
+                            <option value="ABSENT">ABSENT</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="overrideReasonInput">Reason for Override (Required for Audit)</label>
+                        <textarea id="overrideReasonInput" class="form-input" rows="3" placeholder="e.g. Technical issue scanning QR code / Granted medical leave" required></textarea>
+                    </div>
+
+                    <div id="overrideAlert" style="display: none; padding: 0.6rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;"></div>
+
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                        <button type="button" class="btn-secondary" style="padding: 0.6rem 1rem; font-size: 0.85rem;" onclick="closeOverrideModal()">Cancel</button>
+                        <button type="submit" id="submitOverrideBtn" class="btn-primary" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; width: auto;">Save Override</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- CLASS & STUDENT ATTENDANCE ANALYTICS CARD -->
+        <div class="card full-width" style="grid-column: 1 / -1; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                <h3 class="card-title" style="margin-bottom: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Class & Enrolled Student Attendance Analytics
+                </h3>
+
+                <!-- CLASS / SESSION SELECTOR DROPDOWN & SEARCH INPUT -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 200px;" onchange="syncClassInputFromSelect()">
+                        <option value="">Select a Session / Class...</option>
+                    </select>
+                    <input type="text" id="teacherClassNameSearch" class="form-input" placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 220px;" oninput="loadSelectedClassAnalytics()">
+                    <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;" onclick="loadSelectedClassAnalytics()">Search Stats</button>
+                </div>
+            </div>
+
+            <!-- OVERALL CLASS AVERAGE & SUBJECT BREAKDOWN GRID -->
+            <div id="classAnalyticsPanel" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Overall Class Average %</span>
+                        <span id="classOverallAvgText" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-cyan);">0.0%</span>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Total Enrolled Students</span>
+                        <span id="classTotalStudentsText" style="font-size: 1.8rem; font-weight: 700; color: #c4b5fd;">0 Students</span>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">Subject Averages Across Class</h4>
+                <div id="classSubjectAveragesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class to view subject averages.</p>
+                </div>
+
+                <!-- ENROLLED STUDENT ROSTER & INDIVIDUAL ATTENDANCE % TABLE -->
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">Enrolled Student Roster & Individual Performance</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Overall Attendance %</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classRosterTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-state">Select a class session above to load student roster.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- EVERYDAY STUDENT ATTENDANCE HISTORY LOG TABLE -->
+                <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">Everyday Student Attendance Log (History Records)</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Student Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classDailyLogTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-state">Select a class session above to load daily attendance history records.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="classAnalyticsPlaceholder" class="empty-state">
+                Please select one of your launched class sessions above to view overall class averages, subject breakdowns, and enrolled student rosters.
+            </div>
+        </div>
+
+        <!-- UPLOAD & MANAGE ASSIGNMENTS CARD -->
+        <div class="card full-width" style="grid-column: 1 / -1; margin-top: 1rem;">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Upload & Manage Course Assignments
+            </h3>
+
+            <form id="uploadAssignmentForm" onsubmit="handleAssignmentUpload(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="assignClassName">Course / Class Name</label>
+                        <input type="text" id="assignClassName" class="form-input" placeholder="e.g. CS101 - Computer Science" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="assignSubject">Subject Name</label>
+                        <input type="text" id="assignSubject" class="form-input" placeholder="e.g. Algorithms & Data Structures" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="assignTitle">Assignment Title</label>
+                        <input type="text" id="assignTitle" class="form-input" placeholder="e.g. Homework 1 - Binary Trees" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="assignDueDate">Submission Due Date</label>
+                        <input type="datetime-local" id="assignDueDate" class="form-input" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="assignDescription">Assignment Instructions / Description</label>
+                        <textarea id="assignDescription" class="form-input" rows="2" placeholder="Enter assignment instructions for students..."></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="assignFile">Upload Assignment PDF File</label>
+                        <input type="file" id="assignFile" class="form-input" accept=".pdf" required style="padding: 0.5rem;">
+                    </div>
+                </div>
+
+                <button type="submit" id="uploadAssignBtn" class="btn-primary" style="margin-top: 0.5rem; background: linear-gradient(135deg, #10b981, #06b6d4);">📤 Upload Assignment for Students</button>
+            </form>
+
+            <div id="assignmentAlert" style="display: none; margin-top: 1rem; padding: 0.8rem; border-radius: 10px; font-size: 0.9rem; text-align: center;"></div>
+
+            <!-- TEACHER ASSIGNMENTS LIST -->
+            <div style="margin-top: 1.5rem;">
+                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Uploaded Assignments</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Class & Subject</th>
+                                <th>Assignment Title</th>
+                                <th>Due Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacherAssignmentsTableBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">No assignments uploaded yet. Fill the form above to upload a PDF assignment.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var activeSessionId = null;
+        var qrTimer = null;
+        var countdownTimer = null;
+        var attendancePollTimer = null;
+        var secondsLeft = 20;
+
+        const token = localStorage.getItem('jwtToken');
+        const username = localStorage.getItem('username');
+        const role = localStorage.getItem('userRole');
+
+        if (!token || role !== 'TEACHER') {
+            window.location.href = '/login.html';
+        }
+
+        function formatDateForInput(date) {
+            if (!date) return '';
+            const tzOffset = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function escapeJsString(str) {
+            if (!str) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        const teacherNameDisplay = document.getElementById('teacherNameDisplay');
+        if (teacherNameDisplay) teacherNameDisplay.textContent = `Welcome, ${username || 'Teacher'}`;
+
+        const now = new Date();
+        const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        if (startTimeInput) startTimeInput.value = formatDateForInput(now);
+        if (endTimeInput) endTimeInput.value = formatDateForInput(nextHour);
+
+        // Auto detect GPS, active session, and load courses on page load
+        detectGPSLocation();
+        autoFetchLatestActiveSession();
+        loadTeacherCourses();
+
+        function logout() {
+            if (qrTimer) clearInterval(qrTimer);
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (attendancePollTimer) clearInterval(attendancePollTimer);
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        async function loadTeacherCourses() {
+            try {
+                const res = await fetch('/classes/my-courses', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const courses = await res.json();
+
+                const listContainer = document.getElementById('myCoursesListContainer');
+                const courseSelect = document.getElementById('courseSelect');
+                
+                if (courseSelect) {
+                    courseSelect.innerHTML = '<option value="">-- Choose one of your Created Classes --</option>';
+                }
+
+                if (!courses || courses.length === 0) {
+                    if (listContainer) {
+                        listContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No classes created yet. Create your first class using the form on the left!</p>';
+                    }
+                    return;
+                }
+
+                if (listContainer) listContainer.innerHTML = '';
+
+                courses.forEach(c => {
+                    if (courseSelect) {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.setAttribute('data-name', c.className);
+                        opt.setAttribute('data-subject', c.subject);
+                        opt.textContent = `${c.className} (${c.subject}) - Code: ${c.classCode}`;
+                        courseSelect.appendChild(opt);
+                    }
+
+                    if (listContainer) {
+                        const card = document.createElement('div');
+                        card.style.background = 'rgba(15, 23, 42, 0.6)';
+                        card.style.border = '1px solid var(--card-border)';
+                        card.style.borderRadius = '12px';
+                        card.style.padding = '0.85rem 1rem';
+                        card.style.display = 'flex';
+                        card.style.justifyContent = 'space-between';
+                        card.style.alignItems = 'center';
+                        card.style.flexWrap = 'wrap';
+                        card.style.gap = '0.5rem';
+
+                        card.innerHTML = `
+                            <div>
+                                <div style="font-size: 0.95rem; font-weight: 600; color: #f8fafc;">${escapeHtml(c.className)}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(c.subject)}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                <span class="timer-badge" style="background: rgba(139, 92, 246, 0.2); border-color: var(--accent-purple); color: #c4b5fd; font-size: 0.9rem; font-weight: 700; padding: 0.3rem 0.65rem; font-family: monospace;">
+                                    ${escapeHtml(c.classCode)}
+                                </span>
+                                <button type="button" class="btn-excel" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="copyClassCode('${escapeHtml(c.classCode)}')">Copy Code</button>
+                                <button type="button" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; width: auto;" onclick="selectCourseToLaunch(${c.id}, '${escapeJsString(c.className)}', '${escapeJsString(c.subject)}')">Launch Session</button>
+                                <button type="button" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="deleteClassCourse(${c.id}, '${escapeJsString(c.className)}')">🗑️ Delete</button>
+                            </div>
+                        `;
+                        listContainer.appendChild(card);
+                    }
+                });
+            } catch (err) {
+                console.error("Error loading teacher courses:", err);
+            }
+        }
+
+        async function deleteClassCourse(courseId, className) {
+            if (!confirm(`Are you sure you want to DELETE class course '${className}'?\n\nThis will remove the class code and student enrollments.`)) return;
+
+            try {
+                const res = await fetch(`/classes/${courseId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to delete class course');
+                }
+
+                alert(`Class course '${className}' deleted successfully.`);
+                loadTeacherCourses();
+            } catch (err) {
+                alert(err.message || 'Error deleting class course');
+            }
+        }
+
+        async function handleCreateClassCourse(e) {
+            e.preventDefault();
+            const alertDiv = document.getElementById('createCourseAlert');
+            const btn = document.getElementById('createCourseBtn');
+            if (alertDiv) alertDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Creating Class...';
+
+            const payload = {
+                className: document.getElementById('newClassName').value.trim(),
+                subject: document.getElementById('newSubject').value.trim(),
+                classCode: document.getElementById('newClassCode').value.trim()
+            };
+
+            try {
+                const res = await fetch('/classes/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to create class course');
+                }
+
+                const createdCourse = await res.json();
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    alertDiv.style.background = 'rgba(34, 197, 94, 0.2)';
+                    alertDiv.style.color = '#86efac';
+                    alertDiv.innerHTML = `🎉 Class Created! Unique Code: <strong style="font-family: monospace; font-size: 1.1rem; text-decoration: underline; color: #7dd3fc;">${createdCourse.classCode}</strong> (Share this code with students!)`;
+                }
+
+                document.getElementById('createClassCourseForm').reset();
+                loadTeacherCourses();
+            } catch (err) {
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    alertDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    alertDiv.style.color = '#fca5a5';
+                    alertDiv.textContent = err.message || 'Error creating class course';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '➕ Create Class & Generate Unique Code';
+            }
+        }
+
+        function copyClassCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert(`Unique Class Code '${code}' copied to clipboard!\n\nShare this code with your students to join your class.`);
+            }).catch(err => {
+                prompt("Unique Class Code for students:", code);
+            });
+        }
+
+        function selectCourseToLaunch(courseId, className, subject) {
+            const idInput = document.getElementById('selectedClassCourseId');
+            const nameInput = document.getElementById('className');
+            const subjectInput = document.getElementById('sessionSubject');
+            if (idInput) idInput.value = courseId;
+            if (nameInput) {
+                nameInput.value = className;
+                nameInput.scrollIntoView({ behavior: 'smooth' });
+            }
+            if (subjectInput && subject) {
+                subjectInput.value = subject;
+            }
+        }
+
+        function onCourseSelectChange(select) {
+            const selectedOpt = select.options[select.selectedIndex];
+            const idInput = document.getElementById('selectedClassCourseId');
+            const nameInput = document.getElementById('className');
+            const subjectInput = document.getElementById('sessionSubject');
+            if (selectedOpt && selectedOpt.value) {
+                if (idInput) idInput.value = selectedOpt.value;
+                if (nameInput) nameInput.value = selectedOpt.getAttribute('data-name');
+                if (subjectInput) subjectInput.value = selectedOpt.getAttribute('data-subject') || '';
+            } else {
+                if (idInput) idInput.value = '';
+            }
+        }
+
+        async function handleStartSession(e) {
+            e.preventDefault();
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            btn.textContent = 'Launching session...';
+
+            const selectedClassCourseId = document.getElementById('selectedClassCourseId') ? document.getElementById('selectedClassCourseId').value : null;
+
+            const payload = {
+                classCourseId: selectedClassCourseId ? parseInt(selectedClassCourseId) : null,
+                className: document.getElementById('className').value.trim(),
+                subject: document.getElementById('sessionSubject').value.trim(),
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                classroomLat: parseFloat(document.getElementById('classroomLat').value),
+                classroomLng: parseFloat(document.getElementById('classroomLng').value),
+                radiusMeters: parseFloat(document.getElementById('radiusMeters').value),
+                expectedWifiSsid: document.getElementById('expectedWifiSsid') ? document.getElementById('expectedWifiSsid').value.trim() : null
+            };
+
+            try {
+                const res = await fetch('/sessions/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to start session');
+                }
+
+                const session = await res.json();
+                activeSessionId = session.id;
+
+                document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
+                document.getElementById('activePasscodeDisplay').textContent = session.passcode || '------';
+                document.getElementById('activeSessionPanel').style.display = 'block';
+                document.getElementById('exportExcelBtn').style.display = 'inline-flex';
+                document.getElementById('endSessionBtn').style.display = 'block';
+                document.getElementById('rotationTimerBadge').style.display = 'inline-flex';
+
+                startLiveQrRotation();
+                startLiveAttendancePolling();
+
+            } catch (err) {
+                alert(err.message || 'Error launching session');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Launch Active Session';
+            }
+        }
+
+        async function handleEndSession() {
+            if (!activeSessionId) return;
+            if (!confirm('Are you sure you want to END this class session? Students will no longer be able to mark attendance.')) return;
+
+            const btn = document.getElementById('endSessionBtn');
+            btn.disabled = true;
+            btn.textContent = 'Ending session...';
+
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/end`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to end session');
+                }
+
+                clearInterval(qrTimer);
+                clearInterval(countdownTimer);
+
+                document.getElementById('activeClassName').textContent = document.getElementById('className').value.trim() + ' (ENDED)';
+                document.getElementById('rotationTimerBadge').style.display = 'none';
+                btn.style.display = 'none';
+
+                const img = document.getElementById('qrImageDisplay');
+                img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 24 24" fill="none" stroke="%23ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+                alert('Class session has been ended successfully! You can export attendance to Excel/CSV anytime.');
+
+            } catch (err) {
+                alert(err.message || 'Error ending session');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function handleDeleteActiveSession() {
+            if (!activeSessionId) return;
+            if (!confirm('Are you sure you want to PERMANENTLY DELETE this class session?\n\nAll attendance records recorded for this session will be permanently deleted.')) return;
+
+            const btn = document.getElementById('deleteActiveSessionBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+            }
+
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to delete session');
+                }
+
+                if (qrTimer) clearInterval(qrTimer);
+                if (countdownTimer) clearInterval(countdownTimer);
+                if (attendancePollTimer) clearInterval(attendancePollTimer);
+
+                const activePanel = document.getElementById('activeSessionPanel');
+                if (activePanel) activePanel.style.display = 'none';
+                activeSessionId = null;
+
+                alert('Class session has been deleted successfully.');
+                location.reload();
+            } catch (err) {
+                alert(err.message || 'Error deleting session');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🗑️ Delete Session';
+                }
+            }
+        }
+
+        async function handleCancelActiveSession() {
+            if (!activeSessionId) return;
+            if (!confirm("Are you sure you want to cancel this session? It will be marked as CANCELLED (e.g. holiday/leave) and excluded from all attendance percentage calculations.")) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/cancel?cancelled=true`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to cancel session');
+                }
+
+                if (qrTimer) clearInterval(qrTimer);
+                if (countdownTimer) clearInterval(countdownTimer);
+                if (attendancePollTimer) clearInterval(attendancePollTimer);
+
+                const activePanel = document.getElementById('activeSessionPanel');
+                if (activePanel) activePanel.style.display = 'none';
+                activeSessionId = null;
+
+                alert('Session has been cancelled and excluded from all attendance percentage calculations.');
+                location.reload();
+            } catch (err) {
+                alert(err.message || 'Error cancelling session');
+            }
+        }
+
+        async function exportAttendanceCsv() {
+            if (!activeSessionId) {
+                alert('No session selected for export.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/export`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to export attendance');
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Attendance_Session_${activeSessionId}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+            } catch (err) {
+                alert(err.message || 'Error downloading CSV export');
+            }
+        }
+
+        async function refreshQrImage() {
+            if (!activeSessionId) return;
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/qr?t=` + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to load QR code');
+                
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const img = document.getElementById('qrImageDisplay');
+                img.src = objectUrl;
+                secondsLeft = 20;
+            } catch (err) {
+                console.error('Error fetching QR image:', err);
+            }
+        }
+
+        function startLiveQrRotation() {
+            refreshQrImage();
+
+            if (qrTimer) clearInterval(qrTimer);
+            if (countdownTimer) clearInterval(countdownTimer);
+
+            qrTimer = setInterval(() => {
+                refreshQrImage();
+            }, 20000);
+
+            countdownTimer = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft < 0) secondsLeft = 20;
+                document.getElementById('countdown').textContent = secondsLeft;
+            }, 1000);
+        }
+
+        async function pollAttendance() {
+            if (!activeSessionId) return;
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/attendance-full`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) return;
+
+                const records = await res.json();
+                renderAttendanceTable(records);
+            } catch (err) {
+                console.error('Error polling attendance:', err);
+            }
+        }
+
+        function startLiveAttendancePolling() {
+            pollAttendance();
+            if (attendancePollTimer) clearInterval(attendancePollTimer);
+            attendancePollTimer = setInterval(pollAttendance, 5000);
+        }
+
+        function formatMarkedAtTime(markedAt) {
+            if (!markedAt) return 'N/A';
+            try {
+                let dateObj;
+                if (Array.isArray(markedAt)) {
+                    dateObj = new Date(markedAt[0], markedAt[1] - 1, markedAt[2], markedAt[3] || 0, markedAt[4] || 0, markedAt[5] || 0);
+                } else {
+                    dateObj = new Date(markedAt);
+                }
+                if (isNaN(dateObj.getTime())) return 'N/A';
+                return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } catch (e) {
+                return 'N/A';
+            }
+        }
+
+        function renderAttendanceTable(records) {
+            const tbody = document.getElementById('attendanceTableBody');
+            const badge = document.getElementById('attendanceCountBadge');
+
+            if (!records) records = [];
+
+            if (badge) {
+                badge.textContent = `${records.length} Student${records.length === 1 ? '' : 's'}`;
+            }
+
+            if (!tbody) return;
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Waiting for students to scan QR code...</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = records.map(r => {
+                const name = escapeHtml(r.studentName || r.studentUsername || 'Student');
+                const email = escapeHtml(r.studentEmail || '');
+                const timeStr = formatMarkedAtTime(r.markedAt);
+                const status = escapeHtml(r.status || 'ABSENT');
+                const isPresent = status === 'PRESENT';
+                const statusClass = isPresent ? 'status-present' : 'status-absent';
+                
+                const manualBadge = r.manuallyOverridden 
+                    ? `<span style="font-size: 0.7rem; background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid #f59e0b; border-radius: 4px; padding: 0.1rem 0.35rem; margin-left: 0.4rem;" title="Reason: ${escapeHtml(r.overrideReason || '')} (By ${escapeHtml(r.overriddenByName || 'Teacher')})">✏️ Manual</span>` 
+                    : '';
+
+                const wifiBadge = r.wifiMismatchWarning 
+                    ? `<span style="font-size: 0.7rem; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; border-radius: 4px; padding: 0.1rem 0.35rem; margin-left: 0.4rem;" title="Reported WiFi: ${escapeHtml(r.studentWifiSsid || 'Unknown')}">⚠️ WiFi Mismatch</span>` 
+                    : '';
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; color: #f8fafc;">${name} ${manualBadge} ${wifiBadge}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">${email}</div>
+                        </td>
+                        <td>${timeStr}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                        <td>
+                            <button type="button" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: #93c5fd;" onclick="openOverrideModal(${r.studentId}, '${escapeJsString(name)}', '${escapeJsString(r.status)}')">✏️ Override</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openOverrideModal(studentId, studentName, currentStatus) {
+            document.getElementById('overrideStudentId').value = studentId;
+            document.getElementById('overrideStudentInfo').textContent = `Overriding attendance for: ${studentName} (Current: ${currentStatus || 'N/A'})`;
+            document.getElementById('overrideStatusSelect').value = currentStatus === 'PRESENT' ? 'PRESENT' : 'ABSENT';
+            document.getElementById('overrideReasonInput').value = '';
+            const alertDiv = document.getElementById('overrideAlert');
+            if (alertDiv) alertDiv.style.display = 'none';
+
+            const modal = document.getElementById('overrideModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeOverrideModal() {
+            const modal = document.getElementById('overrideModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function handleManualOverrideSubmit(e) {
+            e.preventDefault();
+            const alertDiv = document.getElementById('overrideAlert');
+            const btn = document.getElementById('submitOverrideBtn');
+            if (alertDiv) alertDiv.style.display = 'none';
+
+            const studentId = parseInt(document.getElementById('overrideStudentId').value);
+            const status = document.getElementById('overrideStatusSelect').value;
+            const reason = document.getElementById('overrideReasonInput').value.trim();
+
+            if (!activeSessionId) {
+                alert("No active session selected.");
+                return;
+            }
+
+            if (!reason) {
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    alertDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    alertDiv.style.color = '#fca5a5';
+                    alertDiv.textContent = 'Please enter a valid reason for manual override.';
+                }
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
+                sessionId: activeSessionId,
+                studentId: studentId,
+                status: status,
+                reason: reason
+            };
+
+            try {
+                const res = await fetch('/attendance/manual-override', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to override attendance');
+                }
+
+                closeOverrideModal();
+                pollAttendance();
+            } catch (err) {
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    alertDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    alertDiv.style.color = '#fca5a5';
+                    alertDiv.textContent = err.message || 'Error submitting manual override';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Override';
+            }
+        }
+
+        // Set default due date (Tomorrow 23:59)
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        tomorrow.setHours(23, 59, 0, 0);
+        const assignDueInput = document.getElementById('assignDueDate');
+        if (assignDueInput) {
+            assignDueInput.value = formatDateForInput(tomorrow);
+        }
+
+        async function handleAssignmentUpload(e) {
+            e.preventDefault();
+            const btn = document.getElementById('uploadAssignBtn');
+            const alertBox = document.getElementById('assignmentAlert');
+
+            const className = document.getElementById('assignClassName').value.trim();
+            const subject = document.getElementById('assignSubject').value.trim();
+            const title = document.getElementById('assignTitle').value.trim();
+            const dueDate = document.getElementById('assignDueDate').value;
+            const description = document.getElementById('assignDescription').value.trim();
+            const fileInput = document.getElementById('assignFile');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAssignAlert(alertBox, false, "Please select a PDF file to upload.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('className', className);
+            formData.append('subject', subject);
+            formData.append('title', title);
+            formData.append('dueDate', dueDate);
+            formData.append('description', description);
+
+            btn.disabled = true;
+            btn.textContent = "Uploading PDF...";
+
+            try {
+                const res = await fetch('/assignments/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    showAssignAlert(alertBox, false, "Session Expired (HTTP " + res.status + "): Server restarted or token invalid. Please log in again.", true);
+                    return;
+                }
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ message: 'Upload failed' }));
+                    throw new Error(errData.message || ('Failed to upload assignment (HTTP ' + res.status + ')'));
+                }
+
+                const data = await res.json();
+                showAssignAlert(alertBox, true, `Assignment '${data.title}' successfully uploaded for ${data.className}!`);
+                document.getElementById('uploadAssignmentForm').reset();
+                if (assignDueInput) assignDueInput.value = formatDateForInput(tomorrow);
+                loadTeacherAssignments(className);
+            } catch (err) {
+                const isFetchErr = err.message && err.message.includes('Failed to fetch');
+                const errMsg = isFetchErr ? "Session Expired / Connection Error. Please log in again." : err.message;
+                showAssignAlert(alertBox, false, errMsg, isFetchErr);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "📤 Upload Assignment for Students";
+            }
+        }
+
+        async function loadTeacherAssignments(className) {
+            if (!className) return;
+            try {
+                const res = await fetch(`/assignments/class/${encodeURIComponent(className)}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const assignments = await res.json();
+                const tbody = document.getElementById('teacherAssignmentsTableBody');
+
+                if (!assignments || assignments.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No assignments uploaded for '${className}'.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = assignments.map(a => `
+                    <tr>
+                        <td><strong>${a.className}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${a.subject}</span></td>
+                        <td>${a.title}</td>
+                        <td>${new Date(a.dueDate).toLocaleString()}</td>
+                        <td><a href="/assignments/download/${a.id}" target="_blank" class="btn-excel" style="text-decoration: none; padding: 0.3rem 0.6rem; font-size: 0.8rem;">📥 View / Download PDF</a></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Error loading assignments:", err);
+            }
+        }
+
+        function showAssignAlert(elem, isSuccess, message, isAuthErr = false) {
+            elem.style.display = 'block';
+            elem.style.background = isSuccess ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+            elem.style.color = isSuccess ? '#86efac' : '#fca5a5';
+            elem.style.border = isSuccess ? '1px solid var(--accent-green)' : '1px solid var(--accent-red)';
+            
+            if (isAuthErr) {
+                elem.innerHTML = `${message}<br><br><button class="btn-secondary" style="background: #ef4444; color: #ffffff;" onclick="logout()">🔑 Log In Again</button>`;
+            } else {
+                elem.textContent = message;
+            }
+        }
+
+        // Auto load assignments if course name input is updated
+        document.getElementById('assignClassName')?.addEventListener('change', (e) => {
+            loadTeacherAssignments(e.target.value.trim());
+        });
+
+        // Auto load sessions for dropdown
+        loadTeacherSessions();
+
+        function syncClassInputFromSelect() {
+            const val = document.getElementById('teacherClassSelect').value;
+            const textInput = document.getElementById('teacherClassNameSearch');
+            if (val) {
+                textInput.value = val;
+            } else {
+                textInput.value = '';
+            }
+            loadSelectedClassAnalytics();
+        }
+
+        async function loadTeacherSessions() {
+            const select = document.getElementById('teacherClassSelect');
+            if (!select) return;
+
+            try {
+                const res = await fetch('/sessions/my-sessions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const sessions = await res.json();
+                let optionsHtml = '<option value="">Select a Session / Class...</option>';
+
+                if (sessions && sessions.length > 0) {
+                    const uniqueClasses = [...new Set(sessions.map(s => s.className).filter(Boolean))];
+                    optionsHtml += '<optgroup label="Classes">';
+                    uniqueClasses.forEach(c => {
+                        optionsHtml += `<option value="${escapeHtml(c)}">${escapeHtml(c)} (All Sessions)</option>`;
+                    });
+                    optionsHtml += '</optgroup><optgroup label="Specific Sessions">';
+                    sessions.forEach(s => {
+                        optionsHtml += `<option value="${s.id}">${escapeHtml(s.className)} (Session #${s.id})</option>`;
+                    });
+                    optionsHtml += '</optgroup>';
+                } else {
+                    optionsHtml += '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                }
+
+                select.innerHTML = optionsHtml;
+
+            } catch (err) {
+                console.error("Error loading teacher sessions:", err);
+            }
+        }
+
+        async function loadSelectedClassAnalytics() {
+            const selectVal = document.getElementById('teacherClassSelect').value.trim();
+            const textVal = document.getElementById('teacherClassNameSearch').value.trim();
+            const targetVal = textVal || selectVal;
+
+            const panel = document.getElementById('classAnalyticsPanel');
+            const placeholder = document.getElementById('classAnalyticsPlaceholder');
+
+            if (!targetVal) {
+                panel.style.display = 'none';
+                placeholder.style.display = 'block';
+                return;
+            }
+
+            panel.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            const isNumericId = /^\d+$/.test(targetVal);
+            const sumUrl = isNumericId ? `/classes/${targetVal}/attendance-summary` : `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary`;
+            const rosterUrl = isNumericId ? `/classes/${targetVal}/roster` : `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
+
+            try {
+                // 1. Fetch Class Summary Analytics
+                const sumRes = await fetch(sumUrl, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (sumRes.ok) {
+                    const summary = await sumRes.json();
+                    document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0) + '%';
+                    document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
+
+                    const avgGrid = document.getElementById('classSubjectAveragesGrid');
+                    if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
+                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject session data recorded yet.</p>';
+                    } else {
+                        avgGrid.innerHTML = summary.subjectAverages.map(sa => `
+                            <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 0.75rem; border-radius: 8px;">
+                                <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sa.subject)}</span>
+                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
+                                <span style="font-size: 0.7rem; color: var(--text-secondary); display: block;">${sa.totalSessionsHeld} sessions held</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // 2. Fetch Class Student Roster
+                const rosterRes = await fetch(rosterUrl, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (rosterRes.ok) {
+                    const roster = await rosterRes.json();
+                    const tbody = document.getElementById('classRosterTableBody');
+
+                    if (!roster.students || roster.students.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
+
+                    // Fetch individual attendance summary for each student
+                    const studentRows = await Promise.all(roster.students.map(async s => {
+                        let percent = 0.0;
+                        try {
+                            const sRes = await fetch(`/students/${s.id}/attendance-summary`, {
+                                headers: { 'Authorization': 'Bearer ' + token }
+                            });
+                            if (sRes.ok) {
+                                const sSum = await sRes.json();
+                                percent = sSum.overallPercentage || 0.0;
+                            }
+                        } catch (e) {}
+
+                        const isGood = percent >= 75;
+                        return `
+                            <tr>
+                                <td><strong>${escapeHtml(s.name)}</strong></td>
+                                <td>${escapeHtml(s.username)}</td>
+                                <td>${escapeHtml(s.email)}</td>
+                                <td>
+                                    <span style="font-weight: 700; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</span>
+                                </td>
+                                <td>
+                                    <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${s.id}, '${escapeHtml(s.name)}')">📊 View Breakdown</button>
+                                </td>
+                            </tr>
+                        `;
+                    }));
+
+                    tbody.innerHTML = studentRows.join('');
+                }
+
+                // 3. Fetch Everyday Class Attendance Records Log
+                const logUrl = isNumericId ? `/sessions/${targetVal}/attendance-full` : `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records`;
+                try {
+                    const logRes = await fetch(logUrl, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (logRes.ok) {
+                        const records = await logRes.json();
+                        const logTbody = document.getElementById('classDailyLogTableBody');
+
+                        if (!records || records.length === 0) {
+                            logTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No daily attendance entries logged for this class session yet.</td></tr>';
+                        } else {
+                            logTbody.innerHTML = records.map(r => {
+                                const formattedTime = r.markedAt ? new Date(r.markedAt).toLocaleString() : 'N/A';
+                                const isPresent = r.status === 'PRESENT' || r.status === 'LATE';
+                                const statusBadge = `<span class="status-badge ${isPresent ? 'status-present' : 'status-absent'}">${r.status || 'ABSENT'}</span>`;
+                                return `
+                                    <tr>
+                                        <td>${formattedTime}</td>
+                                        <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
+                                        <td>${escapeHtml(r.username || '-')}</td>
+                                        <td>${escapeHtml(r.email || '-')}</td>
+                                        <td>${statusBadge}</td>
+                                    </tr>
+                                `;
+                            }).join('');
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error loading daily log:", e);
+                }
+
+            } catch (err) {
+                console.error("Error loading class analytics:", err);
+            }
+        }
+
+        async function viewStudentBreakdown(studentId, studentName) {
+            try {
+                const res = await fetch(`/students/${studentId}/attendance-summary`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const summary = await res.json();
+                document.getElementById('modalStudentName').textContent = studentName || summary.studentName || 'Student Report';
+                document.getElementById('modalStudentSubtext').textContent = `@${summary.username || ''} | ${summary.email || ''}`;
+
+                const overall = summary.overallPercentage || 0.0;
+                document.getElementById('modalOverallPercent').textContent = `${overall}%`;
+
+                const badge = document.getElementById('modalStatusBadge');
+                if (overall >= 75) {
+                    badge.className = 'status-badge status-present';
+                    badge.textContent = '75%+ Eligible';
+                } else {
+                    badge.className = 'status-badge status-absent';
+                    badge.textContent = 'Below 75% Warning';
+                }
+
+                // Subject Breakdown Grid
+                const grid = document.getElementById('modalSubjectGrid');
+                if (summary.subjectBreakdown && summary.subjectBreakdown.length > 0) {
+                    grid.innerHTML = summary.subjectBreakdown.map(sb => `
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 0.75rem; border-radius: 10px;">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); display: block;">${escapeHtml(sb.subject)}</span>
+                            <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-cyan);">${sb.percentage}%</span>
+                            <span style="font-size: 0.7rem; color: var(--text-secondary); display: block;">Attended ${sb.presentCount}/${sb.totalSessions} sessions</span>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject records found.</p>';
+                }
+
+                // Everyday History Log Table
+                const tbody = document.getElementById('modalHistoryTableBody');
+                if (summary.recentRecords && summary.recentRecords.length > 0) {
+                    tbody.innerHTML = summary.recentRecords.map(r => {
+                        const formattedTime = r.markedAt ? new Date(r.markedAt).toLocaleString() : 'N/A';
+                        const isPresent = r.status === 'PRESENT' || r.status === 'LATE';
+                        return `
+                            <tr>
+                                <td>${formattedTime}</td>
+                                <td><strong>${escapeHtml(r.subject || 'N/A')}</strong></td>
+                                <td>${escapeHtml(r.className || 'N/A')}</td>
+                                <td><span class="status-badge ${isPresent ? 'status-present' : 'status-absent'}">${r.status || 'ABSENT'}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No daily attendance entries logged for this student yet.</td></tr>';
+                }
+
+                document.getElementById('studentDetailModal').style.display = 'flex';
+            } catch (err) {
+                console.error("Failed to load student breakdown:", err);
+                alert("Failed to load student attendance breakdown.");
+            }
+        }
+
+        function closeStudentModal() {
+            document.getElementById('studentDetailModal').style.display = 'none';
+        }
+    </script>
+
+    <!-- STUDENT DETAIL ATTENDANCE MODAL -->
+    <div id="studentDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 16px; width: 100%; max-width: 750px; max-height: 90vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); color: var(--text-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <h3 id="modalStudentName" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">Student Attendance Report</h3>
+                    <span id="modalStudentSubtext" style="font-size: 0.825rem; color: var(--text-secondary);">Individual percentage breakdown and daily logs</span>
+                </div>
+                <button onclick="closeStudentModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Overall % Stat Card -->
+            <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Overall Attendance Rate</span>
+                    <span id="modalOverallPercent" style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan);">0.0%</span>
+                </div>
+                <span id="modalStatusBadge" class="status-badge status-present" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">75%+ Eligible</span>
+            </div>
+
+            <!-- Subject Breakdown Grid -->
+            <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">Subject Performance Breakdown</h4>
+            <div id="modalSubjectGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            </div>
+
+            <!-- Everyday History Log Table -->
+            <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">Student's Everyday Attendance Log</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Subject</th>
+                            <th>Class</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalHistoryTableBody">
+                        <tr><td colspan="4" class="empty-state">No attendance records logged yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn-secondary" style="width: auto; padding: 0.5rem 1.25rem;" onclick="closeStudentModal()">Close Report</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
