@@ -89,4 +89,15 @@ class AssignmentControllerTest {
         assertEquals(1, response.getBody().size());
         assertEquals("Homework 1", response.getBody().get(0).getTitle());
     }
+
+    @Test
+    void testDeleteAssignment_Success() {
+        when(principal.getName()).thenReturn("teacher1");
+        doNothing().when(assignmentService).deleteAssignment(1L, "teacher1");
+
+        ResponseEntity<Void> response = assignmentController.deleteAssignment(1L, principal);
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(assignmentService, times(1)).deleteAssignment(1L, "teacher1");
+    }
 }

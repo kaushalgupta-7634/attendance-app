@@ -71,4 +71,15 @@ public class AssignmentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getFilename() + "\"")
                 .body(fileResource);
     }
+
+    /**
+     * DELETE /assignments/{id} (TEACHER only)
+     * Deletes an assignment by ID.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteAssignment(@PathVariable("id") Long id, Principal principal) {
+        assignmentService.deleteAssignment(id, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
 }

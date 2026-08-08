@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.attendance.controller.AttendanceMarkIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.12 s -- in com.example.attendance.controller.AttendanceMarkIntegrationTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.36 s -- in com.example.attendance.controller.AttendanceMarkIntegrationTest
