@@ -1,0 +1,536 @@
+package com.example.attendance.service;
+
+import com.example.attendance.model.*;
+import com.example.attendance.repository.AttendanceRecordRepository;
+import com.example.attendance.repository.ClassSessionRepository;
+import com.example.attendance.repository.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.example.attendance.repository.ClassCourseRepository;
+import com.example.attendance.repository.EnrollmentRepository;
+
+@Service
+public class ClassSessionService {
+
+    private final ClassSessionRepository classSessionRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final UserRepository userRepository;
+    private final QrCodeService qrCodeService;
+    private final ClassCourseRepository classCourseRepository;
+    private final EnrollmentRepository enrollmentRepository;
+
+    public ClassSessionService(ClassSessionRepository classSessionRepository,
+                               AttendanceRecordRepository attendanceRecordRepository,
+                               UserRepository userRepository,
+                               QrCodeService qrCodeService,
+                               ClassCourseRepository classCourseRepository,
+                               EnrollmentRepository enrollmentRepository) {
+        this.classSessionRepository = classSessionRepository;
+        this.attendanceRecordRepository = attendanceRecordRepository;
+        this.userRepository = userRepository;
+        this.qrCodeService = qrCodeService;
+        this.classCourseRepository = classCourseRepository;
+        this.enrollmentRepository = enrollmentRepository;
+    }
+
+    public ClassSession startSession(CreateSessionRequest request, String teacherUsername) {
+        User teacher = userRepository.findByUsername(teacherUsername)
+                .orElseThrow(() -> new RuntimeException("Teacher user not found with username: " + teacherUsername));
+
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new RuntimeException("Only teachers can start a class session.");
+        }
+
+        ClassSession session = new ClassSession();
+        session.setTeacher(teacher);
+
+        ClassCourse classCourse = null;
+        if (request.getClassCourseId() != null) {
+            classCourse = classCourseRepository.findById(request.getClassCourseId()).orElse(null);
+        } else if (request.getClassName() != null && !request.getClassName().isBlank()) {
+            classCourse = classCourseRepository.findByClassCodeIgnoreCase(request.getClassName())
+                    .orElseGet(() -> classCourseRepository.findAll().stream()
+                            .filter(c -> c.getClassName().equalsIgnoreCase(request.getClassName()))
+                            .findFirst().orElse(null));
+        }
+
+        String subject = request.getSubject();
+        if ((subject == null || subject.isBlank()) && classCourse != null) {
+            subject = classCourse.getSubject();
+        }
+
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("Subject is required to start a session.");
+        }
+
+        session.setSubject(subject.trim());
+
+        if (classCourse != null) {
+            session.setClassCourse(classCourse);
+            session.setClassName(classCourse.getClassName());
+        } else {
+            session.setClassName(request.getClassName());
+        }
+
+        session.setStartTime(request.getStartTime());
+        session.setEndTime(request.getEndTime());
+        session.setClassroomLat(request.getClassroomLat());
+        session.setClassroomLng(request.getClassroomLng());
+        session.setRadiusMeters(request.getRadiusMeters());
+        if (request.getExpectedWifiSsid() != null && !request.getExpectedWifiSsid().isBlank()) {
+            session.setExpectedWifiSsid(request.getExpectedWifiSsid().trim());
+        }
+        session.setActive(true);
+
+        String randomPasscode = String.format("%06d", new java.util.Random().nextInt(1000000));
+        session.setPasscode(randomPasscode);
+
+        return classSessionRepository.save(session);
+    }
+
+    private void verifyTeacherAccess(ClassSession session, String teacherUsername) {
+        User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + teacherUsername));
+
+        if (requester.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can access this session.");
+        }
+
+        if (session.getTeacher() != null && !session.getTeacher().getId().equals(requester.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: You are not the teacher for this session.");
+        }
+    }
+
+    public ClassSession endSession(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        session.setActive(false);
+        LocalDateTime now = LocalDateTime.now();
+        session.setEndTime(now);
+        ClassSession savedSession = classSessionRepository.save(session);
+
+        // Auto-create ABSENT records for any students who didn't mark attendance during the session
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+        for (User student : students) {
+            if (!attendanceRecordRepository.existsBySessionAndStudent(savedSession, student)) {
+                com.example.attendance.model.AttendanceRecord absentRecord = new com.example.attendance.model.AttendanceRecord();
+                absentRecord.setSession(savedSession);
+                absentRecord.setStudent(student);
+                absentRecord.setMarkedAt(now);
+                absentRecord.setStudentLat(savedSession.getClassroomLat() != null ? savedSession.getClassroomLat() : 0.0);
+                absentRecord.setStudentLng(savedSession.getClassroomLng() != null ? savedSession.getClassroomLng() : 0.0);
+                absentRecord.setStatus(com.example.attendance.model.AttendanceStatus.ABSENT);
+                attendanceRecordRepository.save(absentRecord);
+            }
+        }
+
+        return savedSession;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public int autoCloseExpiredSessions() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ClassSession> expiredSessions = classSessionRepository.findByActiveTrueAndEndTimeBefore(now);
+        if (expiredSessions.isEmpty()) {
+            return 0;
+        }
+
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+
+        for (ClassSession session : expiredSessions) {
+            session.setActive(false);
+            classSessionRepository.save(session);
+
+            for (User student : students) {
+                if (!attendanceRecordRepository.existsBySessionAndStudent(session, student)) {
+                    AttendanceRecord absentRecord = new AttendanceRecord();
+                    absentRecord.setSession(session);
+                    absentRecord.setStudent(student);
+                    absentRecord.setMarkedAt(session.getEndTime() != null ? session.getEndTime() : now);
+                    absentRecord.setStudentLat(session.getClassroomLat() != null ? session.getClassroomLat() : 0.0);
+                    absentRecord.setStudentLng(session.getClassroomLng() != null ? session.getClassroomLng() : 0.0);
+                    absentRecord.setStatus(AttendanceStatus.ABSENT);
+                    attendanceRecordRepository.save(absentRecord);
+                }
+            }
+            org.slf4j.LoggerFactory.getLogger(ClassSessionService.class).info(
+                    "Auto-closed expired active ClassSession ID: {} ('{}', subject: '{}')",
+                    session.getId(), session.getClassName(), session.getSubject()
+            );
+        }
+
+        return expiredSessions.size();
+    }
+
+    public byte[] getSessionQrCodeImage(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        if (!session.isActive()) {
+            throw new RuntimeException("ClassSession is no longer active.");
+        }
+
+        String qrToken = qrCodeService.generateQrToken(sessionId);
+        return qrCodeService.generateQrCodeImageBytes(qrToken, 300, 300);
+    }
+
+    public List<AttendanceRecordDTO> getSessionAttendanceRecords(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+
+        return records.stream().map(record -> new AttendanceRecordDTO(
+                record.getId(),
+                record.getStudent().getId(),
+                record.getStudent().getName(),
+                record.getStudent().getUsername(),
+                record.getStudent().getEmail(),
+                record.getMarkedAt(),
+                record.getStudentLat(),
+                record.getStudentLng(),
+                record.getStatus(),
+                record.isManuallyOverridden(),
+                record.getOverrideReason(),
+                record.getOverriddenBy() != null ? record.getOverriddenBy().getName() : null
+        )).collect(Collectors.toList());
+    }
+
+    public List<AttendanceRecordDTO> getSessionFullAttendanceRecords(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+        java.util.Map<Long, AttendanceRecord> recordMap = records.stream()
+                .collect(Collectors.toMap(r -> r.getStudent().getId(), r -> r, (r1, r2) -> r1));
+
+        List<User> enrolledStudents = java.util.Collections.emptyList();
+        if (session.getClassCourse() != null) {
+            List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(session.getClassCourse());
+            enrolledStudents = enrollments.stream().map(Enrollment::getStudent).collect(Collectors.toList());
+        }
+
+        List<User> targetStudents = enrolledStudents;
+        if (targetStudents.isEmpty()) {
+            targetStudents = userRepository.findByRole(Role.STUDENT);
+        }
+
+        return targetStudents.stream().map(student -> {
+            AttendanceRecord record = recordMap.get(student.getId());
+            if (record != null) {
+                return new AttendanceRecordDTO(
+                        record.getId(),
+                        student.getId(),
+                        student.getName(),
+                        student.getUsername(),
+                        student.getEmail(),
+                        record.getMarkedAt(),
+                        record.getStudentLat(),
+                        record.getStudentLng(),
+                        record.getStatus(),
+                        record.isManuallyOverridden(),
+                        record.getOverrideReason(),
+                        record.getOverriddenBy() != null ? record.getOverriddenBy().getName() : null,
+                        record.getStudentWifiSsid(),
+                        record.isWifiMismatchWarning()
+                );
+            } else {
+                return new AttendanceRecordDTO(
+                        null,
+                        student.getId(),
+                        student.getName(),
+                        student.getUsername(),
+                        student.getEmail(),
+                        null,
+                        null,
+                        null,
+                        AttendanceStatus.ABSENT,
+                        false,
+                        null,
+                        null,
+                        null,
+                        false
+                );
+            }
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AttendanceRecordDTO manualOverrideAttendance(ManualOverrideRequest request, String teacherUsername) {
+        if (request == null || request.getSessionId() == null || request.getStudentId() == null || request.getStatus() == null) {
+            throw new IllegalArgumentException("Session ID, Student ID, and Status are required.");
+        }
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Reason is required for manual attendance override.");
+        }
+
+        ClassSession session = classSessionRepository.findById(request.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + request.getSessionId()));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found: " + teacherUsername));
+
+        User student = userRepository.findById(request.getStudentId())
+                .orElseThrow(() -> new IllegalArgumentException("Student not found with ID: " + request.getStudentId()));
+
+        AttendanceRecord record = attendanceRecordRepository.findBySessionAndStudent(session, student)
+                .orElse(null);
+
+        if (record == null) {
+            record = new AttendanceRecord();
+            record.setSession(session);
+            record.setStudent(student);
+            record.setStudentLat(session.getClassroomLat());
+            record.setStudentLng(session.getClassroomLng());
+        }
+
+        record.setMarkedAt(LocalDateTime.now());
+        record.setStatus(request.getStatus());
+        record.setManuallyOverridden(true);
+        record.setOverrideReason(request.getReason().trim());
+        record.setOverriddenBy(teacher);
+
+        record = attendanceRecordRepository.save(record);
+
+        return new AttendanceRecordDTO(
+                record.getId(),
+                student.getId(),
+                student.getName(),
+                student.getUsername(),
+                student.getEmail(),
+                record.getMarkedAt(),
+                record.getStudentLat(),
+                record.getStudentLng(),
+                record.getStatus(),
+                record.isManuallyOverridden(),
+                record.getOverrideReason(),
+                teacher.getName()
+        );
+    }
+
+    public byte[] exportSessionAttendanceCsv(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Record ID,Student ID,Student Name,Username,Email,Marked At,Student Lat,Student Lng,Status\n");
+
+        for (AttendanceRecord r : records) {
+            csv.append(r.getId()).append(",")
+               .append(r.getStudent().getId()).append(",")
+               .append("\"").append(r.getStudent().getName().replace("\"", "\"\"")).append("\",")
+               .append("\"").append(r.getStudent().getUsername().replace("\"", "\"\"")).append("\",")
+               .append("\"").append(r.getStudent().getEmail().replace("\"", "\"\"")).append("\",")
+               .append(r.getMarkedAt()).append(",")
+               .append(r.getStudentLat()).append(",")
+               .append(r.getStudentLng()).append(",")
+               .append(r.getStatus()).append("\n");
+        }
+
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public byte[] exportFullSessionAttendanceCsv(Long sessionId, String teacherUsername) {
+        List<AttendanceRecordDTO> records = getSessionFullAttendanceRecords(sessionId, teacherUsername);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Student Name,Email,Status,Marked At\n");
+
+        for (AttendanceRecordDTO r : records) {
+            String name = r.getStudentName() != null ? r.getStudentName() : (r.getStudentUsername() != null ? r.getStudentUsername() : "");
+            String email = r.getStudentEmail() != null ? r.getStudentEmail() : "";
+            String status = r.getStatus() != null ? r.getStatus().name() : "ABSENT";
+            String markedAt = r.getMarkedAt() != null ? r.getMarkedAt().toString() : "";
+
+            csv.append("\"").append(name.replace("\"", "\"\"")).append("\",")
+               .append("\"").append(email.replace("\"", "\"\"")).append("\",")
+               .append(status).append(",")
+               .append(markedAt).append("\n");
+        }
+
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public ClassSession getLatestActiveSession() {
+        return classSessionRepository.findTopByActiveTrueOrderByIdDesc()
+                .orElseThrow(() -> new RuntimeException("No active class session found. Please ask your teacher to launch a class session."));
+    }
+
+    public ClassRosterResponseDTO getClassRoster(Long classId, String teacherUsername) {
+        User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        if (requester.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class rosters.");
+        }
+
+        ClassCourse classCourse = classCourseRepository.findById(classId).orElse(null);
+        String className = null;
+        Long resolvedId = classId;
+
+        if (classCourse == null) {
+            ClassSession session = classSessionRepository.findById(classId).orElse(null);
+            if (session != null) {
+                classCourse = session.getClassCourse();
+                className = session.getClassName();
+                if (classCourse == null && className != null) {
+                    final String nameToFind = className;
+                    classCourse = classCourseRepository.findByClassCodeIgnoreCase(nameToFind)
+                            .orElseGet(() -> classCourseRepository.findAll().stream()
+                                    .filter(c -> c.getClassName().equalsIgnoreCase(nameToFind))
+                                    .findFirst().orElse(null));
+                }
+            } else {
+                throw new IllegalArgumentException("ClassCourse or ClassSession not found with ID: " + classId);
+            }
+        } else {
+            className = classCourse.getClassName();
+        }
+
+        List<User> students = java.util.Collections.emptyList();
+        if (classCourse != null) {
+            List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(classCourse);
+            students = enrollments.stream().map(Enrollment::getStudent).collect(Collectors.toList());
+        }
+
+        List<ClassRosterResponseDTO.StudentDTO> studentDTOs = students.stream().map(student ->
+                new ClassRosterResponseDTO.StudentDTO(
+                        student.getId(),
+                        student.getName(),
+                        student.getUsername(),
+                        student.getEmail()
+                )
+        ).collect(Collectors.toList());
+
+        return new ClassRosterResponseDTO(
+                resolvedId,
+                className != null ? className : "Unknown",
+                studentDTOs.size(),
+                studentDTOs
+        );
+    }
+
+    public ClassRosterResponseDTO getClassRosterByName(String className, String teacherUsername) {
+        User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        if (requester.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class rosters.");
+        }
+
+        List<User> students;
+        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
+            students = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
+            if (students == null || students.isEmpty()) {
+                students = userRepository.findByRole(Role.STUDENT);
+            }
+        } else {
+            students = userRepository.findByRole(Role.STUDENT);
+        }
+
+        List<ClassRosterResponseDTO.StudentDTO> studentDTOs = students.stream().map(student ->
+                new ClassRosterResponseDTO.StudentDTO(
+                        student.getId(),
+                        student.getName(),
+                        student.getUsername(),
+                        student.getEmail()
+                )
+        ).collect(Collectors.toList());
+
+        return new ClassRosterResponseDTO(
+                0L,
+                className != null ? className : "General",
+                studentDTOs.size(),
+                studentDTOs
+        );
+    }
+
+    public List<ClassSession> getTeacherSessions(String teacherUsername) {
+        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        List<ClassSession> sessions = classSessionRepository.findByTeacher(teacher);
+        if (sessions.isEmpty()) {
+            sessions = classSessionRepository.findAll();
+        }
+        return sessions;
+    }
+
+    public List<AttendanceRecordDTO> getClassDailyAttendanceRecords(String className, String teacherUsername) {
+        User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        if (requester.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view daily attendance records.");
+        }
+
+        List<AttendanceRecord> records;
+        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
+            records = attendanceRecordRepository.findBySession_ClassNameOrderByMarkedAtDesc(className);
+            if (records.isEmpty()) {
+                records = attendanceRecordRepository.findAll();
+            }
+        } else {
+            records = attendanceRecordRepository.findAll();
+        }
+
+        return records.stream().map(r -> new AttendanceRecordDTO(
+                r.getId(),
+                r.getStudent().getId(),
+                r.getStudent().getName(),
+                r.getStudent().getUsername(),
+                r.getStudent().getEmail(),
+                r.getMarkedAt(),
+                r.getStudentLat(),
+                r.getStudentLng(),
+                r.getStatus()
+        )).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteSession(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        attendanceRecordRepository.deleteBySession(session);
+        classSessionRepository.delete(session);
+    }
+
+    @Transactional
+    public ClassSession cancelSession(Long sessionId, boolean cancelled, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
+
+        verifyTeacherAccess(session, teacherUsername);
+
+        session.setCancelled(cancelled);
+        if (cancelled) {
+            session.setActive(false);
+        }
+        return classSessionRepository.save(session);
+    }
+}
+
