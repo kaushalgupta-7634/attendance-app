@@ -66,7 +66,7 @@ public class AttendanceService {
             final String code = rawToken.trim();
             session = classSessionRepository.findAll().stream()
                     .filter(ClassSession::isActive)
-                    .filter(s -> code.equalsIgnoreCase(s.getPasscode()))
+                    .filter(s -> qrCodeService.validatePasscode(s.getId(), code) || code.equalsIgnoreCase(s.getPasscode()))
                     .findFirst()
                     .orElseGet(() -> classSessionRepository.findTopByActiveTrueOrderByIdDesc().orElse(null));
 
@@ -82,16 +82,22 @@ public class AttendanceService {
             throw new IllegalArgumentException("Attendance rejected: Class session '" + session.getClassName() + "' is not active.");
         }
 
-        // Validate QR Token Hash if hash was present
+        // Validate QR Token Hash (15s window) or 6-Digit Passcode (30s window)
         if (tokenHash != null && !tokenHash.isEmpty()) {
             boolean isValidToken = qrCodeService.validateToken(session.getId(), tokenHash);
             if (!isValidToken) {
-                throw new IllegalArgumentException("Attendance rejected: QR token expired (20s rotation). Please scan the live QR code on teacher screen.");
+                throw new IllegalArgumentException("Attendance rejected: QR token expired (15s rotation). Please scan the live QR code on teacher screen.");
+            }
+        } else if (rawToken != null && rawToken.trim().matches("\\d{6}")) {
+            String code = rawToken.trim();
+            boolean isValidPasscode = qrCodeService.validatePasscode(session.getId(), code) || code.equalsIgnoreCase(session.getPasscode());
+            if (!isValidPasscode) {
+                throw new IllegalArgumentException("Attendance rejected: 6-digit token number expired (30s rotation). Please enter the current token number shown on teacher screen.");
             }
         }
 
         // Step (b): Verify current time is within session's startTime/endTime
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         if (now.isBefore(session.getStartTime()) || now.isAfter(session.getEndTime())) {
             throw new IllegalArgumentException("Attendance rejected: Session closed. Session time: " 
                     + session.getStartTime() + " to " + session.getEndTime() + ".");

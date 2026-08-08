@@ -86,12 +86,9 @@ public class ClassSessionService {
         if (request.getExpectedWifiSsid() != null && !request.getExpectedWifiSsid().isBlank()) {
             session.setExpectedWifiSsid(request.getExpectedWifiSsid().trim());
         }
-        session.setActive(true);
-
-        String randomPasscode = String.format("%06d", new java.util.Random().nextInt(1000000));
-        session.setPasscode(randomPasscode);
-
-        return classSessionRepository.save(session);
+        ClassSession savedSession = classSessionRepository.save(session);
+        savedSession.setPasscode(qrCodeService.generateCurrentPasscode(savedSession.getId()));
+        return savedSession;
     }
 
     private void verifyTeacherAccess(ClassSession session, String teacherUsername) {
@@ -114,7 +111,7 @@ public class ClassSessionService {
         verifyTeacherAccess(session, teacherUsername);
 
         session.setActive(false);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         session.setEndTime(now);
         ClassSession savedSession = classSessionRepository.save(session);
 
@@ -138,7 +135,7 @@ public class ClassSessionService {
 
     @org.springframework.transaction.annotation.Transactional
     public int autoCloseExpiredSessions() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         List<ClassSession> expiredSessions = classSessionRepository.findByActiveTrueAndEndTimeBefore(now);
         if (expiredSessions.isEmpty()) {
             return 0;
@@ -301,7 +298,7 @@ public class ClassSessionService {
             record.setStudentLng(session.getClassroomLng());
         }
 
-        record.setMarkedAt(LocalDateTime.now());
+        record.setMarkedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         record.setStatus(request.getStatus());
         record.setManuallyOverridden(true);
         record.setOverrideReason(request.getReason().trim());
@@ -373,8 +370,20 @@ public class ClassSessionService {
     }
 
     public ClassSession getLatestActiveSession() {
-        return classSessionRepository.findTopByActiveTrueOrderByIdDesc()
+        ClassSession session = classSessionRepository.findTopByActiveTrueOrderByIdDesc()
                 .orElseThrow(() -> new RuntimeException("No active class session found. Please ask your teacher to launch a class session."));
+        session.setPasscode(qrCodeService.generateCurrentPasscode(session.getId()));
+        return session;
+    }
+
+    public String getSessionPasscode(Long sessionId, String teacherUsername) {
+        ClassSession session = classSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+        verifyTeacherAccess(session, teacherUsername);
+        if (!session.isActive()) {
+            return "------";
+        }
+        return qrCodeService.generateCurrentPasscode(sessionId);
     }
 
     public ClassRosterResponseDTO getClassRoster(Long classId, String teacherUsername) {

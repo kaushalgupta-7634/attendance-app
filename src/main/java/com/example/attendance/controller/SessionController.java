@@ -47,6 +47,13 @@ public class SessionController {
         return new ResponseEntity<>(qrImage, headers, HttpStatus.OK);
     }
 
+    @GetMapping("/{id}/passcode")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<java.util.Map<String, String>> getSessionPasscode(@PathVariable("id") Long id, Principal principal) {
+        String passcode = classSessionService.getSessionPasscode(id, principal.getName());
+        return ResponseEntity.ok(java.util.Map.of("passcode", passcode));
+    }
+
     @GetMapping("/{id}/attendance")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<List<AttendanceRecordDTO>> getSessionAttendance(@PathVariable("id") Long id, Principal principal) {

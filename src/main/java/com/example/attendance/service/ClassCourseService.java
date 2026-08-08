@@ -88,7 +88,7 @@ public class ClassCourseService {
             throw new IllegalArgumentException("Student is already enrolled in class '" + classCourse.getClassName() + "' (" + classCode + ").");
         }
 
-        Enrollment enrollment = new Enrollment(student, classCourse, LocalDateTime.now());
+        Enrollment enrollment = new Enrollment(student, classCourse, LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         return enrollmentRepository.save(enrollment);
     }
 

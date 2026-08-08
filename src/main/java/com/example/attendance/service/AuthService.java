@@ -95,7 +95,7 @@ public class AuthService {
         userRepository.findByEmailIgnoreCase(cleanEmail).ifPresent(user -> {
             String token = java.util.UUID.randomUUID().toString();
             user.setResetToken(token);
-            user.setResetTokenExpiry(java.time.LocalDateTime.now().plusMinutes(15));
+            user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
             userRepository.save(user);
 
             emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
@@ -116,7 +116,7 @@ public class AuthService {
         User user = userRepository.findByResetToken(request.getToken().trim())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset token."));
 
-        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")))) {
             throw new IllegalArgumentException("Invalid or expired password reset token.");
         }
 

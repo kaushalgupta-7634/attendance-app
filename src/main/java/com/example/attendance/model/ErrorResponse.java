@@ -13,7 +13,7 @@ public class ErrorResponse {
     }
 
     public ErrorResponse(int status, String error, String message, String path) {
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         this.status = status;
         this.error = error;
         this.message = message;

@@ -462,7 +462,7 @@
 
                     <div id="rotationTimerBadge" class="timer-badge">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                        Rotating in <span id="countdown">20</span>s
+                        Rotating in <span id="countdown">15</span>s
                     </div>
 
                     <!-- END SESSION, CANCEL SESSION & DELETE SESSION BUTTONS -->
@@ -701,7 +701,7 @@
         var qrTimer = null;
         var countdownTimer = null;
         var attendancePollTimer = null;
-        var secondsLeft = 20;
+        var secondsLeft = 15;
 
         const token = localStorage.getItem('jwtToken');
         const username = localStorage.getItem('username');
@@ -1122,6 +1122,23 @@
             }
         }
 
+        async function fetchPasscode() {
+            if (!activeSessionId) return;
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/passcode?t=` + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.passcode) {
+                        document.getElementById('activePasscodeDisplay').textContent = data.passcode;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching passcode:', err);
+            }
+        }
+
         async function refreshQrImage() {
             if (!activeSessionId) return;
             try {
@@ -1134,7 +1151,8 @@
                 const objectUrl = URL.createObjectURL(blob);
                 const img = document.getElementById('qrImageDisplay');
                 img.src = objectUrl;
-                secondsLeft = 20;
+                secondsLeft = 15;
+                fetchPasscode();
             } catch (err) {
                 console.error('Error fetching QR image:', err);
             }
@@ -1148,11 +1166,11 @@
 
             qrTimer = setInterval(() => {
                 refreshQrImage();
-            }, 20000);
+            }, 15000);
 
             countdownTimer = setInterval(() => {
                 secondsLeft--;
-                if (secondsLeft < 0) secondsLeft = 20;
+                if (secondsLeft < 0) secondsLeft = 15;
                 document.getElementById('countdown').textContent = secondsLeft;
             }, 1000);
         }
