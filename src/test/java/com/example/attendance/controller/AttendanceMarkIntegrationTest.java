@@ -131,7 +131,7 @@ class AttendanceMarkIntegrationTest {
     @org.springframework.security.test.context.support.WithMockUser(username = "student_test", roles = "STUDENT")
     void testMarkAttendance_Rejection_ExpiredOrInvalidToken() throws Exception {
         // Expired token (e.g. hash from 10 buckets ago)
-        long expiredBucket = (System.currentTimeMillis() / 20000L) - 10;
+        long expiredBucket = (System.currentTimeMillis() / 15000L) - 10;
         String expiredHash = qrCodeService.generateHashForBucket(activeSession.getId(), expiredBucket);
         String expiredToken = activeSession.getId() + ":" + expiredHash;
 

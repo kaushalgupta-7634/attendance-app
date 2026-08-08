@@ -64,19 +64,19 @@ public class AssignmentService {
 
     public LocalDateTime parseDueDate(String dueDateStr) {
         if (dueDateStr == null || dueDateStr.isBlank()) {
-            return LocalDateTime.now().plusDays(7);
+            return LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusDays(7);
         }
         dueDateStr = dueDateStr.trim();
         try {
             if (dueDateStr.endsWith("Z")) {
-                return java.time.Instant.parse(dueDateStr).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+                return java.time.Instant.parse(dueDateStr).atZone(java.time.ZoneId.of("Asia/Kolkata")).toLocalDateTime();
             }
             if (dueDateStr.length() == 16) {
                 dueDateStr += ":00";
             }
             return LocalDateTime.parse(dueDateStr, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         } catch (Exception e) {
-            return LocalDateTime.now().plusDays(7);
+            return LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusDays(7);
         }
     }
 
@@ -122,7 +122,7 @@ public class AssignmentService {
         assignment.setTitle(title);
         assignment.setDescription(description);
         assignment.setPdfFilePath(targetPath.toString());
-        assignment.setUploadedAt(LocalDateTime.now());
+        assignment.setUploadedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         assignment.setDueDate(dueDate);
 
         Assignment savedAssignment = assignmentRepository.save(assignment);
