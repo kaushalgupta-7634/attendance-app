@@ -183,6 +183,36 @@ public class AssignmentService {
         }
     }
 
+    /**
+     * Deletes an assignment by ID if owned by the requesting teacher.
+     */
+    public void deleteAssignment(Long id, String teacherUsername) {
+        User teacher = userRepository.findByUsername(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can delete assignments.");
+        }
+
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Assignment not found with ID: " + id));
+
+        if (!assignment.getTeacher().getId().equals(teacher.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: You are not the owner of this assignment.");
+        }
+
+        try {
+            if (assignment.getPdfFilePath() != null) {
+                Path filePath = Paths.get(assignment.getPdfFilePath()).normalize();
+                Files.deleteIfExists(filePath);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not delete physical assignment file at {}: {}", assignment.getPdfFilePath(), e.getMessage());
+        }
+
+        assignmentRepository.delete(assignment);
+    }
+
     public AssignmentResponseDTO mapToDTO(Assignment assignment) {
         return new AssignmentResponseDTO(
                 assignment.getId(),

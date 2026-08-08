@@ -1440,11 +1440,43 @@
                         <td><strong>${a.className}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${a.subject}</span></td>
                         <td>${a.title}</td>
                         <td>${new Date(a.dueDate).toLocaleString()}</td>
-                        <td><a href="/assignments/download/${a.id}" target="_blank" class="btn-excel" style="text-decoration: none; padding: 0.3rem 0.6rem; font-size: 0.8rem;">📥 View / Download PDF</a></td>
+                        <td>
+                            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                <a href="/assignments/download/${a.id}" target="_blank" class="btn-excel" style="text-decoration: none; padding: 0.3rem 0.6rem; font-size: 0.8rem;">📥 View / Download PDF</a>
+                                <button onclick="handleDeleteAssignment(${a.id}, '${escapeJsString(a.title)}', '${escapeJsString(a.className)}')" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.3rem 0.6rem; font-size: 0.8rem;">🗑️ Delete</button>
+                            </div>
+                        </td>
                     </tr>
                 `).join('');
             } catch (err) {
                 console.error("Error loading assignments:", err);
+            }
+        }
+
+        async function handleDeleteAssignment(id, title, className) {
+            if (!confirm(`Are you sure you want to delete assignment '${title}'?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/assignments/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    alert("Session expired. Please log in again.");
+                    return;
+                }
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ message: 'Failed to delete assignment' }));
+                    throw new Error(errData.message || 'Failed to delete assignment');
+                }
+
+                loadTeacherAssignments(className);
+            } catch (err) {
+                alert("Error deleting assignment: " + err.message);
             }
         }
 

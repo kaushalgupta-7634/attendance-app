@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface ClassSessionRepository extends JpaRepository<ClassSession, Long> {
     List<ClassSession> findByTeacher(User teacher);
     List<ClassSession> findByActive(boolean active);
+    long countByActiveTrue();
     Optional<ClassSession> findTopByActiveTrueOrderByIdDesc();
     List<ClassSession> findByClassCourse(ClassCourse classCourse);
     
