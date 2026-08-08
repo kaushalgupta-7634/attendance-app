@@ -1345,11 +1345,16 @@
         }
 
         // Set default due date (Tomorrow 23:59)
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        tomorrow.setHours(23, 59, 0, 0);
+        function getDefaultDueDate() {
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            tomorrow.setHours(23, 59, 0, 0);
+            return formatDateForInput(tomorrow);
+        }
+
         const assignDueInput = document.getElementById('assignDueDate');
         if (assignDueInput) {
-            assignDueInput.value = formatDateForInput(tomorrow);
+            assignDueInput.value = getDefaultDueDate();
         }
 
         async function handleAssignmentUpload(e) {
@@ -1402,7 +1407,8 @@
                 const data = await res.json();
                 showAssignAlert(alertBox, true, `Assignment '${data.title}' successfully uploaded for ${data.className}!`);
                 document.getElementById('uploadAssignmentForm').reset();
-                if (assignDueInput) assignDueInput.value = formatDateForInput(tomorrow);
+                const assignDueEl = document.getElementById('assignDueDate');
+                if (assignDueEl) assignDueEl.value = getDefaultDueDate();
                 loadTeacherAssignments(className);
             } catch (err) {
                 const isFetchErr = err.message && err.message.includes('Failed to fetch');
