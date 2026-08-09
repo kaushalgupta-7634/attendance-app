@@ -250,16 +250,22 @@
         }
 
         .qr-frame {
-            width: 220px;
-            height: 220px;
+            width: 280px;
+            height: 280px;
             margin: 1rem auto;
             background: #ffffff;
-            padding: 10px;
+            padding: 12px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .qr-frame:hover {
+            transform: scale(1.03);
         }
 
         .qr-image {

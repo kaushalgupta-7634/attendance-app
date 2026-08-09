@@ -556,7 +556,20 @@
             const btn = document.getElementById('scanToggleBtn');
             html5QrCode = new Html5Qrcode("reader");
 
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            const config = {
+                fps: 20,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    return {
+                        width: Math.floor(minEdge * 0.85),
+                        height: Math.floor(minEdge * 0.85)
+                    };
+                },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                },
+                aspectRatio: 1.0
+            };
 
             html5QrCode.start(
                 { facingMode: "environment" },
