@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Teacher Dashboard - Class Session & Live Attendance Tracking">
-    <title>Teacher Dashboard | Smart Attendance</title>
+    <title>ATTENDX - Faculty Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         body {
@@ -44,10 +44,9 @@
             max-width: 1200px;
             margin: 0 auto 2rem auto;
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
             padding: 1rem 1.5rem;
-            border-radius: 16px;
+            border-radius: 12px;
         }
 
         .user-info {
@@ -57,29 +56,29 @@
         }
 
         .role-badge {
-            background: rgba(139, 92, 246, 0.2);
-            border: 1px solid var(--accent-purple);
-            color: #c4b5fd;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
             font-size: 0.75rem;
             font-weight: 600;
             padding: 0.2rem 0.6rem;
-            border-radius: 20px;
+            border-radius: 6px;
         }
 
         .btn-secondary {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             color: #fca5a5;
             padding: 0.5rem 1rem;
             border-radius: 8px;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.15s ease;
         }
 
         .btn-secondary:hover {
-            background: rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.25);
         }
 
         .container {
@@ -333,7 +332,7 @@
 
     <div class="navbar">
         <div class="user-info">
-            <h2 id="teacherNameDisplay">Teacher Dashboard</h2>
+            <h2 id="teacherNameDisplay">ATTENDX Faculty Portal</h2>
             <span class="role-badge">TEACHER</span>
         </div>
         <button class="btn-secondary" onclick="logout()">Logout</button>

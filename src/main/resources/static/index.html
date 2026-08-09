@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoAttend - Smart Attendance & Class Management Platform</title>
-    <meta name="description" content="Next-generation geo-fenced smart attendance management system with rotating QR tokens, 30s passcode verification, and assignment portal.">
+    <title>ATTENDX - Smart Geo-Fenced Attendance & Class Management Platform</title>
+    <meta name="description" content="ATTENDX - Next-generation geo-fenced smart attendance management system with rotating QR tokens, 30s passcode verification, and assignment portal.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -51,23 +51,24 @@
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            font-size: 1.25rem;
-            font-weight: 700;
+            font-size: 1.35rem;
+            font-weight: 800;
             color: #ffffff;
             text-decoration: none;
+            letter-spacing: -0.02em;
         }
 
         .logo-icon {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             background: var(--accent-blue);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            font-weight: 700;
-            font-size: 1rem;
+            font-weight: 900;
+            font-size: 1.1rem;
         }
 
         .nav-links {
@@ -303,9 +304,18 @@
 
     <nav>
         <a href="/" class="logo">
-            <div class="logo-icon">📋</div>
-            Attendance Management Portal
+            <div class="logo-icon">⚡</div>
+            ATTENDX
         </a>
+        <div class="nav-links">
+            <div class="nav-badge">
+                <div class="pulse-dot"></div>
+                IST (Asia/Kolkata)
+            </div>
+            <a href="/swagger-ui.html" target="_blank" class="btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.825rem;">API Documentation</a>
+            <a href="/login.html" class="btn-nav" id="mainPortalBtn">Sign In to Account</a>
+        </div>
+    </nav>
         <div class="nav-links">
             <div class="nav-badge">
                 <div class="pulse-dot"></div>
