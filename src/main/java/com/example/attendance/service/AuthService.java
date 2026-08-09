@@ -85,33 +85,50 @@ public class AuthService {
         return "User registered successfully with role: " + role.name();
     }
 
-    public String forgotPassword(ForgotPasswordRequest request) {
-        String genericMessage = "If an account with that email or username exists, a password reset link has been sent.";
+    public ForgotPasswordResponseDTO forgotPassword(ForgotPasswordRequest request) {
         if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
-            return genericMessage;
+            throw new IllegalArgumentException("Username or Email address is required.");
         }
 
-        String cleanInput = request.getEmail().trim().toLowerCase();
+        String cleanInput = request.getEmail().trim();
         java.util.Optional<User> userOpt = userRepository.findByEmailIgnoreCase(cleanInput)
                 .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput));
 
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            String token = java.util.UUID.randomUUID().toString();
-            user.setResetToken(token);
-            user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
-            userRepository.save(user);
-
-            try {
-                emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
-            } catch (org.springframework.mail.MailException e) {
-                org.slf4j.LoggerFactory.getLogger(AuthService.class).warn(
-                        "SMTP Email delivery failed for {}: {}. Reset token is saved in DB.", user.getEmail(), e.getMessage()
-                );
-            }
+        if (userOpt.isEmpty()) {
+            return new ForgotPasswordResponseDTO(
+                    false,
+                    false,
+                    "No registered account found matching '" + cleanInput + "'. Please check your username/email or register a new account.",
+                    null,
+                    null
+            );
         }
 
-        return genericMessage;
+        User user = userOpt.get();
+        String token = java.util.UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(30));
+        userRepository.save(user);
+
+        String resetUrl = "/reset-password.html?token=" + token;
+        boolean emailSent = false;
+
+        try {
+            if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
+                emailSent = true;
+            }
+        } catch (org.springframework.mail.MailException e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).warn(
+                    "SMTP Email delivery failed for {}: {}. Reset token is saved in DB.", user.getEmail(), e.getMessage()
+            );
+        }
+
+        String message = emailSent
+                ? "Password reset link sent to " + user.getEmail() + ". You can also use the direct link below to reset your password immediately."
+                : "Reset token generated for " + user.getUsername() + ". Direct password reset link is ready below.";
+
+        return new ForgotPasswordResponseDTO(true, emailSent, message, token, resetUrl);
     }
 
     public String resetPassword(ResetPasswordRequest request) {
@@ -136,5 +153,18 @@ public class AuthService {
         userRepository.save(user);
 
         return "Password has been successfully reset. You may now log in.";
+    }
+
+    public UserProfileDTO getCurrentUserProfile(String username) {
+        User user = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
+        return new UserProfileDTO(
+                user.getId(),
+                user.getName() != null && !user.getName().isBlank() ? user.getName() : user.getUsername(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getClassName()
+        );
     }
 }

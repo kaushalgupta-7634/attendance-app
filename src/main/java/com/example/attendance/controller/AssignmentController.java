@@ -50,11 +50,13 @@ public class AssignmentController {
 
     /**
      * GET /assignments/class/{classId}
-     * Returns list of assignments for the specified class ID or class name.
+     * Returns list of assignments for the specified class ID or class name (supports filter=all|active|expired).
      */
     @GetMapping("/class/{classId}")
-    public ResponseEntity<List<AssignmentResponseDTO>> getAssignmentsForClass(@PathVariable("classId") String classId) {
-        List<AssignmentResponseDTO> assignments = assignmentService.getAssignmentsForClass(classId);
+    public ResponseEntity<List<AssignmentResponseDTO>> getAssignmentsForClass(
+            @PathVariable("classId") String classId,
+            @RequestParam(value = "filter", required = false, defaultValue = "all") String filter) {
+        List<AssignmentResponseDTO> assignments = assignmentService.getAssignmentsForClass(classId, filter);
         return ResponseEntity.ok(assignments);
     }
 
@@ -70,6 +72,17 @@ public class AssignmentController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getFilename() + "\"")
                 .body(fileResource);
+    }
+
+    /**
+     * DELETE /assignments/expired (TEACHER only)
+     * Deletes all expired assignments.
+     */
+    @DeleteMapping("/expired")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<String> deleteExpiredAssignments(Principal principal) {
+        int deletedCount = assignmentService.deleteAllExpiredAssignments(principal.getName());
+        return ResponseEntity.ok("Deleted " + deletedCount + " expired assignments.");
     }
 
     /**

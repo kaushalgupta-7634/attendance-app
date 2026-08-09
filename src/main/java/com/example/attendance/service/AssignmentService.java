@@ -130,36 +130,102 @@ public class AssignmentService {
     }
 
     /**
-     * Retrieves assignments for a class by class session ID or class name.
+     * Retrieves assignments for a class by class session ID or class name, with optional filtering.
      */
     public List<AssignmentResponseDTO> getAssignmentsForClass(String classIdOrName) {
+        return getAssignmentsForClass(classIdOrName, "all");
+    }
+
+    public List<AssignmentResponseDTO> getAssignmentsForClass(String classIdOrName, String filter) {
+        List<Assignment> assignments;
         if (classIdOrName == null || classIdOrName.isBlank() || "all".equalsIgnoreCase(classIdOrName.trim())) {
-            return assignmentRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
-        }
-
-        String targetClassName = classIdOrName.trim();
-
-        // Check if classIdOrName is a numeric session ID
-        if (targetClassName.matches("\\d+")) {
-            Long sessionId = Long.parseLong(targetClassName);
-            ClassSession session = classSessionRepository.findById(sessionId).orElse(null);
-            if (session != null) {
-                targetClassName = session.getClassName();
-            }
-        }
-
-        List<Assignment> assignments = assignmentRepository.findByClassNameIgnoreCase(targetClassName);
-        
-        if (assignments.isEmpty()) {
-            assignments = assignmentRepository.findByClassNameContainingIgnoreCase(targetClassName);
-        }
-
-        if (assignments.isEmpty()) {
-            // Ultimate fallback: return all assignments in DB so students don't miss assignments due to slight naming differences
             assignments = assignmentRepository.findAll();
+        } else {
+            String targetClassName = classIdOrName.trim();
+
+            // Check if classIdOrName is a numeric session ID
+            if (targetClassName.matches("\\d+")) {
+                Long sessionId = Long.parseLong(targetClassName);
+                ClassSession session = classSessionRepository.findById(sessionId).orElse(null);
+                if (session != null) {
+                    targetClassName = session.getClassName();
+                }
+            }
+
+            assignments = assignmentRepository.findByClassNameIgnoreCase(targetClassName);
+            
+            if (assignments.isEmpty()) {
+                assignments = assignmentRepository.findByClassNameContainingIgnoreCase(targetClassName);
+            }
+            // Removed bad fallback `if (assignments.isEmpty()) assignments = assignmentRepository.findAll();`
+            // which caused unrelated/expired assignments from other classes to flood the results when a class had no assignments.
         }
+
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        // Filter if requested
+        if ("active".equalsIgnoreCase(filter)) {
+            assignments = assignments.stream()
+                    .filter(a -> a.getDueDate() == null || a.getDueDate().isAfter(now) || a.getDueDate().isEqual(now))
+                    .collect(Collectors.toList());
+        } else if ("expired".equalsIgnoreCase(filter)) {
+            assignments = assignments.stream()
+                    .filter(a -> a.getDueDate() != null && a.getDueDate().isBefore(now))
+                    .collect(Collectors.toList());
+        }
+
+        // Sort: Active assignments first (closest deadline first), Expired assignments second (most recently expired first)
+        assignments.sort((a, b) -> {
+            boolean aExpired = a.getDueDate() != null && a.getDueDate().isBefore(now);
+            boolean bExpired = b.getDueDate() != null && b.getDueDate().isBefore(now);
+
+            if (aExpired != bExpired) {
+                return aExpired ? 1 : -1; // Active first, Expired second
+            }
+
+            if (a.getDueDate() == null) return 1;
+            if (b.getDueDate() == null) return -1;
+
+            if (!aExpired) {
+                return a.getDueDate().compareTo(b.getDueDate()); // Active: ascending due date
+            } else {
+                return b.getDueDate().compareTo(a.getDueDate()); // Expired: descending due date
+            }
+        });
 
         return assignments.stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    /**
+     * Deletes all expired assignments owned by teachers.
+     */
+    public int deleteAllExpiredAssignments(String teacherUsername) {
+        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can delete assignments.");
+        }
+
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        List<Assignment> expiredAssignments = assignmentRepository.findAll().stream()
+                .filter(a -> a.getDueDate() != null && a.getDueDate().isBefore(now))
+                .collect(Collectors.toList());
+
+        int count = 0;
+        for (Assignment assignment : expiredAssignments) {
+            try {
+                if (assignment.getPdfFilePath() != null) {
+                    Path filePath = Paths.get(assignment.getPdfFilePath()).normalize();
+                    Files.deleteIfExists(filePath);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not delete physical assignment file at {}: {}", assignment.getPdfFilePath(), e.getMessage());
+            }
+            assignmentRepository.delete(assignment);
+            count++;
+        }
+        return count;
     }
 
     /**
@@ -214,6 +280,10 @@ public class AssignmentService {
     }
 
     public AssignmentResponseDTO mapToDTO(Assignment assignment) {
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        boolean isExpired = assignment.getDueDate() != null && assignment.getDueDate().isBefore(now);
+        String status = isExpired ? "EXPIRED" : "ACTIVE";
+
         return new AssignmentResponseDTO(
                 assignment.getId(),
                 assignment.getTeacher().getId(),
@@ -224,7 +294,9 @@ public class AssignmentService {
                 assignment.getDescription(),
                 assignment.getPdfFilePath(),
                 assignment.getUploadedAt(),
-                assignment.getDueDate()
+                assignment.getDueDate(),
+                isExpired,
+                status
         );
     }
 }

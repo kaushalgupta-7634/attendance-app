@@ -55,25 +55,30 @@ class AuthServiceTest {
         when(userRepository.findByEmailIgnoreCase("alice@example.com")).thenReturn(Optional.of(student));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        String result = authService.forgotPassword(request);
+        ForgotPasswordResponseDTO result = authService.forgotPassword(request);
 
         assertNotNull(result);
-        assertTrue(result.contains("If an account with that email exists"));
+        assertTrue(result.isSuccess());
+        assertTrue(result.isEmailSent());
+        assertNotNull(result.getResetToken());
+        assertNotNull(result.getResetUrl());
         assertNotNull(student.getResetToken());
         assertNotNull(student.getResetTokenExpiry());
         verify(emailService).sendPasswordResetEmail(eq("alice@example.com"), eq("Alice Smith"), eq(student.getResetToken()));
     }
 
     @Test
-    void testForgotPassword_NonExistingUser_ReturnsSameGenericMessage() {
+    void testForgotPassword_NonExistingUser_ReturnsFailureResponse() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
 
         when(userRepository.findByEmailIgnoreCase("unknown@example.com")).thenReturn(Optional.empty());
 
-        String result = authService.forgotPassword(request);
+        ForgotPasswordResponseDTO result = authService.forgotPassword(request);
 
         assertNotNull(result);
-        assertTrue(result.contains("If an account with that email exists"));
+        assertFalse(result.isSuccess());
+        assertFalse(result.isEmailSent());
+        assertNull(result.getResetToken());
         verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString(), anyString());
     }
 

@@ -31,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody com.example.attendance.model.ForgotPasswordRequest request) {
-        String response = authService.forgotPassword(request);
+    public ResponseEntity<com.example.attendance.model.ForgotPasswordResponseDTO> forgotPassword(@RequestBody com.example.attendance.model.ForgotPasswordRequest request) {
+        com.example.attendance.model.ForgotPasswordResponseDTO response = authService.forgotPassword(request);
         return ResponseEntity.ok(response);
     }
 
@@ -40,5 +40,11 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@RequestBody com.example.attendance.model.ResetPasswordRequest request) {
         String response = authService.resetPassword(request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<com.example.attendance.model.UserProfileDTO> getMe(java.security.Principal principal) {
+        com.example.attendance.model.UserProfileDTO profile = authService.getCurrentUserProfile(principal.getName());
+        return ResponseEntity.ok(profile);
     }
 }

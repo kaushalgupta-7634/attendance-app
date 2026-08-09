@@ -14,6 +14,8 @@ public class AssignmentResponseDTO {
     private String pdfFilePath;
     private LocalDateTime uploadedAt;
     private LocalDateTime dueDate;
+    private boolean expired;
+    private String status;
 
     public AssignmentResponseDTO() {
     }
@@ -21,6 +23,13 @@ public class AssignmentResponseDTO {
     public AssignmentResponseDTO(Long id, Long teacherId, String teacherName, String className,
                                  String subject, String title, String description,
                                  String pdfFilePath, LocalDateTime uploadedAt, LocalDateTime dueDate) {
+        this(id, teacherId, teacherName, className, subject, title, description, pdfFilePath, uploadedAt, dueDate, false, "ACTIVE");
+    }
+
+    public AssignmentResponseDTO(Long id, Long teacherId, String teacherName, String className,
+                                 String subject, String title, String description,
+                                 String pdfFilePath, LocalDateTime uploadedAt, LocalDateTime dueDate,
+                                 boolean expired, String status) {
         this.id = id;
         this.teacherId = teacherId;
         this.teacherName = teacherName;
@@ -31,6 +40,8 @@ public class AssignmentResponseDTO {
         this.pdfFilePath = pdfFilePath;
         this.uploadedAt = uploadedAt;
         this.dueDate = dueDate;
+        this.expired = expired;
+        this.status = status;
     }
 
     public Long getId() {
@@ -111,5 +122,21 @@ public class AssignmentResponseDTO {
 
     public void setDueDate(LocalDateTime dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public boolean isExpired() {
+        return expired;
+    }
+
+    public void setExpired(boolean expired) {
+        this.expired = expired;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

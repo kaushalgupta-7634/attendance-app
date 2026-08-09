@@ -80,9 +80,9 @@ class AssignmentControllerTest {
                 LocalDateTime.now(), LocalDateTime.now().plusDays(7)
         );
 
-        when(assignmentService.getAssignmentsForClass("CS101")).thenReturn(List.of(assignment1));
+        when(assignmentService.getAssignmentsForClass("CS101", "all")).thenReturn(List.of(assignment1));
 
-        ResponseEntity<List<AssignmentResponseDTO>> response = assignmentController.getAssignmentsForClass("CS101");
+        ResponseEntity<List<AssignmentResponseDTO>> response = assignmentController.getAssignmentsForClass("CS101", "all");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
