@@ -32,4 +32,5 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     List<User> findDistinctStudentsBySessionOrClassName(@Param("session") ClassSession session, @Param("className") String className);
 
     void deleteBySession(ClassSession session);
+    void deleteByStudent(User student);
 }

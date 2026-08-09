@@ -17,4 +17,5 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     List<Enrollment> findByStudent(User student);
     long countByClassCourse(ClassCourse classCourse);
     void deleteByClassCourse(ClassCourse classCourse);
+    void deleteByStudent(User student);
 }
