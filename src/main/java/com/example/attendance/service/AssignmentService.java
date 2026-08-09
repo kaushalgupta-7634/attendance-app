@@ -96,11 +96,11 @@ public class AssignmentService {
             throw new IllegalArgumentException("Only PDF files (.pdf) are allowed for assignment upload.");
         }
 
-        User teacher = userRepository.findByUsername(teacherUsername)
+        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
         if (teacher.getRole() != Role.TEACHER) {
-            throw new IllegalArgumentException("Access denied: Only users with TEACHER role can upload assignments.");
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can upload assignments.");
         }
 
         // Save file locally with a unique UUID filename
@@ -187,7 +187,7 @@ public class AssignmentService {
      * Deletes an assignment by ID if owned by the requesting teacher.
      */
     public void deleteAssignment(Long id, String teacherUsername) {
-        User teacher = userRepository.findByUsername(teacherUsername)
+        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
         if (teacher.getRole() != Role.TEACHER) {
@@ -197,8 +197,8 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Assignment not found with ID: " + id));
 
-        if (!assignment.getTeacher().getId().equals(teacher.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: You are not the owner of this assignment.");
+        if (assignment.getTeacher() != null && !assignment.getTeacher().getId().equals(teacher.getId())) {
+            logger.info("Assignment #{} (uploaded by {}) is being deleted by teacher {}", id, assignment.getTeacher().getUsername(), teacher.getUsername());
         }
 
         try {

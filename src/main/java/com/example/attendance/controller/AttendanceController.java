@@ -4,6 +4,7 @@ import com.example.attendance.model.AttendanceRecord;
 import com.example.attendance.model.AttendanceRecordDTO;
 import com.example.attendance.model.ManualOverrideRequest;
 import com.example.attendance.model.MarkAttendanceRequest;
+import com.example.attendance.scheduler.AttendanceScheduler;
 import com.example.attendance.service.AttendanceService;
 import com.example.attendance.service.ClassSessionService;
 import org.springframework.http.HttpStatus;
@@ -19,10 +20,14 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
     private final ClassSessionService classSessionService;
+    private final AttendanceScheduler attendanceScheduler;
 
-    public AttendanceController(AttendanceService attendanceService, ClassSessionService classSessionService) {
+    public AttendanceController(AttendanceService attendanceService,
+                                ClassSessionService classSessionService,
+                                AttendanceScheduler attendanceScheduler) {
         this.attendanceService = attendanceService;
         this.classSessionService = classSessionService;
+        this.attendanceScheduler = attendanceScheduler;
     }
 
     @PostMapping("/mark")
@@ -37,5 +42,12 @@ public class AttendanceController {
     public ResponseEntity<AttendanceRecordDTO> manualOverride(@RequestBody ManualOverrideRequest request, Principal principal) {
         AttendanceRecordDTO dto = classSessionService.manualOverrideAttendance(request, principal.getName());
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/trigger-low-attendance-alerts")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<String> triggerLowAttendanceAlerts() {
+        attendanceScheduler.checkAndSendAttendanceAlerts();
+        return ResponseEntity.ok("Low attendance alert calculation & email warnings triggered successfully.");
     }
 }
