@@ -10,8 +10,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -34,55 +32,56 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            String targetUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "admin";
-            String targetPassword = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "adminpassword123";
+            String envUser = System.getenv("ADMIN_USERNAME");
+            if (envUser == null || envUser.isBlank()) envUser = adminDefaultUsername;
+            String targetUsername = (envUser != null && !envUser.isBlank()) ? envUser.trim() : "admin";
+
+            String envPass = System.getenv("ADMIN_PASSWORD");
+            if (envPass == null || envPass.isBlank()) envPass = adminDefaultPassword;
+            String targetPassword = (envPass != null && !envPass.isBlank()) ? envPass.trim() : "763424ks";
 
             String encodedPassword = passwordEncoder.encode(targetPassword);
 
-            // 1. Ensure targetUsername (e.g. KaushalGupta) exists as ADMIN
-            User targetAdmin = userRepository.findByUsernameIgnoreCase(targetUsername).orElse(null);
-            if (targetAdmin == null) {
-                targetAdmin = new User();
-                targetAdmin.setName(targetUsername);
-                targetAdmin.setUsername(targetUsername);
-                targetAdmin.setEmail(targetUsername.toLowerCase().replaceAll("\\s+", "") + "@attendance.system");
-                targetAdmin.setPassword(encodedPassword);
-                targetAdmin.setRole(Role.ADMIN);
-                targetAdmin.setEnabled(true);
-                userRepository.save(targetAdmin);
-                logger.info("CREATED ADMIN USER -> username='{}'", targetUsername);
-            } else {
-                targetAdmin.setPassword(encodedPassword);
-                targetAdmin.setRole(Role.ADMIN);
-                targetAdmin.setEnabled(true);
-                userRepository.save(targetAdmin);
-                logger.info("UPDATED ADMIN USER -> username='{}'", targetUsername);
+            // Sync or Create primary target admin user (e.g. KaushalGupta)
+            syncAdminUser(targetUsername, encodedPassword);
+
+            // Sync or Create fallback 'admin' user
+            if (!"admin".equalsIgnoreCase(targetUsername)) {
+                syncAdminUser("admin", encodedPassword);
             }
 
-            // 2. Also ensure 'admin' username exists as ADMIN with targetPassword as backup
-            if (!"admin".equalsIgnoreCase(targetUsername)) {
-                User backupAdmin = userRepository.findByUsernameIgnoreCase("admin").orElse(null);
-                if (backupAdmin == null) {
-                    backupAdmin = new User();
-                    backupAdmin.setName("System Administrator");
-                    backupAdmin.setUsername("admin");
-                    backupAdmin.setEmail("admin.backup@attendance.system");
-                    backupAdmin.setPassword(encodedPassword);
-                    backupAdmin.setRole(Role.ADMIN);
-                    backupAdmin.setEnabled(true);
-                    userRepository.save(backupAdmin);
-                    logger.info("CREATED BACKUP ADMIN -> username='admin'");
-                } else {
-                    backupAdmin.setPassword(encodedPassword);
-                    backupAdmin.setRole(Role.ADMIN);
-                    backupAdmin.setEnabled(true);
-                    userRepository.save(backupAdmin);
-                    logger.info("UPDATED BACKUP ADMIN -> username='admin'");
-                }
+            // Sync or Create 'KaushalGupta' if targetUsername was different
+            if (!"KaushalGupta".equalsIgnoreCase(targetUsername)) {
+                syncAdminUser("KaushalGupta", encodedPassword);
             }
 
         } catch (Exception e) {
             logger.error("Error in DataInitializer admin setup: {}", e.getMessage(), e);
+        }
+    }
+
+    private void syncAdminUser(String username, String encodedPassword) {
+        try {
+            User user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
+            if (user == null) {
+                user = new User();
+                user.setName(username);
+                user.setUsername(username);
+                user.setEmail(username.toLowerCase().replaceAll("[^a-z0-9]", "") + "@attendance.system");
+                user.setPassword(encodedPassword);
+                user.setRole(Role.ADMIN);
+                user.setEnabled(true);
+                userRepository.save(user);
+                logger.info("CREATED ADMIN USER -> username='{}'", username);
+            } else {
+                user.setPassword(encodedPassword);
+                user.setRole(Role.ADMIN);
+                user.setEnabled(true);
+                userRepository.save(user);
+                logger.info("UPDATED ADMIN USER -> username='{}'", username);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to sync admin user '{}': {}", username, e.getMessage());
         }
     }
 }

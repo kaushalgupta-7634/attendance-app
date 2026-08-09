@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class LoginRateLimitingFilter extends OncePerRequestFilter {
 
-    private static final int MAX_ATTEMPTS = 5;
-    private static final long WINDOW_MS = 60_000; // 1 minute window
+    private static final int MAX_ATTEMPTS = 20;
+    private static final long WINDOW_MS = 30_000; // 30 seconds window
 
     private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Long>> attemptsMap = new ConcurrentHashMap<>();
 
