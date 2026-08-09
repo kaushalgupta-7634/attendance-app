@@ -133,11 +133,11 @@ public class User {
         this.resetTokenExpiry = resetTokenExpiry;
     }
 
-    @Column(name = "enabled", nullable = false, columnDefinition = "boolean default true")
-    private boolean enabled = true;
+    @Column(name = "enabled")
+    private Boolean enabled = true;
 
     public boolean isEnabled() {
-        return enabled;
+        return enabled == null || Boolean.TRUE.equals(enabled);
     }
 
     public void setEnabled(boolean enabled) {
