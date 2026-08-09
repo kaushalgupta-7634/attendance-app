@@ -10,6 +10,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -35,38 +37,60 @@ public class DataInitializer implements CommandLineRunner {
             String effectiveUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "admin";
             String effectivePassword = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "adminpassword123";
 
+            // 1. Try finding user by exact username (case-insensitive)
             User admin = userRepository.findByUsernameIgnoreCase(effectiveUsername).orElse(null);
 
+            // 2. If not found, try finding any existing user with Role.ADMIN
             if (admin == null) {
-                admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.ADMIN).findFirst().orElse(null);
+                admin = userRepository.findAll().stream()
+                        .filter(u -> u.getRole() == Role.ADMIN)
+                        .findFirst()
+                        .orElse(null);
             }
 
             if (admin == null) {
+                // 3. Create fresh ADMIN user
                 admin = new User();
                 admin.setName("System Administrator");
                 admin.setUsername(effectiveUsername);
 
-                String emailCandidate = effectiveUsername.toLowerCase() + "@attendance.com";
-                if (userRepository.findByEmailIgnoreCase(emailCandidate).isPresent()) {
-                    emailCandidate = "admin." + System.currentTimeMillis() + "@attendance.com";
-                }
-                admin.setEmail(emailCandidate);
+                String safeEmail = "admin." + System.currentTimeMillis() + "@attendance.system";
+                admin.setEmail(safeEmail);
                 admin.setPassword(passwordEncoder.encode(effectivePassword));
                 admin.setRole(Role.ADMIN);
                 admin.setEnabled(true);
 
                 userRepository.save(admin);
-                logger.info("Successfully created default ADMIN account: username='{}'", effectiveUsername);
+                logger.info("ADMIN CREATED SUCCESSFULLY -> Username: '{}', Role: ADMIN", effectiveUsername);
             } else {
+                // 4. Update existing user to ADMIN role with configured credentials
                 admin.setUsername(effectiveUsername);
                 admin.setPassword(passwordEncoder.encode(effectivePassword));
                 admin.setRole(Role.ADMIN);
                 admin.setEnabled(true);
+
                 userRepository.save(admin);
-                logger.info("ADMIN account synced with configured credentials: username='{}'", effectiveUsername);
+                logger.info("ADMIN SYNCED SUCCESSFULLY -> Username: '{}', Role: ADMIN", effectiveUsername);
             }
         } catch (Exception e) {
-            logger.error("Non-fatal error initializing Admin account: {}", e.getMessage(), e);
+            logger.error("Error setting up Admin user: {}", e.getMessage(), e);
+            // Fallback attempt: Force update any existing user with username 'admin'
+            try {
+                String fallbackUser = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "admin";
+                String fallbackPass = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "adminpassword123";
+                
+                Optional<User> existing = userRepository.findByUsernameIgnoreCase(fallbackUser);
+                if (existing.isPresent()) {
+                    User u = existing.get();
+                    u.setPassword(passwordEncoder.encode(fallbackPass));
+                    u.setRole(Role.ADMIN);
+                    u.setEnabled(true);
+                    userRepository.save(u);
+                    logger.info("FALLBACK ADMIN SYNCED -> Username: '{}'", fallbackUser);
+                }
+            } catch (Exception ex) {
+                logger.error("Fallback Admin sync failed: {}", ex.getMessage());
+            }
         }
     }
 }
