@@ -682,14 +682,22 @@
 
             <!-- TEACHER ASSIGNMENTS LIST -->
             <div style="margin-top: 1.5rem;">
-                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Uploaded Assignments</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <h4 style="font-size: 1rem; margin: 0; color: var(--text-secondary);">Uploaded Assignments</h4>
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                        <button type="button" class="btn-secondary" id="btnFilterAll" onclick="setAssignmentFilter('all')" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; background: var(--accent-purple); color: #fff; border-color: var(--accent-purple);">All</button>
+                        <button type="button" class="btn-secondary" id="btnFilterActive" onclick="setAssignmentFilter('active')" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">🟢 Active</button>
+                        <button type="button" class="btn-secondary" id="btnFilterExpired" onclick="setAssignmentFilter('expired')" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">🔴 Expired</button>
+                        <button type="button" class="btn-secondary" onclick="handleDeleteExpiredAssignments()" style="padding: 0.3rem 0.7rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.2); border-color: var(--accent-red); color: #fca5a5;">🗑️ Delete All Expired</button>
+                    </div>
+                </div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
                                 <th>Class & Subject</th>
                                 <th>Assignment Title</th>
-                                <th>Due Date</th>
+                                <th>Status & Due Date</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -730,12 +738,24 @@
         }
 
         const payload = parseJwtPayload(token);
-        const displayName = localStorage.getItem('userName') || payload.name || payload.sub || 'Teacher';
+        let displayName = localStorage.getItem('userName') || payload.name || payload.sub || 'Teacher';
 
         const teacherHeader = document.getElementById('teacherNameDisplay');
         if (teacherHeader) {
             teacherHeader.textContent = `Hello, ${displayName}`;
         }
+
+        // Fetch latest profile to ensure actual user full name is displayed
+        fetch('/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(res => res.ok ? res.json() : null).then(profile => {
+            if (profile && profile.name) {
+                localStorage.setItem('userName', profile.name);
+                if (teacherHeader) {
+                    teacherHeader.textContent = `Hello, ${profile.name}`;
+                }
+            }
+        }).catch(err => console.log("Profile fetch failed:", err));
 
         function formatDateForInput(date) {
             if (!date) return '';
@@ -752,9 +772,6 @@
             if (!str) return '';
             return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
-
-        const teacherNameDisplay = document.getElementById('teacherNameDisplay');
-        if (teacherNameDisplay) teacherNameDisplay.textContent = `Welcome, ${username || 'Teacher'}`;
 
         const now = new Date();
         const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
@@ -1494,10 +1511,33 @@
             }
         }
 
+        let currentAssignFilter = 'all';
+
+        function setAssignmentFilter(filter) {
+            currentAssignFilter = filter;
+            ['btnFilterAll', 'btnFilterActive', 'btnFilterExpired'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--text-secondary)';
+                    btn.style.borderColor = 'var(--input-border)';
+                }
+            });
+            const activeId = filter === 'active' ? 'btnFilterActive' : filter === 'expired' ? 'btnFilterExpired' : 'btnFilterAll';
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) {
+                activeBtn.style.background = 'var(--accent-purple)';
+                activeBtn.style.color = '#fff';
+                activeBtn.style.borderColor = 'var(--accent-purple)';
+            }
+            const className = document.getElementById('assignClassName')?.value.trim() || 'all';
+            loadTeacherAssignments(className);
+        }
+
         async function loadTeacherAssignments(className) {
             const targetClass = (className && className.trim()) ? className.trim() : "all";
             try {
-                const res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}`, {
+                const res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) return;
@@ -1506,16 +1546,29 @@
                 if (!tbody) return;
 
                 if (!assignments || assignments.length === 0) {
-                    const displayMsg = targetClass === 'all' ? 'No assignments uploaded yet. Fill the form above to upload a PDF assignment.' : `No assignments uploaded for '${escapeHtml(targetClass)}'.`;
+                    const filterText = currentAssignFilter !== 'all' ? ` (${currentAssignFilter})` : '';
+                    const displayMsg = targetClass === 'all' 
+                        ? `No assignments uploaded yet${filterText}. Fill the form above to upload a PDF assignment.` 
+                        : `No assignments uploaded for '${escapeHtml(targetClass)}'${filterText}.`;
                     tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${displayMsg}</td></tr>`;
                     return;
                 }
 
-                tbody.innerHTML = assignments.map(a => `
+                tbody.innerHTML = assignments.map(a => {
+                    const statusBadge = a.expired 
+                        ? `<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: #fca5a5; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 0.2rem;">🔴 Expired</span>`
+                        : `<span style="background: rgba(34, 197, 94, 0.2); border: 1px solid var(--accent-green); color: #86efac; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 0.2rem;">🟢 Active</span>`;
+                    
+                    const dueDateFormatted = new Date(a.dueDate).toLocaleString();
+
+                    return `
                     <tr>
                         <td><strong>${escapeHtml(a.className)}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(a.subject)}</span></td>
                         <td>${escapeHtml(a.title)}</td>
-                        <td>${new Date(a.dueDate).toLocaleString()}</td>
+                        <td>
+                            ${statusBadge}<br>
+                            <span style="font-size: 0.82rem; color: ${a.expired ? '#fca5a5' : 'var(--text-primary)'};">${dueDateFormatted}</span>
+                        </td>
                         <td>
                             <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                                 <a href="/assignments/download/${a.id}" target="_blank" class="btn-excel" style="text-decoration: none; padding: 0.3rem 0.6rem; font-size: 0.8rem;">📥 View / Download PDF</a>
@@ -1523,7 +1576,8 @@
                             </div>
                         </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
                 console.error("Error loading assignments:", err);
             }
@@ -1560,6 +1614,31 @@
                 loadTeacherAssignments(className || 'all');
             } catch (err) {
                 alert("Error deleting assignment: " + err.message);
+            }
+        }
+
+        async function handleDeleteExpiredAssignments() {
+            if (!confirm("Are you sure you want to delete all expired assignments? This action cannot be undone.")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/assignments/expired', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ message: 'Failed to delete expired assignments' }));
+                    throw new Error(errData.message || 'Failed to delete expired assignments');
+                }
+
+                const msg = await res.text();
+                alert("✅ " + msg);
+                const className = document.getElementById('assignClassName')?.value.trim() || 'all';
+                loadTeacherAssignments(className);
+            } catch (err) {
+                alert("Error deleting expired assignments: " + err.message);
             }
         }
 
