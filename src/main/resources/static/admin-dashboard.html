@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Attendance System - Master Admin Command Center">
+    <title>Admin Dashboard | Attendance System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --accent-purple: #8b5cf6;
+            --accent-indigo: #6366f1;
+            --accent-cyan: #06b6d4;
+            --accent-rose: #f43f5e;
+            --accent-emerald: #10b981;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            padding: 1.2rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(244, 63, 94, 0.15);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            color: #fecdd3;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #f43f5e;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 1.25rem;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-label {
+            font-size: 0.825rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 1.75rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-indigo));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .select-input {
+            padding: 0.65rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: white;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .select-input option {
+            background: #1e293b;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-student { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
+        .badge-teacher { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.4); }
+        .badge-admin { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+        
+        .badge-active { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .badge-disabled { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+        .btn-sm {
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle { background: rgba(234, 179, 8, 0.2); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.4); margin-right: 4px; }
+        .btn-toggle:hover { background: #eab308; color: black; }
+
+        .btn-reset { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); margin-right: 4px; }
+        .btn-reset:hover { background: #6366f1; color: white; }
+
+        .btn-delete { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+        .btn-delete:hover { background: #f43f5e; color: white; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="brand-title">👑 Admin Command Center</div>
+            <div class="user-info">
+                <span id="adminNameDisplay" style="font-weight: 600;">Hello, Admin</span>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- MASTER STATS GRID -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Students</div>
+                <div class="stat-value" id="statStudents">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Teachers</div>
+                <div class="stat-value" id="statTeachers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Courses</div>
+                <div class="stat-value" id="statCourses">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Attendance Records</div>
+                <div class="stat-value" id="statAttendance">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Live QR Sessions</div>
+                <div class="stat-value" id="statActiveSessions">0</div>
+            </div>
+        </div>
+
+        <div class="main-card">
+            <div class="nav-tabs">
+                <button id="tabUsersBtn" class="tab-btn active" onclick="switchSection('users')">👥 User Roster</button>
+                <button id="tabCoursesBtn" class="tab-btn" onclick="switchSection('courses')">📚 Class Courses</button>
+                <button id="tabSessionsBtn" class="tab-btn" onclick="switchSection('sessions')">⚡ Live QR Sessions</button>
+            </div>
+
+            <!-- SECTION 1: USERS ROSTER -->
+            <div id="usersSection">
+                <div class="filter-bar">
+                    <input type="text" id="userSearch" class="search-input" placeholder="Search by name, username, email or class..." oninput="loadUsers()">
+                    <select id="roleFilter" class="select-input" onchange="loadUsers()">
+                        <option value="ALL">All Roles</option>
+                        <option value="STUDENT">Students Only</option>
+                        <option value="TEACHER">Teachers Only</option>
+                        <option value="ADMIN">Admins Only</option>
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Class</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading user accounts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 2: COURSES -->
+            <div id="coursesSection" class="hidden">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Class Name</th>
+                                <th>Subject</th>
+                                <th>Class Code</th>
+                                <th>Teacher</th>
+                                <th>Students Enrolled</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coursesTableBody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading class courses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 3: SESSIONS -->
+            <div id="sessionsSection" class="hidden">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>Class / Subject</th>
+                                <th>Passcode</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessionsTableBody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading active sessions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RESET PASSWORD -->
+    <div id="resetPasswordModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="modal-title">Reset User Password</h3>
+            <p id="resetModalSub" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;"></p>
+            <input type="password" id="newAdminPasswordInput" class="search-input" style="width: 100%; margin-bottom: 1rem;" placeholder="Enter new password (min 6 chars)" minlength="6">
+            <div class="modal-actions">
+                <button class="btn-sm" onclick="closeModal('resetPasswordModal')">Cancel</button>
+                <button class="btn-sm btn-reset" onclick="confirmResetPassword()">Update Password</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('jwtToken');
+        const role = localStorage.getItem('userRole');
+
+        if (!token || role !== 'ADMIN') {
+            alert('Access Denied. Admin authentication required.');
+            window.location.href = '/login.html';
+        }
+
+        let selectedUserId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminName = localStorage.getItem('userName') || 'System Administrator';
+            document.getElementById('adminNameDisplay').textContent = `Hello, ${adminName}`;
+            loadStats();
+            loadUsers();
+        });
+
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        function switchSection(type) {
+            document.getElementById('usersSection').classList.toggle('hidden', type !== 'users');
+            document.getElementById('coursesSection').classList.toggle('hidden', type !== 'courses');
+            document.getElementById('sessionsSection').classList.toggle('hidden', type !== 'sessions');
+
+            document.getElementById('tabUsersBtn').classList.toggle('active', type === 'users');
+            document.getElementById('tabCoursesBtn').classList.toggle('active', type === 'courses');
+            document.getElementById('tabSessionsBtn').classList.toggle('active', type === 'sessions');
+
+            if (type === 'users') loadUsers();
+            if (type === 'courses') loadCourses();
+            if (type === 'sessions') loadSessions();
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('statStudents').textContent = data.totalStudents || 0;
+                    document.getElementById('statTeachers').textContent = data.totalTeachers || 0;
+                    document.getElementById('statCourses').textContent = data.totalCourses || 0;
+                    document.getElementById('statAttendance').textContent = data.totalAttendanceRecords || 0;
+                    document.getElementById('statActiveSessions').textContent = data.activeSessionsCount || 0;
+                }
+            } catch (e) {}
+        }
+
+        async function loadUsers() {
+            const roleVal = document.getElementById('roleFilter').value;
+            const queryVal = document.getElementById('userSearch').value.trim();
+
+            const tbody = document.getElementById('usersTableBody');
+            try {
+                const url = `/admin/users?role=${encodeURIComponent(roleVal)}&query=${encodeURIComponent(queryVal)}`;
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to load users');
+
+                const users = await res.json();
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No matching users found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td><strong>${escapeHtml(u.name)}</strong></td>
+                        <td>${escapeHtml(u.username)}</td>
+                        <td>${escapeHtml(u.email)}</td>
+                        <td><span class="badge badge-${u.role.toLowerCase()}">${u.role}</span></td>
+                        <td>${escapeHtml(u.className || '-')}</td>
+                        <td><span class="badge ${u.enabled ? 'badge-active' : 'badge-disabled'}">${u.enabled ? 'Active' : 'Disabled'}</span></td>
+                        <td>
+                            ${u.role !== 'ADMIN' ? `
+                                <button class="btn-sm btn-toggle" onclick="toggleStatus(${u.id}, ${!u.enabled})">${u.enabled ? 'Disable' : 'Enable'}</button>
+                                <button class="btn-sm btn-reset" onclick="openResetPasswordModal(${u.id}, '${escapeJs(u.username)}')">Reset Password</button>
+                                <button class="btn-sm btn-delete" onclick="deleteUserAccount(${u.id}, '${escapeJs(u.username)}')">Delete</button>
+                            ` : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Super Admin</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #fca5a5;">${err.message}</td></tr>`;
+            }
+        }
+
+        async function toggleStatus(userId, newStatus) {
+            try {
+                const res = await fetch(`/admin/users/${userId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ enabled: newStatus })
+                });
+
+                if (!res.ok) throw new Error('Failed to update status');
+                loadUsers();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function openResetPasswordModal(userId, username) {
+            selectedUserId = userId;
+            document.getElementById('resetModalSub').textContent = `Set a new password for account '${username}'`;
+            document.getElementById('newAdminPasswordInput').value = '';
+            document.getElementById('resetPasswordModal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        async function confirmResetPassword() {
+            const newPassword = document.getElementById('newAdminPasswordInput').value;
+            if (!newPassword || newPassword.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/admin/users/${selectedUserId}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                if (!res.ok) throw new Error('Failed to reset password');
+                alert('Password reset successfully!');
+                closeModal('resetPasswordModal');
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function deleteUserAccount(userId, username) {
+            if (!confirm(`Are you sure you want to permanently delete user '${username}'? This will clean up all associated records.`)) return;
+
+            try {
+                const res = await fetch(`/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to delete user account');
+                alert(`User '${username}' deleted successfully.`);
+                loadStats();
+                loadUsers();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function loadCourses() {
+            const tbody = document.getElementById('coursesTableBody');
+            try {
+                const res = await fetch('/admin/courses', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to load courses');
+
+                const courses = await res.json();
+                if (courses.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No courses created yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = courses.map(c => `
+                    <tr>
+                        <td>#${c.id}</td>
+                        <td><strong>${escapeHtml(c.className)}</strong></td>
+                        <td>${escapeHtml(c.subject)}</td>
+                        <td><code>${escapeHtml(c.classCode)}</code></td>
+                        <td>${escapeHtml(c.teacherName)}</td>
+                        <td>${c.enrolledStudentsCount} Students</td>
+                        <td>
+                            <button class="btn-sm btn-delete" onclick="deleteCourseRecord(${c.id}, '${escapeJs(c.className)}')">Delete Course</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #fca5a5;">${err.message}</td></tr>`;
+            }
+        }
+
+        async function deleteCourseRecord(courseId, className) {
+            if (!confirm(`Are you sure you want to delete course '${className}'?`)) return;
+
+            try {
+                const res = await fetch(`/admin/courses/${courseId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to delete course');
+                alert('Course deleted successfully.');
+                loadStats();
+                loadCourses();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function loadSessions() {
+            const tbody = document.getElementById('sessionsTableBody');
+            try {
+                const res = await fetch('/admin/sessions/active', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to load active sessions');
+
+                const sessions = await res.json();
+                if (sessions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No live QR sessions running currently.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = sessions.map(s => `
+                    <tr>
+                        <td>#${s.id}</td>
+                        <td><strong>${escapeHtml(s.className)}</strong> (${escapeHtml(s.subject)})</td>
+                        <td><code>${escapeHtml(s.passcode || '-')}</code></td>
+                        <td>${new Date(s.startTime).toLocaleTimeString()}</td>
+                        <td>${new Date(s.endTime).toLocaleTimeString()}</td>
+                        <td><span class="badge badge-active">Live Active</span></td>
+                        <td>
+                            <button class="btn-sm btn-delete" onclick="terminateSessionRecord(${s.id})">End Session</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #fca5a5;">${err.message}</td></tr>`;
+            }
+        }
+
+        async function terminateSessionRecord(sessionId) {
+            if (!confirm('Are you sure you want to end this active session?')) return;
+
+            try {
+                const res = await fetch(`/admin/sessions/${sessionId}/terminate`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to terminate session');
+                alert('Session ended successfully.');
+                loadStats();
+                loadSessions();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+    </script>
+</body>
+</html>

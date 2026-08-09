@@ -132,4 +132,15 @@ public class User {
     public void setResetTokenExpiry(java.time.LocalDateTime resetTokenExpiry) {
         this.resetTokenExpiry = resetTokenExpiry;
     }
+
+    @Column(name = "enabled", nullable = false, columnDefinition = "boolean default true")
+    private boolean enabled = true;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 }
