@@ -341,6 +341,7 @@
                         <option value="TEACHER">Teachers Only</option>
                         <option value="ADMIN">Admins Only</option>
                     </select>
+                    <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;" onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
                 </div>
 
                 <div class="table-responsive">
@@ -410,6 +411,12 @@
 
             <!-- SECTION 4: ATTENDANCE LOGS -->
             <div id="attendanceSection" class="hidden">
+                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">
+                        📋 Detailed Attendance Records
+                    </div>
+                    <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;" onclick="exportAttendanceCSV()">📥 Export Attendance (CSV)</button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -742,6 +749,89 @@
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
             }
+        }
+
+        async function exportUsersCSV() {
+            try {
+                const res = await fetch('/admin/users?role=ALL', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to fetch user roster.');
+                const users = await res.json();
+
+                if (!users || users.length === 0) {
+                    alert('No users available to export.');
+                    return;
+                }
+
+                let csvContent = '\uFEFF';
+                csvContent += 'ID,Name,Username,Email,Role,Class,Status\n';
+
+                users.forEach(u => {
+                    const row = [
+                        `"${u.id || ''}"`,
+                        `"${(u.name || '').replace(/"/g, '""')}"`,
+                        `"${(u.username || '').replace(/"/g, '""')}"`,
+                        `"${(u.email || '').replace(/"/g, '""')}"`,
+                        `"${(u.role || '').replace(/"/g, '""')}"`,
+                        `"${(u.className || '').replace(/"/g, '""')}"`,
+                        `"${u.enabled ? 'Active' : 'Disabled'}"`
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+
+                downloadCSV(csvContent, `User_Roster_${new Date().toISOString().slice(0, 10)}.csv`);
+
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            }
+        }
+
+        async function exportAttendanceCSV() {
+            try {
+                const res = await fetch('/admin/attendance-records', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to fetch attendance records.');
+                const records = await res.json();
+
+                if (!records || records.length === 0) {
+                    alert('No attendance records available to export.');
+                    return;
+                }
+
+                let csvContent = '\uFEFF';
+                csvContent += 'Record ID,Student Name,Class,Subject,Status,Timestamp\n';
+
+                records.forEach(r => {
+                    const timeStr = r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : '-';
+                    const row = [
+                        `"${r.id || ''}"`,
+                        `"${(r.studentName || '').replace(/"/g, '""')}"`,
+                        `"${(r.className || '').replace(/"/g, '""')}"`,
+                        `"${(r.subject || '').replace(/"/g, '""')}"`,
+                        `"${(r.status || '').replace(/"/g, '""')}"`,
+                        `"${timeStr.replace(/"/g, '""')}"`
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+
+                downloadCSV(csvContent, `Attendance_Records_${new Date().toISOString().slice(0, 10)}.csv`);
+
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            }
+        }
+
+        function downloadCSV(csvText, filename) {
+            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function escapeHtml(str) {
