@@ -313,6 +313,16 @@
             </div>
         </div>
 
+        <!-- CLASS BREAKDOWN BAR -->
+        <div id="classBreakdownContainer" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                🎓 <span>Classwise Student Counts:</span>
+            </div>
+            <div id="classBreakdownBadges" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <span class="badge badge-teacher">Loading class totals...</span>
+            </div>
+        </div>
+
         <div class="main-card">
             <div class="nav-tabs">
                 <button id="tabUsersBtn" class="tab-btn active" onclick="switchSection('users')">👥 User Roster</button>
@@ -484,6 +494,17 @@
                     document.getElementById('statCourses').textContent = data.totalCourses || 0;
                     document.getElementById('statAttendance').textContent = data.totalAttendanceRecords || 0;
                     document.getElementById('statActiveSessions').textContent = data.activeSessionsCount || 0;
+
+                    const breakdownContainer = document.getElementById('classBreakdownBadges');
+                    if (data.classwiseStudentCounts && Object.keys(data.classwiseStudentCounts).length > 0) {
+                        breakdownContainer.innerHTML = Object.entries(data.classwiseStudentCounts).map(([cls, count]) => `
+                            <span class="badge badge-active" style="padding: 0.45rem 0.9rem; font-size: 0.875rem; border-radius: 8px;">
+                                🎓 <strong>${escapeHtml(cls)}</strong>: ${count} ${count === 1 ? 'Student' : 'Students'}
+                            </span>
+                        `).join('');
+                    } else {
+                        breakdownContainer.innerHTML = `<span style="color: var(--text-secondary); font-size: 0.85rem;">No class assignments yet.</span>`;
+                    }
                 }
             } catch (e) {}
         }

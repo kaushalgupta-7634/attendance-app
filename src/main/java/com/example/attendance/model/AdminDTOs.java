@@ -10,16 +10,18 @@ public class AdminDTOs {
         private long totalCourses;
         private long totalAttendanceRecords;
         private long activeSessionsCount;
+        private java.util.Map<String, Long> classwiseStudentCounts;
 
         public SystemStatsDTO() {
         }
 
-        public SystemStatsDTO(long totalStudents, long totalTeachers, long totalCourses, long totalAttendanceRecords, long activeSessionsCount) {
+        public SystemStatsDTO(long totalStudents, long totalTeachers, long totalCourses, long totalAttendanceRecords, long activeSessionsCount, java.util.Map<String, Long> classwiseStudentCounts) {
             this.totalStudents = totalStudents;
             this.totalTeachers = totalTeachers;
             this.totalCourses = totalCourses;
             this.totalAttendanceRecords = totalAttendanceRecords;
             this.activeSessionsCount = activeSessionsCount;
+            this.classwiseStudentCounts = classwiseStudentCounts;
         }
 
         public long getTotalStudents() {
@@ -60,6 +62,14 @@ public class AdminDTOs {
 
         public void setActiveSessionsCount(long activeSessionsCount) {
             this.activeSessionsCount = activeSessionsCount;
+        }
+
+        public java.util.Map<String, Long> getClasswiseStudentCounts() {
+            return classwiseStudentCounts;
+        }
+
+        public void setClasswiseStudentCounts(java.util.Map<String, Long> classwiseStudentCounts) {
+            this.classwiseStudentCounts = classwiseStudentCounts;
         }
     }
 
