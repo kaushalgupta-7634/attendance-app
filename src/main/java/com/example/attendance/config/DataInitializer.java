@@ -18,10 +18,10 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${ADMIN_USERNAME:admin}")
+    @Value("${ADMIN_USERNAME:${ADMIN_USER:${admin.username:KaushalGupta}}}")
     private String adminDefaultUsername;
 
-    @Value("${ADMIN_PASSWORD:adminpassword123}")
+    @Value("${ADMIN_PASSWORD:${ADMIN_PASS:${admin.password:763424ks}}}")
     private String adminDefaultPassword;
 
     public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -32,18 +32,13 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            String envUser = System.getenv("ADMIN_USERNAME");
-            if (envUser == null || envUser.isBlank()) envUser = adminDefaultUsername;
-            String targetUsername = (envUser != null && !envUser.isBlank()) ? envUser.trim() : "admin";
+            String targetUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "KaushalGupta";
+            String targetPassword = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "763424ks";
 
-            String envPass = System.getenv("ADMIN_PASSWORD");
-            if (envPass == null || envPass.isBlank()) envPass = adminDefaultPassword;
-            String targetPassword = (envPass != null && !envPass.isBlank()) ? envPass.trim() : "763424ks";
-
-            // Sync primary target admin user (e.g. KaushalGupta)
+            // Sync primary target admin user (KaushalGupta)
             syncAdminUser(targetUsername, targetPassword);
 
-            // Sync fallback 'admin' user
+            // Sync fallback 'admin' user with the same password 763424ks
             if (!"admin".equalsIgnoreCase(targetUsername)) {
                 syncAdminUser("admin", targetPassword);
             }
