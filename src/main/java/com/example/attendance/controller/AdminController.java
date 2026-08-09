@@ -10,9 +10,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin Management", description = "Master Admin System Statistics, User Roster, and System Audit Logs")
 public class AdminController {
 
     private final AdminService adminService;

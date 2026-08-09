@@ -8,8 +8,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "User Sign-in, Registration, and Password Reset endpoints")
 public class AuthController {
 
     private final AuthService authService;

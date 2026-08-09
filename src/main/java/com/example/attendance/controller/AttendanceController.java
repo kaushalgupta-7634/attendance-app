@@ -14,8 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/attendance")
+@Tag(name = "Attendance", description = "GPS Location Check-in, QR Token Verification, and Roster Logs")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;

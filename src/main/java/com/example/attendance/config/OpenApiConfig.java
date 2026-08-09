@@ -13,27 +13,28 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
-    private static final String SECURITY_SCHEME_NAME = "bearerAuth";
+        private static final String SECURITY_SCHEME_NAME = "bearerAuth";
 
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("ATTENDX System API")
-                        .version("1.0.0")
-                        .description("REST API documentation for ATTENDX - Smart Geo-Fenced & QR Attendance Management System.")
-                        .contact(new Contact()
-                                .name("ATTENDX Support")
-                                .email("support@example.com"))
-                        .license(new License().name("Apache 2.0").url("https://www.apache.org/licenses/LICENSE-2.0")))
-                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
-                .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
-                                new SecurityScheme()
-                                        .name(SECURITY_SCHEME_NAME)
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")
-                                        .description("Enter your JWT bearer token (obtained from POST /auth/login) to authorize requests.")));
-    }
+        @Bean
+        public OpenAPI customOpenAPI() {
+                return new OpenAPI()
+                                .info(new Info()
+                                                .title("ATTENDX System API")
+                                                .version("1.0.0")
+                                                .description("REST API documentation for ATTENDX - Smart Geo-Fenced & QR Attendance Management System.")
+                                                .contact(new Contact()
+                                                                .name("ATTENDX Support")
+                                                                .email("support@example.com"))
+                                                .license(new License().name("Apache 2.0")
+                                                                .url("https://www.apache.org/licenses/LICENSE-2.0")))
+                                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                                .components(new Components()
+                                                .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                                                                new SecurityScheme()
+                                                                                .name(SECURITY_SCHEME_NAME)
+                                                                                .type(SecurityScheme.Type.HTTP)
+                                                                                .scheme("bearer")
+                                                                                .bearerFormat("JWT")
+                                                                                .description("Enter your JWT bearer token (obtained from POST /auth/login) to authorize requests.")));
+        }
 }
