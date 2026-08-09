@@ -218,11 +218,11 @@ public class AdminService {
                 }
             }
             String subject = "-";
-            if (rec.getClassSession() != null && rec.getClassSession().getSubject() != null) {
-                subject = rec.getClassSession().getSubject();
+            if (rec.getSession() != null && rec.getSession().getSubject() != null) {
+                subject = rec.getSession().getSubject();
             }
-            String status = rec.getStatus() != null ? rec.getStatus() : "PRESENT";
-            String timestamp = rec.getTimestamp() != null ? rec.getTimestamp().toString() : "-";
+            String status = rec.getStatus() != null ? rec.getStatus().name() : "PRESENT";
+            String timestamp = rec.getMarkedAt() != null ? rec.getMarkedAt().toString() : "-";
 
             dtos.add(new AdminDTOs.AttendanceRecordSummaryDTO(rec.getId(), studentName, className, subject, status, timestamp));
         }
