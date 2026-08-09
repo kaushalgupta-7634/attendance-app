@@ -45,7 +45,8 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + cleanUsername));
+                .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
+                .orElseThrow(() -> new RuntimeException("User not found with username/email: " + cleanUsername));
 
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);

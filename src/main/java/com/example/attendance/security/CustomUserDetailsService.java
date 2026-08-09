@@ -25,7 +25,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         String cleanUsername = username != null ? username.trim() : "";
         User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+                .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username/email: " + username));
 
         Set<GrantedAuthority> authorities = java.util.Collections.singleton(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
