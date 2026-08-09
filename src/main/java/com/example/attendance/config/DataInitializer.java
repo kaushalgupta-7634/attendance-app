@@ -60,8 +60,11 @@ public class DataInitializer implements CommandLineRunner {
             } else {
                 admin.setRole(Role.ADMIN);
                 admin.setEnabled(true);
+                if (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) {
+                    admin.setPassword(passwordEncoder.encode(effectivePassword));
+                }
                 userRepository.save(admin);
-                logger.info("ADMIN account verified: username='{}'", admin.getUsername());
+                logger.info("ADMIN account synced with configured credentials: username='{}'", admin.getUsername());
             }
         } catch (Exception e) {
             logger.error("Non-fatal error initializing Admin account: {}", e.getMessage(), e);
