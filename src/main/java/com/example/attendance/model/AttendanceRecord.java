@@ -28,7 +28,6 @@ public class AttendanceRecord {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
-    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User student;
 
@@ -53,7 +52,6 @@ public class AttendanceRecord {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "overridden_by_id")
-    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.SET_NULL)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User overriddenBy;
 
