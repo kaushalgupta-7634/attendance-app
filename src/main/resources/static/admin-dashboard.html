@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Attendance System - Master Admin Command Center">
-    <title>Admin Dashboard | Attendance System</title>
+    <title>ATTENDX - Admin Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         body {
@@ -48,20 +48,17 @@
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
             border: 1px solid var(--card-border);
-            padding: 1.2rem 2rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 1.1rem 1.75rem;
+            border-radius: 12px;
+            margin-bottom: 1.75rem;
         }
 
         .brand-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #ffffff, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.02em;
         }
 
         .user-info {
@@ -71,19 +68,19 @@
         }
 
         .logout-btn {
-            background: rgba(244, 63, 94, 0.15);
-            border: 1px solid rgba(244, 63, 94, 0.4);
-            color: #fecdd3;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.825rem;
             font-weight: 500;
-            transition: all 0.2s ease;
+            cursor: pointer;
+            transition: background 0.15s ease;
         }
 
         .logout-btn:hover {
-            background: #f43f5e;
-            color: white;
+            background: rgba(239, 68, 68, 0.25);
         }
 
         .stats-grid {
