@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -31,7 +30,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
     public void run(String... args) {
         try {
             String targetUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "KaushalGupta";
@@ -55,8 +53,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    @Transactional
-    public void syncAdminUser(String username, String rawPassword) {
+    private void syncAdminUser(String username, String rawPassword) {
         try {
             User user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
             String encodedPassword = passwordEncoder.encode(rawPassword);
@@ -69,14 +66,14 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
-                user = userRepository.saveAndFlush(user);
-                logger.info("CREATED ADMIN USER -> username='{}', passwordMatches={}", username, passwordEncoder.matches(rawPassword, user.getPassword()));
+                user = userRepository.save(user);
+                logger.info("CREATED ADMIN USER -> username='{}'", username);
             } else {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
-                user = userRepository.saveAndFlush(user);
-                logger.info("UPDATED ADMIN USER -> username='{}', passwordMatches={}", username, passwordEncoder.matches(rawPassword, user.getPassword()));
+                user = userRepository.save(user);
+                logger.info("UPDATED ADMIN USER -> username='{}'", username);
             }
         } catch (Exception e) {
             logger.warn("Failed to sync admin user '{}': {}", username, e.getMessage());
