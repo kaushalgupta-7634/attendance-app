@@ -45,7 +45,7 @@ public class AdminService {
         long totalAttendanceRecords = attendanceRecordRepository.count();
         long activeSessionsCount = classSessionRepository.findByActiveTrue().size();
 
-        Map<String, Long> classwiseCounts = userRepository.findAll().stream()
+        java.util.Map<String, Long> classwiseCounts = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.STUDENT && u.getClassName() != null && !u.getClassName().isBlank())
                 .collect(Collectors.groupingBy(
                         u -> u.getClassName().trim().toUpperCase(),
