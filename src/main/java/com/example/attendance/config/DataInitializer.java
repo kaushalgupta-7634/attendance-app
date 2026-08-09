@@ -17,6 +17,9 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Value("${app.admin.username:${ADMIN_USERNAME:admin}}")
+    private String adminDefaultUsername;
+
     @org.springframework.beans.factory.annotation.Value("${app.admin.password:${ADMIN_PASSWORD:adminpassword123}}")
     private String adminDefaultPassword;
 
@@ -27,22 +30,40 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        String effectiveUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "admin";
         String effectivePassword = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "adminpassword123";
 
-        // Seed default ADMIN account if none exists
-        User admin = userRepository.findByUsernameIgnoreCase("admin").orElse(null);
+        // Check if an admin account with role ADMIN or configured username already exists
+        User admin = userRepository.findByUsernameIgnoreCase(effectiveUsername).orElse(null);
+
+        if (admin == null) {
+            // Also check if any ADMIN role account exists
+            admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.ADMIN).findFirst().orElse(null);
+        }
 
         if (admin == null) {
             admin = new User();
             admin.setName("System Administrator");
-            admin.setUsername("admin");
-            admin.setEmail("admin@attendance.com");
+            admin.setUsername(effectiveUsername);
+            admin.setEmail(effectiveUsername.toLowerCase() + "@attendance.com");
             admin.setPassword(passwordEncoder.encode(effectivePassword));
             admin.setRole(Role.ADMIN);
             admin.setEnabled(true);
 
             userRepository.save(admin);
-            logger.info("Successfully seeded default ADMIN account: username='admin'");
+            logger.info("Successfully seeded default ADMIN account: username='{}'", effectiveUsername);
+        } else {
+            // Update username and password if environment variables are explicitly provided
+            if (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) {
+                admin.setUsername(effectiveUsername);
+            }
+            if (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) {
+                admin.setPassword(passwordEncoder.encode(effectivePassword));
+            }
+            admin.setRole(Role.ADMIN);
+            admin.setEnabled(true);
+            userRepository.save(admin);
+            logger.info("Successfully updated ADMIN account credentials: username='{}'", effectiveUsername);
         }
     }
 }
