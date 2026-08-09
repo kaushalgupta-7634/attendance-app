@@ -194,4 +194,17 @@ public class AdminService {
         classSessionRepository.save(session);
         logger.info("Admin terminated active QR session ID {}", sessionId);
     }
+
+    public List<AdminDTOs.AttendanceRecordSummaryDTO> getAttendanceRecords() {
+        return attendanceRecordRepository.findAll().stream()
+                .map(rec -> new AdminDTOs.AttendanceRecordSummaryDTO(
+                        rec.getId(),
+                        rec.getStudent() != null ? (rec.getStudent().getName() != null && !rec.getStudent().getName().isBlank() ? rec.getStudent().getName() : rec.getStudent().getUsername()) : "Unknown",
+                        rec.getStudent() != null ? rec.getStudent().getClassName() : "-",
+                        rec.getClassSession() != null ? rec.getClassSession().getSubject() : "-",
+                        rec.getStatus() != null ? rec.getStatus() : "PRESENT",
+                        rec.getTimestamp() != null ? rec.getTimestamp().toString() : "-"
+                ))
+                .collect(Collectors.toList());
+    }
 }

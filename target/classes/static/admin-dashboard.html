@@ -318,6 +318,7 @@
                 <button id="tabUsersBtn" class="tab-btn active" onclick="switchSection('users')">👥 User Roster</button>
                 <button id="tabCoursesBtn" class="tab-btn" onclick="switchSection('courses')">📚 Class Courses</button>
                 <button id="tabSessionsBtn" class="tab-btn" onclick="switchSection('sessions')">⚡ Live QR Sessions</button>
+                <button id="tabAttendanceBtn" class="tab-btn" onclick="switchSection('attendance')">📋 Attendance Log</button>
             </div>
 
             <!-- SECTION 1: USERS ROSTER -->
@@ -396,6 +397,27 @@
                     </table>
                 </div>
             </div>
+
+            <!-- SECTION 4: ATTENDANCE LOGS -->
+            <div id="attendanceSection" class="hidden">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Record ID</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading attendance logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -439,14 +461,17 @@
             document.getElementById('usersSection').classList.toggle('hidden', type !== 'users');
             document.getElementById('coursesSection').classList.toggle('hidden', type !== 'courses');
             document.getElementById('sessionsSection').classList.toggle('hidden', type !== 'sessions');
+            document.getElementById('attendanceSection').classList.toggle('hidden', type !== 'attendance');
 
             document.getElementById('tabUsersBtn').classList.toggle('active', type === 'users');
             document.getElementById('tabCoursesBtn').classList.toggle('active', type === 'courses');
             document.getElementById('tabSessionsBtn').classList.toggle('active', type === 'sessions');
+            document.getElementById('tabAttendanceBtn').classList.toggle('active', type === 'attendance');
 
             if (type === 'users') loadUsers();
             if (type === 'courses') loadCourses();
             if (type === 'sessions') loadSessions();
+            if (type === 'attendance') loadAttendanceLogs();
         }
 
         async function loadStats() {
@@ -662,6 +687,39 @@
                 loadSessions();
             } catch (err) {
                 alert(err.message);
+            }
+        }
+
+        async function loadAttendanceLogs() {
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading attendance records...</td></tr>`;
+
+            try {
+                const res = await fetch('/admin/attendance-records', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to fetch attendance records.');
+                const records = await res.json();
+
+                if (!records || records.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No attendance records found yet.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = records.map(r => `
+                    <tr>
+                        <td>#${r.id}</td>
+                        <td><strong>${escapeHtml(r.studentName)}</strong></td>
+                        <td>${escapeHtml(r.className)}</td>
+                        <td>${escapeHtml(r.subject)}</td>
+                        <td><span class="badge ${r.status === 'PRESENT' ? 'badge-active' : 'badge-teacher'}">${escapeHtml(r.status)}</span></td>
+                        <td>${escapeHtml(r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : '-')}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
             }
         }
 
