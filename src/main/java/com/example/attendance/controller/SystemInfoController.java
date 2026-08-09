@@ -12,8 +12,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/info")
+@Tag(name = "System Info", description = "Public System Diagnostics and Server Timezone Status")
 public class SystemInfoController {
 
     private final ClassSessionRepository classSessionRepository;

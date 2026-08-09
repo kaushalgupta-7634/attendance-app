@@ -14,8 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/sessions")
+@Tag(name = "Class Sessions", description = "Faculty Class Session creation, Rotating 15s QR code stream, and Passcode generation")
 public class SessionController {
 
     private final ClassSessionService classSessionService;

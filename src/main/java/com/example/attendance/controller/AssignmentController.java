@@ -16,8 +16,11 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/assignments")
+@Tag(name = "Assignments", description = "PDF Homework upload, course material distribution, and download endpoints")
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
