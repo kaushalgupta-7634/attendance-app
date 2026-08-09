@@ -47,4 +47,9 @@ public class AuthController {
         com.example.attendance.model.UserProfileDTO profile = authService.getCurrentUserProfile(principal.getName());
         return ResponseEntity.ok(profile);
     }
+
+    @GetMapping("/admin-info")
+    public ResponseEntity<java.util.Map<String, Object>> getAdminInfo() {
+        return ResponseEntity.ok(authService.getAdminInfo());
+    }
 }

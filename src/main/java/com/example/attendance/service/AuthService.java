@@ -168,4 +168,17 @@ public class AuthService {
                 user.getClassName()
         );
     }
+
+    public java.util.Map<String, Object> getAdminInfo() {
+        java.util.List<User> admins = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ADMIN)
+                .collect(java.util.stream.Collectors.toList());
+
+        java.util.List<String> usernames = admins.stream().map(User::getUsername).collect(java.util.stream.Collectors.toList());
+        return java.util.Map.of(
+                "totalAdminAccounts", admins.size(),
+                "activeAdminUsernames", usernames,
+                "loginMessage", "Use any of the activeAdminUsernames along with your Railway ADMIN_PASSWORD to log in."
+        );
+    }
 }
