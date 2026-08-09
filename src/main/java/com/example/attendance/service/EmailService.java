@@ -20,11 +20,21 @@ public class EmailService {
     @Value("${app.mail.from:noreply@attendance.com}")
     private String fromAddress;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+    }
+
+    private String getEffectiveFromAddress() {
+        if (mailUsername != null && !mailUsername.isBlank()) {
+            return mailUsername.trim();
+        }
+        return (fromAddress != null && !fromAddress.isBlank()) ? fromAddress.trim() : "noreply@attendance.com";
     }
 
     /**
@@ -54,7 +64,7 @@ public class EmailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
+            message.setFrom(getEffectiveFromAddress());
             message.setTo(toEmail);
             message.setSubject("Warning: Low Attendance Alert");
             message.setText(body.toString());
@@ -96,15 +106,15 @@ public class EmailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
+            message.setFrom(getEffectiveFromAddress());
             message.setTo(toEmail);
             message.setSubject("Reset Your Password - Attendance Management System");
             message.setText(body.toString());
 
             mailSender.send(message);
-            logger.info("Password reset email successfully sent to {}", toEmail);
+            logger.info("Password reset email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
         } catch (MailException e) {
-            logger.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            logger.error("Failed to send password reset email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
             logger.info("Direct Password Reset Link (for testing/development): {}", resetLink);
             throw e;
         }
