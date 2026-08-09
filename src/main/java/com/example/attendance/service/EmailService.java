@@ -80,6 +80,9 @@ public class EmailService {
         }
 
         String cleanBaseUrl = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
+        if (!cleanBaseUrl.startsWith("http://") && !cleanBaseUrl.startsWith("https://")) {
+            cleanBaseUrl = "https://" + cleanBaseUrl;
+        }
         String resetLink = cleanBaseUrl + "/reset-password.html?token=" + resetToken;
 
         StringBuilder body = new StringBuilder();
