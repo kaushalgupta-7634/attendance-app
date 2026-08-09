@@ -86,20 +86,28 @@ public class AuthService {
     }
 
     public String forgotPassword(ForgotPasswordRequest request) {
-        String genericMessage = "If an account with that email exists, a password reset link has been sent.";
+        String genericMessage = "If an account with that email or username exists, a password reset link has been sent.";
         if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
             return genericMessage;
         }
 
-        String cleanEmail = request.getEmail().trim().toLowerCase();
-        userRepository.findByEmailIgnoreCase(cleanEmail).ifPresent(user -> {
+        String cleanInput = request.getEmail().trim().toLowerCase();
+        java.util.Optional<User> userOpt = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput));
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
             String token = java.util.UUID.randomUUID().toString();
             user.setResetToken(token);
             user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
             userRepository.save(user);
 
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
-        });
+            try {
+                emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
+            } catch (org.springframework.mail.MailException e) {
+                throw new IllegalArgumentException("Failed to send email. Server email/SMTP settings are missing or invalid. Check server logs for direct reset link.");
+            }
+        }
 
         return genericMessage;
     }

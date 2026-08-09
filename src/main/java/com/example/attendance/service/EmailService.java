@@ -20,6 +20,9 @@ public class EmailService {
     @Value("${app.mail.from:noreply@attendance.com}")
     private String fromAddress;
 
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -69,13 +72,15 @@ public class EmailService {
      * @param toEmail Email address of the user
      * @param userName Name of the user
      * @param resetToken Generated reset token UUID
+     * @throws MailException if sending the email fails
      */
-    public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) {
+    public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
         if (toEmail == null || toEmail.isBlank() || resetToken == null || resetToken.isBlank()) {
             return;
         }
 
-        String resetLink = "https://yourapp.up.railway.app/reset-password.html?token=" + resetToken;
+        String cleanBaseUrl = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
+        String resetLink = cleanBaseUrl + "/reset-password.html?token=" + resetToken;
 
         StringBuilder body = new StringBuilder();
         body.append("Dear ").append(userName != null ? userName : "User").append(",\n\n");
@@ -97,6 +102,8 @@ public class EmailService {
             logger.info("Password reset email successfully sent to {}", toEmail);
         } catch (MailException e) {
             logger.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            logger.info("Direct Password Reset Link (for testing/development): {}", resetLink);
+            throw e;
         }
     }
 }

@@ -566,6 +566,7 @@
                     </select>
                     <input type="text" id="teacherClassNameSearch" class="form-input" placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 220px;" oninput="loadSelectedClassAnalytics()">
                     <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;" onclick="loadSelectedClassAnalytics()">Search Stats</button>
+                    <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts (&lt;75%)</button>
                 </div>
             </div>
 
@@ -1476,24 +1477,26 @@
         }
 
         async function loadTeacherAssignments(className) {
-            if (!className) return;
+            const targetClass = (className && className.trim()) ? className.trim() : "all";
             try {
-                const res = await fetch(`/assignments/class/${encodeURIComponent(className)}`, {
+                const res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) return;
                 const assignments = await res.json();
                 const tbody = document.getElementById('teacherAssignmentsTableBody');
+                if (!tbody) return;
 
                 if (!assignments || assignments.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No assignments uploaded for '${className}'.</td></tr>`;
+                    const displayMsg = targetClass === 'all' ? 'No assignments uploaded yet. Fill the form above to upload a PDF assignment.' : `No assignments uploaded for '${escapeHtml(targetClass)}'.`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${displayMsg}</td></tr>`;
                     return;
                 }
 
                 tbody.innerHTML = assignments.map(a => `
                     <tr>
-                        <td><strong>${a.className}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${a.subject}</span></td>
-                        <td>${a.title}</td>
+                        <td><strong>${escapeHtml(a.className)}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(a.subject)}</span></td>
+                        <td>${escapeHtml(a.title)}</td>
                         <td>${new Date(a.dueDate).toLocaleString()}</td>
                         <td>
                             <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
@@ -1519,8 +1522,15 @@
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
-                if (res.status === 401 || res.status === 403) {
+                if (res.status === 401) {
                     alert("Session expired. Please log in again.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (res.status === 403) {
+                    const errData = await res.json().catch(() => ({ message: 'Access denied: Only teachers can delete assignments.' }));
+                    alert("Permission Error (HTTP 403): " + (errData.message || 'Access denied.'));
                     return;
                 }
 
@@ -1529,9 +1539,32 @@
                     throw new Error(errData.message || 'Failed to delete assignment');
                 }
 
-                loadTeacherAssignments(className);
+                loadTeacherAssignments(className || 'all');
             } catch (err) {
                 alert("Error deleting assignment: " + err.message);
+            }
+        }
+
+        async function triggerLowAttendanceAlerts() {
+            if (!confirm("Do you want to calculate low attendance (<75%) and send warning email alerts to all affected students?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/attendance/trigger-low-attendance-alerts', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ message: 'Failed to send warning alerts' }));
+                    throw new Error(errData.message || 'Failed to send warning alerts');
+                }
+
+                const msg = await res.text();
+                alert("✅ Success: " + (msg || "Low attendance warning email alerts sent successfully to students."));
+            } catch (err) {
+                alert("❌ Error sending alerts: " + err.message);
             }
         }
 
@@ -1548,9 +1581,16 @@
             }
         }
 
+        // Auto load assignments on page load
+        const initialAssignClass = document.getElementById('assignClassName')?.value.trim() || 'all';
+        loadTeacherAssignments(initialAssignClass);
+
         // Auto load assignments if course name input is updated
+        document.getElementById('assignClassName')?.addEventListener('input', (e) => {
+            loadTeacherAssignments(e.target.value.trim() || 'all');
+        });
         document.getElementById('assignClassName')?.addEventListener('change', (e) => {
-            loadTeacherAssignments(e.target.value.trim());
+            loadTeacherAssignments(e.target.value.trim() || 'all');
         });
 
         // Auto load sessions for dropdown
