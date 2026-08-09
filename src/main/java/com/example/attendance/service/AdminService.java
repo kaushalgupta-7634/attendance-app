@@ -44,12 +44,20 @@ public class AdminService {
         long totalAttendanceRecords = attendanceRecordRepository.count();
         long activeSessionsCount = classSessionRepository.findByActiveTrue().size();
 
+        Map<String, Long> classwiseCounts = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.STUDENT && u.getClassName() != null && !u.getClassName().isBlank())
+                .collect(Collectors.groupingBy(
+                        u -> u.getClassName().trim().toUpperCase(),
+                        Collectors.counting()
+                ));
+
         return new AdminDTOs.SystemStatsDTO(
                 totalStudents,
                 totalTeachers,
                 totalCourses,
                 totalAttendanceRecords,
-                activeSessionsCount
+                activeSessionsCount,
+                classwiseCounts
         );
     }
 
