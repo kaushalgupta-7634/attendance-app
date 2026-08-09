@@ -15,6 +15,15 @@ public class AdminDTOs {
         public SystemStatsDTO() {
         }
 
+        public SystemStatsDTO(long totalStudents, long totalTeachers, long totalCourses, long totalAttendanceRecords, long activeSessionsCount) {
+            this.totalStudents = totalStudents;
+            this.totalTeachers = totalTeachers;
+            this.totalCourses = totalCourses;
+            this.totalAttendanceRecords = totalAttendanceRecords;
+            this.activeSessionsCount = activeSessionsCount;
+            this.classwiseStudentCounts = java.util.Collections.emptyMap();
+        }
+
         public SystemStatsDTO(long totalStudents, long totalTeachers, long totalCourses, long totalAttendanceRecords, long activeSessionsCount, java.util.Map<String, Long> classwiseStudentCounts) {
             this.totalStudents = totalStudents;
             this.totalTeachers = totalTeachers;
