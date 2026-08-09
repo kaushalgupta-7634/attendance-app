@@ -77,4 +77,9 @@ public class AdminController {
         adminService.terminateSession(id);
         return ResponseEntity.ok(Map.of("message", "Class session terminated successfully."));
     }
+
+    @GetMapping("/attendance-records")
+    public ResponseEntity<List<AdminDTOs.AttendanceRecordSummaryDTO>> getAttendanceRecords() {
+        return ResponseEntity.ok(adminService.getAttendanceRecords());
+    }
 }
