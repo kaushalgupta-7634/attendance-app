@@ -413,7 +413,41 @@
                     throw new Error(errText || 'Registration failed');
                 }
 
-                showAlert('Account registered successfully! Please sign in.', true);
+                showAlert('Account registered successfully! Logging you in...', true);
+                
+                // Auto-login registered student to mark attendance seamlessly
+                try {
+                    const loginRes = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    if (loginRes.ok) {
+                        const loginData = await loginRes.json();
+                        const payload = parseJwtPayload(loginData.accessToken);
+                        const userRole = payload.role || role;
+                        const userFullName = payload.name || name;
+
+                        localStorage.setItem('jwtToken', loginData.accessToken);
+                        localStorage.setItem('userRole', userRole);
+                        localStorage.setItem('userName', userFullName);
+                        localStorage.setItem('username', payload.sub || username);
+
+                        setTimeout(() => {
+                            if (userRole === 'ADMIN') {
+                                window.location.href = '/admin-dashboard.html';
+                            } else if (userRole === 'TEACHER') {
+                                window.location.href = '/teacher-dashboard.html';
+                            } else {
+                                window.location.href = '/student-scan.html';
+                            }
+                        }, 600);
+                        return;
+                    }
+                } catch (loginErr) {
+                    console.warn("Auto login post registration failed, switching to login tab:", loginErr);
+                }
+
                 setTimeout(() => {
                     switchTab('login');
                     document.getElementById('loginUsername').value = username;
