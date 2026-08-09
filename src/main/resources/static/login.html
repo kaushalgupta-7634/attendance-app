@@ -316,6 +316,12 @@
             alertBox.style.display = 'block';
         }
 
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('pendingQrToken')) {
+                showAlert('📲 QR Code Scanned! Sign in or Register below to mark your Attendance automatically.', true);
+            }
+        });
+
         function parseJwtPayload(token) {
             try {
                 const base64Url = token.split('.')[1];

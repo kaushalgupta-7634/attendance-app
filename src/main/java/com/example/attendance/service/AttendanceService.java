@@ -36,8 +36,19 @@ public class AttendanceService {
         String rawToken = request.getQrToken() != null ? request.getQrToken().trim() : "";
         String tokenHash = null;
 
-        // Parse "sessionId:tokenHash" if formatted from QR scan
-        if (rawToken.contains(":")) {
+        // Parse full URL if student scanned via Google Lens / Chrome / Camera app
+        if (rawToken.contains("session=") && rawToken.contains("token=")) {
+            try {
+                java.util.regex.Matcher mSession = java.util.regex.Pattern.compile("session=(\\d+)").matcher(rawToken);
+                java.util.regex.Matcher mToken = java.util.regex.Pattern.compile("token=([a-zA-Z0-9]+)").matcher(rawToken);
+                if (mSession.find() && mToken.find()) {
+                    extractedSessionId = Long.parseLong(mSession.group(1));
+                    tokenHash = mToken.group(1);
+                }
+            } catch (Exception e) {
+                // Fallback
+            }
+        } else if (rawToken.contains(":")) {
             String[] parts = rawToken.split(":", 2);
             try {
                 extractedSessionId = Long.parseLong(parts[0]);

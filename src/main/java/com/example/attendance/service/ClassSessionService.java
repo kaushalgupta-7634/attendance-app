@@ -179,7 +179,9 @@ public class ClassSessionService {
         }
 
         String qrToken = qrCodeService.generateQrToken(sessionId);
-        return qrCodeService.generateQrCodeImageBytes(qrToken, 500, 500);
+        String tokenOnly = qrToken.contains(":") ? qrToken.substring(qrToken.indexOf(":") + 1) : qrToken;
+        String deepLinkUrl = "https://attendance-app-production-b868.up.railway.app/student-scan.html?session=" + sessionId + "&token=" + tokenOnly;
+        return qrCodeService.generateQrCodeImageBytes(deepLinkUrl, 500, 500);
     }
 
     public List<AttendanceRecordDTO> getSessionAttendanceRecords(Long sessionId, String teacherUsername) {
