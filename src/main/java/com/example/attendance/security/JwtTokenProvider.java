@@ -35,6 +35,7 @@ public class JwtTokenProvider {
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
                 .claim("sessionId", user.getCurrentSessionId())
+                .claim("name", user.getName())
                 .issuedAt(currentDate)
                 .expiration(expireDate)
                 .signWith(key())

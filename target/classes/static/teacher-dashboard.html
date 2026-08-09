@@ -705,6 +705,17 @@
     </div>
 
     <script>
+        function parseJwtPayload(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return {};
+            }
+        }
+
         var activeSessionId = null;
         var qrTimer = null;
         var countdownTimer = null;
@@ -712,11 +723,18 @@
         var secondsLeft = 15;
 
         const token = localStorage.getItem('jwtToken');
-        const username = localStorage.getItem('username');
         const role = localStorage.getItem('userRole');
 
         if (!token || role !== 'TEACHER') {
             window.location.href = '/login.html';
+        }
+
+        const payload = parseJwtPayload(token);
+        const displayName = localStorage.getItem('userName') || payload.name || payload.sub || 'Teacher';
+
+        const teacherHeader = document.getElementById('teacherNameDisplay');
+        if (teacherHeader) {
+            teacherHeader.textContent = `Hello, ${displayName}`;
         }
 
         function formatDateForInput(date) {
