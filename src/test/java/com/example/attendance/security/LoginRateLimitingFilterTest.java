@@ -31,10 +31,10 @@ class LoginRateLimitingFilterTest {
     }
 
     @Test
-    void testRateLimit_AllowsUpToFiveAttempts() throws Exception {
+    void testRateLimit_AllowsUpToTwentyAttempts() throws Exception {
         String testIp = "192.168.1.100";
 
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 20; i++) {
             MockHttpServletRequest request = new MockHttpServletRequest("POST", "/auth/login");
             request.setRemoteAddr(testIp);
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -45,17 +45,17 @@ class LoginRateLimitingFilterTest {
             verify(filterChain, times(i)).doFilter(any(), any());
         }
 
-        // 6th attempt should be blocked with HTTP 429
-        MockHttpServletRequest request6 = new MockHttpServletRequest("POST", "/auth/login");
-        request6.setRemoteAddr(testIp);
-        MockHttpServletResponse response6 = new MockHttpServletResponse();
+        // 21st attempt should be blocked with HTTP 429
+        MockHttpServletRequest request21 = new MockHttpServletRequest("POST", "/auth/login");
+        request21.setRemoteAddr(testIp);
+        MockHttpServletResponse response21 = new MockHttpServletResponse();
 
-        rateLimitingFilter.doFilterInternal(request6, response6, filterChain);
+        rateLimitingFilter.doFilterInternal(request21, response21, filterChain);
 
-        assertEquals(429, response6.getStatus(), "6th attempt within 60s should be rate limited with HTTP 429");
-        assertTrue(response6.getContentAsString().contains("Too many login attempts"));
-        // Filter chain should NOT be called for 6th attempt
-        verify(filterChain, times(5)).doFilter(any(), any());
+        assertEquals(429, response21.getStatus(), "21st attempt within 30s should be rate limited with HTTP 429");
+        assertTrue(response21.getContentAsString().contains("Too many login attempts"));
+        // Filter chain should NOT be called for 21st attempt
+        verify(filterChain, times(20)).doFilter(any(), any());
     }
 
     @Test
