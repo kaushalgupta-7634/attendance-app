@@ -372,6 +372,15 @@
             }
         }
 
+        // Check for QR Deep-Link parameters from Google Lens / Phone Camera app
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionParam = urlParams.get('session');
+        const tokenParam = urlParams.get('token');
+
+        if (sessionParam && tokenParam) {
+            sessionStorage.setItem('pendingQrToken', sessionParam + ':' + tokenParam);
+        }
+
         const token = localStorage.getItem('jwtToken');
         const role = localStorage.getItem('userRole');
 
@@ -407,6 +416,21 @@
         // Auto request Location & load enrolled courses on page load
         fetchLocation();
         loadStudentEnrolledCourses();
+
+        // Check if there is an incoming QR token from Google Lens / Phone Camera deep link scan
+        window.addEventListener('DOMContentLoaded', () => {
+            const pendingToken = sessionStorage.getItem('pendingQrToken');
+            if (pendingToken) {
+                sessionStorage.removeItem('pendingQrToken');
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                showResult(true, "Processing Direct QR Scan...", "Submitting attendance from Google Lens / Camera QR link...");
+                setTimeout(() => {
+                    sendAttendanceSubmission(pendingToken);
+                }, 800);
+            }
+        });
 
         function escapeHtml(str) {
             if (!str) return '';
