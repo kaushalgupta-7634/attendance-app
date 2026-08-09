@@ -104,8 +104,11 @@ public class AttendanceService {
         }
 
         // Step (c): Calculate distance via haversine formula and verify radius
-        // If bypassLocation is true, or radiusMeters <= 0 or radiusMeters >= 99999, distance check is bypassed
-        if (!request.isBypassLocation() && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
+        // If bypassLocation is true, or radiusMeters <= 0 or radiusMeters >= 99999, or teacher location is dummy default (12.9716, 77.5946 / 0,0), distance check is bypassed
+        boolean isDefaultTeacherLocation = (Math.abs(session.getClassroomLat() - 12.9716) < 0.01 && Math.abs(session.getClassroomLng() - 77.5946) < 0.01)
+                || session.getClassroomLat() == 0.0 || session.getClassroomLng() == 0.0;
+
+        if (!request.isBypassLocation() && !isDefaultTeacherLocation && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
             double distanceMeters = calculateHaversineMeters(
                     request.getStudentLat(), request.getStudentLng(),
                     session.getClassroomLat(), session.getClassroomLng()
