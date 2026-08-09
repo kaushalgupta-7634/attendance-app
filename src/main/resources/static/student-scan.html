@@ -13,25 +13,26 @@
     <!-- jsQR Library for gallery image QR decoding -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
+    <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #030712 100%);
-            --card-bg: rgba(30, 41, 59, 0.75);
-            --card-border: rgba(255, 255, 255, 0.12);
-            --accent-purple: #8b5cf6;
-            --accent-cyan: #06b6d4;
-            --accent-green: #22c55e;
+            --bg-gradient: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-green: #10b981;
             --accent-red: #ef4444;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --input-bg: rgba(15, 23, 42, 0.6);
-            --input-border: rgba(255, 255, 255, 0.1);
+            --input-bg: #0f172a;
+            --input-border: #334155;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         body {
@@ -51,64 +52,68 @@
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
             padding: 0.85rem 1.25rem;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
         }
 
         .role-badge {
-            background: rgba(6, 182, 212, 0.2);
-            border: 1px solid var(--accent-cyan);
-            color: #7dd3fc;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
             font-size: 0.75rem;
             font-weight: 600;
             padding: 0.2rem 0.6rem;
-            border-radius: 20px;
+            border-radius: 6px;
         }
 
         .btn-logout {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             color: #fca5a5;
             padding: 0.4rem 0.8rem;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 0.8rem;
             font-weight: 500;
             cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
         }
 
         .card {
             width: 100%;
             max-width: 540px;
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
             border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 1.75rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            margin-bottom: 1.25rem;
         }
 
         .card-title {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 600;
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            color: #ffffff;
         }
 
         .geo-banner {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(15, 23, 42, 0.7);
+            background: #0f172a;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1.25rem;
+            border-radius: 8px;
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 1.15rem;
             font-size: 0.85rem;
         }
 
@@ -120,15 +125,14 @@
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #e2e8f0;
         }
 
         .dot.active {
             background: var(--accent-green);
-            box-shadow: 0 0 10px var(--accent-green);
         }
 
         .dot.error {
@@ -137,42 +141,50 @@
 
         #reader {
             width: 100%;
-            border-radius: 16px;
+            border-radius: 10px;
             overflow: hidden;
-            border: 2px dashed var(--card-border);
+            border: 1px solid var(--card-border);
             background: #000000;
             margin-bottom: 1rem;
         }
 
         #reader video {
             width: 100% !important;
-            border-radius: 14px;
+            border-radius: 10px;
         }
 
         .btn-action {
             width: 100%;
-            padding: 0.8rem;
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            padding: 0.75rem;
+            background: var(--accent-blue);
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             color: #ffffff;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 0.75rem;
+            transition: background 0.15s ease;
+            margin-bottom: 0.65rem;
         }
 
         .btn-action:hover {
-            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+            background: var(--accent-blue-hover);
         }
 
         .btn-photo {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: #10b981;
+        }
+
+        .btn-photo:hover {
+            background: #059669;
         }
 
         .btn-quick {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: #d97706;
+        }
+
+        .btn-quick:hover {
+            background: #b45309;
         }
 
         .btn-secondary-action {
