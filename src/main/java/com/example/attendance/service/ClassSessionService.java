@@ -179,7 +179,7 @@ public class ClassSessionService {
         }
 
         String qrToken = qrCodeService.generateQrToken(sessionId);
-        return qrCodeService.generateQrCodeImageBytes(qrToken, 300, 300);
+        return qrCodeService.generateQrCodeImageBytes(qrToken, 500, 500);
     }
 
     public List<AttendanceRecordDTO> getSessionAttendanceRecords(Long sessionId, String teacherUsername) {
