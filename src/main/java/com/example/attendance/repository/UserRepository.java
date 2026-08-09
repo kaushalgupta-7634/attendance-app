@@ -20,4 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByResetToken(String resetToken);
     List<User> findByRole(Role role);
     List<User> findByRoleAndClassNameIgnoreCase(Role role, String className);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = "ALTER TABLE users MODIFY COLUMN role VARCHAR(20)", nativeQuery = true)
+    void alterRoleColumnToVarchar();
 }

@@ -32,6 +32,13 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
+            try {
+                userRepository.alterRoleColumnToVarchar();
+                logger.info("Successfully altered MySQL role column to VARCHAR(20)");
+            } catch (Exception e) {
+                logger.info("Role column alter skipped or already updated: {}", e.getMessage());
+            }
+
             String targetUsername = (adminDefaultUsername != null && !adminDefaultUsername.isBlank()) ? adminDefaultUsername.trim() : "KaushalGupta";
             String targetPassword = (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) ? adminDefaultPassword.trim() : "763424ks";
 
