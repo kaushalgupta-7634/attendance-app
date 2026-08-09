@@ -58,13 +58,12 @@ public class DataInitializer implements CommandLineRunner {
                 userRepository.save(admin);
                 logger.info("Successfully created default ADMIN account: username='{}'", effectiveUsername);
             } else {
+                admin.setUsername(effectiveUsername);
+                admin.setPassword(passwordEncoder.encode(effectivePassword));
                 admin.setRole(Role.ADMIN);
                 admin.setEnabled(true);
-                if (adminDefaultPassword != null && !adminDefaultPassword.isBlank()) {
-                    admin.setPassword(passwordEncoder.encode(effectivePassword));
-                }
                 userRepository.save(admin);
-                logger.info("ADMIN account synced with configured credentials: username='{}'", admin.getUsername());
+                logger.info("ADMIN account synced with configured credentials: username='{}'", effectiveUsername);
             }
         } catch (Exception e) {
             logger.error("Non-fatal error initializing Admin account: {}", e.getMessage(), e);
