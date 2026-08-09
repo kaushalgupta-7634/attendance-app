@@ -204,15 +204,28 @@ public class AdminService {
     }
 
     public List<AdminDTOs.AttendanceRecordSummaryDTO> getAttendanceRecords() {
-        return attendanceRecordRepository.findAll().stream()
-                .map(rec -> new AdminDTOs.AttendanceRecordSummaryDTO(
-                        rec.getId(),
-                        rec.getStudent() != null ? (rec.getStudent().getName() != null && !rec.getStudent().getName().isBlank() ? rec.getStudent().getName() : rec.getStudent().getUsername()) : "Unknown",
-                        rec.getStudent() != null ? rec.getStudent().getClassName() : "-",
-                        rec.getClassSession() != null ? rec.getClassSession().getSubject() : "-",
-                        rec.getStatus() != null ? rec.getStatus() : "PRESENT",
-                        rec.getTimestamp() != null ? rec.getTimestamp().toString() : "-"
-                ))
-                .collect(Collectors.toList());
+        List<AttendanceRecord> records = attendanceRecordRepository.findAll();
+        List<AdminDTOs.AttendanceRecordSummaryDTO> dtos = new java.util.ArrayList<>();
+        for (AttendanceRecord rec : records) {
+            String studentName = "Unknown";
+            String className = "-";
+            if (rec.getStudent() != null) {
+                studentName = rec.getStudent().getName() != null && !rec.getStudent().getName().isBlank()
+                        ? rec.getStudent().getName()
+                        : rec.getStudent().getUsername();
+                if (rec.getStudent().getClassName() != null) {
+                    className = rec.getStudent().getClassName();
+                }
+            }
+            String subject = "-";
+            if (rec.getClassSession() != null && rec.getClassSession().getSubject() != null) {
+                subject = rec.getClassSession().getSubject();
+            }
+            String status = rec.getStatus() != null ? rec.getStatus() : "PRESENT";
+            String timestamp = rec.getTimestamp() != null ? rec.getTimestamp().toString() : "-";
+
+            dtos.add(new AdminDTOs.AttendanceRecordSummaryDTO(rec.getId(), studentName, className, subject, status, timestamp));
+        }
+        return dtos;
     }
 }
