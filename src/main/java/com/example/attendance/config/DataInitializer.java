@@ -40,19 +40,17 @@ public class DataInitializer implements CommandLineRunner {
             if (envPass == null || envPass.isBlank()) envPass = adminDefaultPassword;
             String targetPassword = (envPass != null && !envPass.isBlank()) ? envPass.trim() : "763424ks";
 
-            String encodedPassword = passwordEncoder.encode(targetPassword);
+            // Sync primary target admin user (e.g. KaushalGupta)
+            syncAdminUser(targetUsername, targetPassword);
 
-            // Sync or Create primary target admin user (e.g. KaushalGupta)
-            syncAdminUser(targetUsername, encodedPassword);
-
-            // Sync or Create fallback 'admin' user
+            // Sync fallback 'admin' user
             if (!"admin".equalsIgnoreCase(targetUsername)) {
-                syncAdminUser("admin", encodedPassword);
+                syncAdminUser("admin", targetPassword);
             }
 
-            // Sync or Create 'KaushalGupta' if targetUsername was different
+            // Sync 'KaushalGupta' if targetUsername was different
             if (!"KaushalGupta".equalsIgnoreCase(targetUsername)) {
-                syncAdminUser("KaushalGupta", encodedPassword);
+                syncAdminUser("KaushalGupta", targetPassword);
             }
 
         } catch (Exception e) {
@@ -60,9 +58,11 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void syncAdminUser(String username, String encodedPassword) {
+    private void syncAdminUser(String username, String rawPassword) {
         try {
             User user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
+            String encodedPassword = passwordEncoder.encode(rawPassword);
+
             if (user == null) {
                 user = new User();
                 user.setName(username);
@@ -71,14 +71,14 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
-                userRepository.save(user);
-                logger.info("CREATED ADMIN USER -> username='{}'", username);
+                user = userRepository.save(user);
+                logger.info("CREATED ADMIN USER -> username='{}', passwordMatches={}", username, passwordEncoder.matches(rawPassword, user.getPassword()));
             } else {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
-                userRepository.save(user);
-                logger.info("UPDATED ADMIN USER -> username='{}'", username);
+                user = userRepository.save(user);
+                logger.info("UPDATED ADMIN USER -> username='{}', passwordMatches={}", username, passwordEncoder.matches(rawPassword, user.getPassword()));
             }
         } catch (Exception e) {
             logger.warn("Failed to sync admin user '{}': {}", username, e.getMessage());
