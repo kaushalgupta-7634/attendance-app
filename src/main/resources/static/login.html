@@ -365,7 +365,9 @@
                 showAlert('Login successful! Redirecting...', true);
 
                 setTimeout(() => {
-                    if (role === 'TEACHER') {
+                    if (role === 'ADMIN') {
+                        window.location.href = '/admin-dashboard.html';
+                    } else if (role === 'TEACHER') {
                         window.location.href = '/teacher-dashboard.html';
                     } else {
                         window.location.href = '/student-scan.html';
