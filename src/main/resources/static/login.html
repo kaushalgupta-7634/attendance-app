@@ -316,16 +316,19 @@
             alertBox.style.display = 'block';
         }
 
-        function parseJwtRole(token) {
+        function parseJwtPayload(token) {
             try {
                 const base64Url = token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
                 const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-                const parsed = JSON.parse(jsonPayload);
-                return parsed.role;
+                return JSON.parse(jsonPayload);
             } catch (e) {
-                return null;
+                return {};
             }
+        }
+
+        function parseJwtRole(token) {
+            return parseJwtPayload(token).role || null;
         }
 
         async function handleLogin(e) {
@@ -350,10 +353,14 @@
                 }
 
                 const data = await res.json();
-                const role = parseJwtRole(data.accessToken) || 'STUDENT';
+                const payload = parseJwtPayload(data.accessToken);
+                const role = payload.role || 'STUDENT';
+                const name = payload.name || payload.sub || username;
                 
                 localStorage.setItem('jwtToken', data.accessToken);
                 localStorage.setItem('userRole', role);
+                localStorage.setItem('userName', name);
+                localStorage.setItem('username', payload.sub || username);
 
                 showAlert('Login successful! Redirecting...', true);
 

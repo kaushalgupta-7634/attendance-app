@@ -105,7 +105,9 @@ public class AuthService {
             try {
                 emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
             } catch (org.springframework.mail.MailException e) {
-                throw new IllegalArgumentException("Failed to send email. Server email/SMTP settings are missing or invalid. Check server logs for direct reset link.");
+                org.slf4j.LoggerFactory.getLogger(AuthService.class).warn(
+                        "SMTP Email delivery failed for {}: {}. Reset token is saved in DB.", user.getEmail(), e.getMessage()
+                );
             }
         }
 
