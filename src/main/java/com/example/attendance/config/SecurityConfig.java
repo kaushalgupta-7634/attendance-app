@@ -41,6 +41,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    public org.springframework.security.authentication.dao.DaoAuthenticationProvider authenticationProvider(com.example.attendance.security.CustomUserDetailsService userDetailsService) {
+        org.springframework.security.authentication.dao.DaoAuthenticationProvider authProvider = new org.springframework.security.authentication.dao.DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
