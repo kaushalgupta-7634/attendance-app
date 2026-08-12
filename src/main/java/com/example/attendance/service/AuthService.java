@@ -89,6 +89,9 @@ public class AuthService {
         if (registerRequest.getClassName() != null && !registerRequest.getClassName().isBlank()) {
             user.setClassName(registerRequest.getClassName().trim());
         }
+        if (registerRequest.getSecurityPin() != null && !registerRequest.getSecurityPin().isBlank()) {
+            user.setSecurityPin(registerRequest.getSecurityPin().trim());
+        }
 
         userRepository.save(user);
 
@@ -174,23 +177,46 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid password reset request.");
         }
 
-        String inputOtp = request.getToken() != null ? request.getToken().trim() : null;
-        if (inputOtp == null || inputOtp.isBlank()) {
-            throw new IllegalArgumentException("OTP code is required.");
-        }
-
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("New password is required.");
         }
 
-        User user = userRepository.findByResetToken(inputOtp)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or incorrect 6-digit OTP code. Please check the OTP sent to your email."));
+        String pin = request.getSecurityPin() != null ? request.getSecurityPin().trim() : null;
+        String userOrEmail = request.getUsernameOrEmail() != null ? request.getUsernameOrEmail().trim() : null;
+        String inputOtp = request.getToken() != null ? request.getToken().trim() : null;
 
-        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")))) {
-            throw new IllegalArgumentException("The OTP code has expired. Please request a new OTP code.");
+        User user = null;
+
+        // Mode A: Verification by Private 4-Digit Security PIN
+        if (pin != null && !pin.isBlank()) {
+            if (userOrEmail == null || userOrEmail.isBlank()) {
+                throw new IllegalArgumentException("Username or Registered Email is required for Private Security PIN reset.");
+            }
+            user = userRepository.findByEmailIgnoreCase(userOrEmail)
+                    .or(() -> userRepository.findByUsernameIgnoreCase(userOrEmail))
+                    .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + userOrEmail + "'."));
+
+            if (user.getSecurityPin() == null || user.getSecurityPin().isBlank()) {
+                throw new IllegalArgumentException("No Security PIN was set during registration for account '" + userOrEmail + "'. Please use OTP or ask Admin/Teacher to reset.");
+            }
+
+            if (!user.getSecurityPin().equalsIgnoreCase(pin)) {
+                throw new IllegalArgumentException("Incorrect 4-digit Private Security PIN for account '" + userOrEmail + "'. Access Denied.");
+            }
+        } 
+        // Mode B: Verification by 6-digit OTP
+        else if (inputOtp != null && !inputOtp.isBlank()) {
+            user = userRepository.findByResetToken(inputOtp)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid or incorrect OTP code. Please check your OTP or use Private Security PIN."));
+
+            if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")))) {
+                throw new IllegalArgumentException("The OTP code has expired. Please request a new OTP code or use Private Security PIN.");
+            }
+        } else {
+            throw new IllegalArgumentException("Please provide a valid Private Security PIN or OTP code to reset password.");
         }
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         userRepository.save(user);

@@ -7,6 +7,7 @@ public class RegisterRequest {
     private String password;
     private Role role = Role.STUDENT;
     private String className;
+    private String securityPin;
 
     public RegisterRequest() {
     }
@@ -74,5 +75,13 @@ public class RegisterRequest {
 
     public void setClassName(String className) {
         this.className = className;
+    }
+
+    public String getSecurityPin() {
+        return securityPin;
+    }
+
+    public void setSecurityPin(String securityPin) {
+        this.securityPin = securityPin;
     }
 }

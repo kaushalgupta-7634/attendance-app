@@ -93,4 +93,11 @@ public class AdminController {
             @RequestParam(required = false, defaultValue = "ALL") String className) {
         return ResponseEntity.ok(adminService.getDateRangeAnalytics(startDate, endDate, className));
     }
+
+    @PostMapping("/users/{id}/reset-password")
+    public ResponseEntity<Map<String, String>> resetUserPassword(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        String newPassword = payload != null ? payload.get("newPassword") : null;
+        adminService.resetUserPassword(id, newPassword);
+        return ResponseEntity.ok(Map.of("message", "User password reset successfully by Admin."));
+    }
 }
