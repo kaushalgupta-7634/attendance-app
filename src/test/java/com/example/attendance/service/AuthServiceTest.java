@@ -60,11 +60,12 @@ class AuthServiceTest {
         assertNotNull(result);
         assertTrue(result.isSuccess());
         assertTrue(result.isEmailSent());
-        assertNotNull(result.getResetToken());
-        assertNotNull(result.getResetUrl());
+        assertNull(result.getResetToken());
+        assertNull(result.getResetUrl());
         assertNotNull(student.getResetToken());
+        assertEquals(6, student.getResetToken().length());
         assertNotNull(student.getResetTokenExpiry());
-        verify(emailService).sendPasswordResetEmail(eq("alice@example.com"), eq("Alice Smith"), eq(student.getResetToken()));
+        verify(emailService).sendPasswordResetOtpEmail(eq("alice@example.com"), eq("Alice Smith"), eq(student.getResetToken()));
     }
 
     @Test
@@ -79,12 +80,12 @@ class AuthServiceTest {
         assertFalse(result.isSuccess());
         assertFalse(result.isEmailSent());
         assertNull(result.getResetToken());
-        verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendPasswordResetOtpEmail(anyString(), anyString(), anyString());
     }
 
     @Test
     void testResetPassword_Success() {
-        String token = "valid-reset-token-uuid";
+        String token = "123456";
         student.setResetToken(token);
         student.setResetTokenExpiry(LocalDateTime.now().plusMinutes(10));
 
