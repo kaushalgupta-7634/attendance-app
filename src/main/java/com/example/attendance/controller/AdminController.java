@@ -49,7 +49,8 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> resetUserPassword(
             @PathVariable Long id,
             @RequestBody AdminDTOs.AdminPasswordResetRequest request) {
-        adminService.resetUserPassword(id, request.getNewPassword());
+        String newPassword = request != null ? request.getNewPassword() : null;
+        adminService.resetUserPassword(id, newPassword);
         return ResponseEntity.ok(Map.of("message", "User password has been successfully reset."));
     }
 
