@@ -22,8 +22,7 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
     private final ClassSessionRepository classSessionRepository;
-    @Value("${app.admin.security-pin:9999}")
-    private String masterAdminPin;
+    private final AttendanceRecordRepository attendanceRecordRepository;
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
@@ -260,6 +259,6 @@ public class AuthService {
         if (envPin != null && !envPin.isBlank()) {
             return envPin.trim();
         }
-        return (masterAdminPin != null && !masterAdminPin.isBlank()) ? masterAdminPin.trim() : "9999";
+        return "9999";
     }
 }
