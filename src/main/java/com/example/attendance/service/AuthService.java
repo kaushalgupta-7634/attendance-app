@@ -198,10 +198,11 @@ public class AuthService {
                     .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + userOrEmail + "'."));
 
             String registeredPin = user.getSecurityPin();
+            String effectiveMasterPin = getEffectiveMasterAdminPin();
 
             // Check Admin Master PIN OR user's registered PIN OR fallback 1234 for legacy accounts
             boolean isMatch = (registeredPin != null && !registeredPin.isBlank() && registeredPin.equalsIgnoreCase(pin))
-                           || (masterAdminPin != null && !masterAdminPin.isBlank() && masterAdminPin.equalsIgnoreCase(pin))
+                           || (effectiveMasterPin != null && !effectiveMasterPin.isBlank() && effectiveMasterPin.equalsIgnoreCase(pin))
                            || ((registeredPin == null || registeredPin.isBlank()) && "1234".equals(pin));
 
             if (!isMatch) {
@@ -252,5 +253,13 @@ public class AuthService {
                 "activeAdminUsernames", usernames,
                 "loginMessage", "Use any of the activeAdminUsernames along with your Railway ADMIN_PASSWORD to log in."
         );
+    }
+
+    private String getEffectiveMasterAdminPin() {
+        String envPin = System.getenv("APP_ADMIN_SECURITY_PIN");
+        if (envPin != null && !envPin.isBlank()) {
+            return envPin.trim();
+        }
+        return (masterAdminPin != null && !masterAdminPin.isBlank()) ? masterAdminPin.trim() : "9999";
     }
 }
