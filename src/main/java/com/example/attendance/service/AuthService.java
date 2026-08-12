@@ -10,6 +10,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.attendance.repository.AttendanceRecordRepository;
+import com.example.attendance.repository.ClassSessionRepository;
+
 @Service
 public class AuthService {
 
@@ -18,17 +21,23 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
+    private final ClassSessionRepository classSessionRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       EmailService emailService) {
+                       EmailService emailService,
+                       ClassSessionRepository classSessionRepository,
+                       AttendanceRecordRepository attendanceRecordRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.emailService = emailService;
+        this.classSessionRepository = classSessionRepository;
+        this.attendanceRecordRepository = attendanceRecordRepository;
     }
 
     public JwtAuthResponse login(LoginRequest loginRequest) {
@@ -47,6 +56,43 @@ public class AuthService {
         User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new RuntimeException("User not found with username/email: " + cleanUsername));
+
+        // Proxy Prevention: Prevent logging into a second student account on a device that already marked attendance in an active session
+        if (user.getRole() == Role.STUDENT && loginRequest.getDeviceId() != null && !loginRequest.getDeviceId().isBlank()) {
+            String deviceId = loginRequest.getDeviceId().trim();
+            String baseDeviceId = deviceId.contains("_fp_") ? deviceId.split("_fp_")[0] : deviceId;
+
+            java.util.List<ClassSession> activeSessions = classSessionRepository.findAll().stream()
+                    .filter(ClassSession::isActive)
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassSession activeSess : activeSessions) {
+                java.util.List<AttendanceRecord> records = attendanceRecordRepository.findBySession(activeSess);
+                for (AttendanceRecord rec : records) {
+                    if (rec.getStudent() != null && !rec.getStudent().getId().equals(user.getId())) {
+                        String recDevId = rec.getDeviceId();
+                        if (recDevId != null && !recDevId.isBlank()) {
+                            String recBaseDevId = recDevId.contains("_fp_") ? recDevId.split("_fp_")[0] : recDevId;
+                            boolean isMatch = recDevId.equalsIgnoreCase(deviceId)
+                                    || recBaseDevId.equalsIgnoreCase(baseDeviceId)
+                                    || deviceId.startsWith(recBaseDevId)
+                                    || recDevId.startsWith(baseDeviceId);
+
+                            if (isMatch) {
+                                String otherStudentName = rec.getStudent().getName() != null && !rec.getStudent().getName().isBlank()
+                                        ? rec.getStudent().getName()
+                                        : rec.getStudent().getUsername();
+                                throw new IllegalArgumentException(
+                                        "Login Blocked (Proxy Prevention): This phone/device has already been used to mark attendance for student '" 
+                                        + otherStudentName + "' in active class session '" + activeSess.getClassName() 
+                                        + "'. Account switching on the same phone during active classes is restricted to prevent proxy attendance."
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
