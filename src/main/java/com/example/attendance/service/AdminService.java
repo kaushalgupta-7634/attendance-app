@@ -347,18 +347,4 @@ public class AdminService {
                 classBreakdown
         );
     }
-
-    @Transactional
-    public void resetUserPassword(Long userId, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("New password cannot be blank.");
-        }
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
-        user.setPassword(passwordEncoder.encode(newPassword.trim()));
-        user.setResetToken(null);
-        user.setResetTokenExpiry(null);
-        userRepository.save(user);
-        logger.info("Admin reset password for user: {} (ID: {})", user.getUsername(), userId);
-    }
 }
