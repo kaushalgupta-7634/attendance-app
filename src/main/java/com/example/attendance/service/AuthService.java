@@ -124,25 +124,33 @@ public class AuthService {
         user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
         userRepository.save(user);
 
-        boolean emailSent = false;
+        String recipientEmail = (user.getEmail() != null && !user.getEmail().isBlank()) 
+                ? user.getEmail().trim() 
+                : (cleanInput.contains("@") ? cleanInput : null);
 
-        try {
-            if (user.getEmail() != null && !user.getEmail().isBlank()) {
-                emailService.sendPasswordResetOtpEmail(user.getEmail(), user.getName(), otp);
-                emailSent = true;
-            }
-        } catch (org.springframework.mail.MailException e) {
-            org.slf4j.LoggerFactory.getLogger(AuthService.class).warn(
-                    "SMTP Email delivery failed for {}: {}. OTP code logged on server console.", user.getEmail(), e.getMessage()
-            );
+        if (recipientEmail != null && (user.getEmail() == null || user.getEmail().isBlank())) {
+            user.setEmail(recipientEmail);
+            userRepository.save(user);
         }
 
-        String targetEmail = user.getEmail() != null ? user.getEmail() : user.getUsername();
-        String maskedEmail = maskEmail(targetEmail);
+        boolean emailSent = false;
+
+        if (recipientEmail != null && !recipientEmail.isBlank()) {
+            try {
+                emailService.sendPasswordResetOtpEmail(recipientEmail, user.getName(), otp);
+                emailSent = true;
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(AuthService.class).error(
+                        "SMTP Email delivery failed to {}: {}. OTP code: {}", recipientEmail, e.getMessage(), otp, e
+                );
+            }
+        }
+
+        String maskedEmail = maskEmail(recipientEmail != null ? recipientEmail : user.getUsername());
 
         String message = emailSent
-                ? "A 6-digit OTP code has been sent to your registered email (" + maskedEmail + "). Please enter the OTP to reset your password."
-                : "OTP code generated for " + maskedEmail + ". Please check your email or server log to complete password reset.";
+                ? "A 6-digit OTP code has been sent to your email (" + maskedEmail + "). Please enter the OTP to reset your password."
+                : "OTP code generated for " + maskedEmail + ". (SMTP Note: Check server log or email config if email delivery failed).";
 
         // Hide token and resetUrl in response DTO for security (no direct links)
         return new ForgotPasswordResponseDTO(true, emailSent, message, null, null);
