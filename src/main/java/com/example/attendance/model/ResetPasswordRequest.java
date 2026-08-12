@@ -20,6 +20,14 @@ public class ResetPasswordRequest {
         this.token = token;
     }
 
+    public String getOtp() {
+        return token;
+    }
+
+    public void setOtp(String otp) {
+        this.token = otp;
+    }
+
     public String getNewPassword() {
         return newPassword;
     }

@@ -77,30 +77,25 @@ public class EmailService {
     }
 
     /**
-     * Sends a password reset link to the user's email address.
+     * Sends a password reset 6-digit OTP email to the user.
      *
      * @param toEmail Email address of the user
      * @param userName Name of the user
-     * @param resetToken Generated reset token UUID
+     * @param otp 6-digit OTP code
      * @throws MailException if sending the email fails
      */
-    public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
-        if (toEmail == null || toEmail.isBlank() || resetToken == null || resetToken.isBlank()) {
+    public void sendPasswordResetOtpEmail(String toEmail, String userName, String otp) throws MailException {
+        if (toEmail == null || toEmail.isBlank() || otp == null || otp.isBlank()) {
             return;
         }
 
-        String cleanBaseUrl = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
-        if (!cleanBaseUrl.startsWith("http://") && !cleanBaseUrl.startsWith("https://")) {
-            cleanBaseUrl = "https://" + cleanBaseUrl;
-        }
-        String resetLink = cleanBaseUrl + "/reset-password.html?token=" + resetToken;
-
         StringBuilder body = new StringBuilder();
-        body.append("Dear ").append(userName != null ? userName : "User").append(",\n\n");
-        body.append("You have requested a password reset for your Attendance Management System account.\n\n");
-        body.append("Click the link below to set a new password (valid for 15 minutes):\n");
-        body.append(resetLink).append("\n\n");
-        body.append("If you did not request a password reset, please ignore this email.\n\n");
+        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "User").append(",\n\n");
+        body.append("You requested a password reset for your Attendance Management System account.\n\n");
+        body.append("Your One-Time Password (OTP) is:\n\n");
+        body.append("    🔑 ").append(otp).append("\n\n");
+        body.append("This OTP is valid for 15 minutes. Please enter this OTP on the password reset page to create your new password.\n\n");
+        body.append("If you did not request a password reset, please ignore this email or secure your account.\n\n");
         body.append("Best regards,\n");
         body.append("Attendance Management System");
 
@@ -108,15 +103,19 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(getEffectiveFromAddress());
             message.setTo(toEmail);
-            message.setSubject("Reset Your Password - Attendance Management System");
+            message.setSubject("Your Password Reset OTP - Attendance Management System");
             message.setText(body.toString());
 
             mailSender.send(message);
-            logger.info("Password reset email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
+            logger.info("Password reset OTP email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
         } catch (MailException e) {
-            logger.error("Failed to send password reset email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
-            logger.info("Direct Password Reset Link (for testing/development): {}", resetLink);
+            logger.error("Failed to send password reset OTP email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
+            logger.info("Dev/Test Mode - Password Reset OTP for {}: {}", toEmail, otp);
             throw e;
         }
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
+        sendPasswordResetOtpEmail(toEmail, userName, resetToken);
     }
 }

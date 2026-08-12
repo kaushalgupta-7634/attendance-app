@@ -115,46 +115,65 @@ public class AuthService {
         }
 
         User user = userOpt.get();
-        String token = java.util.UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(30));
+
+        // Generate 6-digit numeric OTP
+        int otpNum = 100000 + new java.security.SecureRandom().nextInt(900000);
+        String otp = String.valueOf(otpNum);
+
+        user.setResetToken(otp);
+        user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
         userRepository.save(user);
 
-        String resetUrl = "/reset-password.html?token=" + token;
         boolean emailSent = false;
 
         try {
             if (user.getEmail() != null && !user.getEmail().isBlank()) {
-                emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
+                emailService.sendPasswordResetOtpEmail(user.getEmail(), user.getName(), otp);
                 emailSent = true;
             }
         } catch (org.springframework.mail.MailException e) {
             org.slf4j.LoggerFactory.getLogger(AuthService.class).warn(
-                    "SMTP Email delivery failed for {}: {}. Reset token is saved in DB.", user.getEmail(), e.getMessage()
+                    "SMTP Email delivery failed for {}: {}. OTP code logged on server console.", user.getEmail(), e.getMessage()
             );
         }
 
-        String message = emailSent
-                ? "Password reset link sent to " + user.getEmail() + ". You can also use the direct link below to reset your password immediately."
-                : "Reset token generated for " + user.getUsername() + ". Direct password reset link is ready below.";
+        String targetEmail = user.getEmail() != null ? user.getEmail() : user.getUsername();
+        String maskedEmail = maskEmail(targetEmail);
 
-        return new ForgotPasswordResponseDTO(true, emailSent, message, token, resetUrl);
+        String message = emailSent
+                ? "A 6-digit OTP code has been sent to your registered email (" + maskedEmail + "). Please enter the OTP to reset your password."
+                : "OTP code generated for " + maskedEmail + ". Please check your email or server log to complete password reset.";
+
+        // Hide token and resetUrl in response DTO for security (no direct links)
+        return new ForgotPasswordResponseDTO(true, emailSent, message, null, null);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) return email;
+        int atIdx = email.indexOf('@');
+        if (atIdx <= 2) return email;
+        return email.charAt(0) + "***" + email.substring(atIdx - 1);
     }
 
     public String resetPassword(ResetPasswordRequest request) {
-        if (request == null || request.getToken() == null || request.getToken().isBlank()) {
-            throw new IllegalArgumentException("Reset token is required.");
+        if (request == null) {
+            throw new IllegalArgumentException("Invalid password reset request.");
+        }
+
+        String inputOtp = request.getToken() != null ? request.getToken().trim() : null;
+        if (inputOtp == null || inputOtp.isBlank()) {
+            throw new IllegalArgumentException("OTP code is required.");
         }
 
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("New password is required.");
         }
 
-        User user = userRepository.findByResetToken(request.getToken().trim())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset token."));
+        User user = userRepository.findByResetToken(inputOtp)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or incorrect 6-digit OTP code. Please check the OTP sent to your email."));
 
         if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")))) {
-            throw new IllegalArgumentException("Invalid or expired password reset token.");
+            throw new IllegalArgumentException("The OTP code has expired. Please request a new OTP code.");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -162,7 +181,7 @@ public class AuthService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
 
-        return "Password has been successfully reset. You may now log in.";
+        return "Password has been successfully reset. You may now log in with your new password.";
     }
 
     public UserProfileDTO getCurrentUserProfile(String username) {
