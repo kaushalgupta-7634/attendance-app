@@ -109,7 +109,7 @@ class DeviceAntiProxyTest {
     private AuthService authService;
 
     @Test
-    void testAntiProxyDeviceCheck_RejectsSecondStudentLoginOnSameDeviceDuringActiveSession() {
+    void testAntiProxyDeviceCheck_AllowsLoginButRejectsAttendanceMarkForSecondStudentOnSameDevice() {
         String sharedDeviceId = "phone-uuid-888_fp_canvas123";
 
         // Step 1: Student 1 marks attendance on device
@@ -117,17 +117,24 @@ class DeviceAntiProxyTest {
         req1.setDeviceId(sharedDeviceId);
         attendanceService.markAttendance(req1, student1.getUsername(), "192.168.1.50");
 
-        // Step 2: Student 2 attempts to login on the same device while active session is running
+        // Step 2: Student 2 attempts to login on the same device - MUST SUCCEED (no login blocking)
         LoginRequest loginReq = new LoginRequest(student2.getUsername(), "pass123");
         loginReq.setDeviceId(sharedDeviceId);
+        JwtAuthResponse authResp = authService.login(loginReq);
+        assertNotNull(authResp);
+        assertNotNull(authResp.getAccessToken());
+
+        // Step 3: Student 2 attempts to mark attendance on the same device - MUST BE REJECTED
+        MarkAttendanceRequest req2 = new MarkAttendanceRequest(null, 28.6139, 77.2090, activeSession.getId());
+        req2.setDeviceId(sharedDeviceId);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> authService.login(loginReq)
+                () -> attendanceService.markAttendance(req2, student2.getUsername(), "192.168.1.50")
         );
 
-        assertTrue(ex.getMessage().contains("Login Blocked (Proxy Prevention)"));
-        assertTrue(ex.getMessage().contains("already been used to mark attendance"));
+        assertTrue(ex.getMessage().contains("Proxy attempt blocked"));
+        assertTrue(ex.getMessage().contains("already been marked from this device"));
     }
 
     @Test
