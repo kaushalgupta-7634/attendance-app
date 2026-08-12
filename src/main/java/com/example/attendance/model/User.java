@@ -36,6 +36,9 @@ public class User {
     @Column(name = "current_session_id")
     private String currentSessionId;
 
+    @Column(name = "security_pin")
+    private String securityPin;
+
     public User() {
     }
 
@@ -142,5 +145,13 @@ public class User {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getSecurityPin() {
+        return securityPin;
+    }
+
+    public void setSecurityPin(String securityPin) {
+        this.securityPin = securityPin;
     }
 }
