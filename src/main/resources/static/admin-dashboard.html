@@ -922,16 +922,28 @@
             const endInput = document.getElementById('analyticsEndMonth');
 
             const now = new Date();
-            const endYm = now.toISOString().slice(0, 7);
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const endYm = `${year}-${month}`;
 
-            const pastDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-            const startYm = pastDate.toISOString().slice(0, 7);
+            const pastDate = new Date(year, now.getMonth() - 5, 1);
+            const pastYear = pastDate.getFullYear();
+            const pastMonth = String(pastDate.getMonth() + 1).padStart(2, '0');
+            const startYm = `${pastYear}-${pastMonth}`;
 
             if (startInput && !startInput.value) startInput.value = startYm;
             if (endInput && !endInput.value) endInput.value = endYm;
+
+            if (startInput && !startInput.dataset.listenerAttached) {
+                startInput.addEventListener('change', () => loadAnalyticsReport());
+                endInput.addEventListener('change', () => loadAnalyticsReport());
+                const classSelect = document.getElementById('analyticsClassFilter');
+                if (classSelect) classSelect.addEventListener('change', () => loadAnalyticsReport());
+                startInput.dataset.listenerAttached = 'true';
+            }
         }
 
-        function drawCircularChart(percentage) {
+        function drawCircularChart(percentage, hasData = true) {
             const circle = document.getElementById('circleProgressPath');
             const text = document.getElementById('circlePercentageText');
             const statusText = document.getElementById('circleStatusBadge');
@@ -940,12 +952,24 @@
 
             const radius = 80;
             const circumference = 2 * Math.PI * radius;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+            if (!hasData) {
+                circle.style.strokeDashoffset = circumference;
+                circle.style.stroke = '#475569';
+                text.textContent = 'N/A';
+                if (statusText) {
+                    statusText.textContent = 'No Sessions in Range';
+                    statusText.style.background = 'rgba(71, 85, 105, 0.25)';
+                    statusText.style.color = '#94a3b8';
+                }
+                return;
+            }
+
             const validPercent = Math.min(100, Math.max(0, parseFloat(percentage) || 0));
             const offset = circumference - (validPercent / 100) * circumference;
 
-            circle.style.strokeDasharray = `${circumference} ${circumference}`;
             circle.style.strokeDashoffset = offset;
-
             text.textContent = validPercent.toFixed(1) + '%';
 
             let strokeColor = '#10b981';
@@ -987,7 +1011,8 @@
 
                 const data = await res.json();
 
-                drawCircularChart(data.overallPercentage || 0);
+                const hasData = data.totalSessions && data.totalSessions > 0;
+                drawCircularChart(data.overallPercentage || 0, hasData);
 
                 document.getElementById('analyticsSessionsHeld').textContent = data.totalSessions || 0;
                 document.getElementById('analyticsPresentCount').textContent = data.totalPresentRecords || 0;

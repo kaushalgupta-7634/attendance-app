@@ -9,6 +9,7 @@ public class StudentAttendanceSummaryDTO {
     private String studentUsername;
     private String studentEmail;
     private double overallPercentage;
+    private long totalSessions;
     private List<SubjectSummaryDTO> subjectBreakdown;
     private List<AttendanceRecordItemDTO> recentRecords;
 
@@ -25,11 +26,19 @@ public class StudentAttendanceSummaryDTO {
                                        String studentEmail, double overallPercentage,
                                        List<SubjectSummaryDTO> subjectBreakdown,
                                        List<AttendanceRecordItemDTO> recentRecords) {
+        this(studentId, studentName, studentUsername, studentEmail, overallPercentage, 0L, subjectBreakdown, recentRecords);
+    }
+
+    public StudentAttendanceSummaryDTO(Long studentId, String studentName, String studentUsername,
+                                       String studentEmail, double overallPercentage, long totalSessions,
+                                       List<SubjectSummaryDTO> subjectBreakdown,
+                                       List<AttendanceRecordItemDTO> recentRecords) {
         this.studentId = studentId;
         this.studentName = studentName;
         this.studentUsername = studentUsername;
         this.studentEmail = studentEmail;
         this.overallPercentage = overallPercentage;
+        this.totalSessions = totalSessions;
         this.subjectBreakdown = subjectBreakdown;
         this.recentRecords = recentRecords;
     }
@@ -72,6 +81,14 @@ public class StudentAttendanceSummaryDTO {
 
     public void setOverallPercentage(double overallPercentage) {
         this.overallPercentage = overallPercentage;
+    }
+
+    public long getTotalSessions() {
+        return totalSessions;
+    }
+
+    public void setTotalSessions(long totalSessions) {
+        this.totalSessions = totalSessions;
     }
 
     public List<SubjectSummaryDTO> getSubjectBreakdown() {
