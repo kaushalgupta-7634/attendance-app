@@ -255,7 +255,16 @@ public class AuthService {
     }
 
     private String getEffectiveMasterAdminPin() {
-        String envPin = System.getenv("APP_ADMIN_SECURITY_PIN");
+        String envPin = System.getenv("ADMIN_SECURITY_PIN");
+        if (envPin == null || envPin.isBlank()) {
+            envPin = System.getenv("APP_ADMIN_SECURITY_PIN");
+        }
+        if (envPin == null || envPin.isBlank()) {
+            envPin = System.getenv("ADMIN_PIN");
+        }
+        if (envPin == null || envPin.isBlank()) {
+            envPin = System.getenv("MASTER_PIN");
+        }
         if (envPin != null && !envPin.isBlank()) {
             return envPin.trim();
         }
