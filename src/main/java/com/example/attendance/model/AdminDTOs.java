@@ -318,4 +318,96 @@ public class AdminDTOs {
             this.timestamp = timestamp;
         }
     }
+
+    public static class SubjectAnalyticsDTO {
+        private String subject;
+        private long sessionsHeld;
+        private long presentCount;
+        private double percentage;
+
+        public SubjectAnalyticsDTO() {}
+        public SubjectAnalyticsDTO(String subject, long sessionsHeld, long presentCount, double percentage) {
+            this.subject = subject;
+            this.sessionsHeld = sessionsHeld;
+            this.presentCount = presentCount;
+            this.percentage = percentage;
+        }
+
+        public String getSubject() { return subject; }
+        public void setSubject(String subject) { this.subject = subject; }
+        public long getSessionsHeld() { return sessionsHeld; }
+        public void setSessionsHeld(long sessionsHeld) { this.sessionsHeld = sessionsHeld; }
+        public long getPresentCount() { return presentCount; }
+        public void setPresentCount(long presentCount) { this.presentCount = presentCount; }
+        public double getPercentage() { return percentage; }
+        public void setPercentage(double percentage) { this.percentage = percentage; }
+    }
+
+    public static class ClassAnalyticsDTO {
+        private String className;
+        private long studentCount;
+        private long sessionsHeld;
+        private double percentage;
+
+        public ClassAnalyticsDTO() {}
+        public ClassAnalyticsDTO(String className, long studentCount, long sessionsHeld, double percentage) {
+            this.className = className;
+            this.studentCount = studentCount;
+            this.sessionsHeld = sessionsHeld;
+            this.percentage = percentage;
+        }
+
+        public String getClassName() { return className; }
+        public void setClassName(String className) { this.className = className; }
+        public long getStudentCount() { return studentCount; }
+        public void setStudentCount(long studentCount) { this.studentCount = studentCount; }
+        public long getSessionsHeld() { return sessionsHeld; }
+        public void setSessionsHeld(long sessionsHeld) { this.sessionsHeld = sessionsHeld; }
+        public double getPercentage() { return percentage; }
+        public void setPercentage(double percentage) { this.percentage = percentage; }
+    }
+
+    public static class DateRangeAnalyticsDTO {
+        private String startDate;
+        private String endDate;
+        private long totalSessions;
+        private long totalPresentRecords;
+        private long totalAbsentRecords;
+        private double overallPercentage;
+        private long totalStudents;
+        private List<SubjectAnalyticsDTO> subjectBreakdown;
+        private List<ClassAnalyticsDTO> classBreakdown;
+
+        public DateRangeAnalyticsDTO() {}
+        public DateRangeAnalyticsDTO(String startDate, String endDate, long totalSessions, long totalPresentRecords, long totalAbsentRecords, double overallPercentage, long totalStudents, List<SubjectAnalyticsDTO> subjectBreakdown, List<ClassAnalyticsDTO> classBreakdown) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+            this.totalSessions = totalSessions;
+            this.totalPresentRecords = totalPresentRecords;
+            this.totalAbsentRecords = totalAbsentRecords;
+            this.overallPercentage = overallPercentage;
+            this.totalStudents = totalStudents;
+            this.subjectBreakdown = subjectBreakdown;
+            this.classBreakdown = classBreakdown;
+        }
+
+        public String getStartDate() { return startDate; }
+        public void setStartDate(String startDate) { this.startDate = startDate; }
+        public String getEndDate() { return endDate; }
+        public void setEndDate(String endDate) { this.endDate = endDate; }
+        public long getTotalSessions() { return totalSessions; }
+        public void setTotalSessions(long totalSessions) { this.totalSessions = totalSessions; }
+        public long getTotalPresentRecords() { return totalPresentRecords; }
+        public void setTotalPresentRecords(long totalPresentRecords) { this.totalPresentRecords = totalPresentRecords; }
+        public long getTotalAbsentRecords() { return totalAbsentRecords; }
+        public void setTotalAbsentRecords(long totalAbsentRecords) { this.totalAbsentRecords = totalAbsentRecords; }
+        public double getOverallPercentage() { return overallPercentage; }
+        public void setOverallPercentage(double overallPercentage) { this.overallPercentage = overallPercentage; }
+        public long getTotalStudents() { return totalStudents; }
+        public void setTotalStudents(long totalStudents) { this.totalStudents = totalStudents; }
+        public List<SubjectAnalyticsDTO> getSubjectBreakdown() { return subjectBreakdown; }
+        public void setSubjectBreakdown(List<SubjectAnalyticsDTO> subjectBreakdown) { this.subjectBreakdown = subjectBreakdown; }
+        public List<ClassAnalyticsDTO> getClassBreakdown() { return classBreakdown; }
+        public void setClassBreakdown(List<ClassAnalyticsDTO> classBreakdown) { this.classBreakdown = classBreakdown; }
+    }
 }

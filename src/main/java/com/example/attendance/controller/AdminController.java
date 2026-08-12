@@ -85,4 +85,12 @@ public class AdminController {
     public ResponseEntity<List<AdminDTOs.AttendanceRecordSummaryDTO>> getAttendanceRecords() {
         return ResponseEntity.ok(adminService.getAttendanceRecords());
     }
+
+    @GetMapping("/attendance-analytics")
+    public ResponseEntity<AdminDTOs.DateRangeAnalyticsDTO> getAttendanceAnalytics(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "ALL") String className) {
+        return ResponseEntity.ok(adminService.getDateRangeAnalytics(startDate, endDate, className));
+    }
 }

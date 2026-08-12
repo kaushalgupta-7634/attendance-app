@@ -229,4 +229,122 @@ public class AdminService {
         }
         return dtos;
     }
+
+    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr, String classNameFilter) {
+        java.time.LocalDateTime startDateTime;
+        java.time.LocalDateTime endDateTime;
+
+        try {
+            if (startDateStr != null && !startDateStr.isBlank()) {
+                String s = startDateStr.trim();
+                if (s.length() == 7) s += "-01";
+                startDateTime = java.time.LocalDate.parse(s).atStartOfDay();
+            } else {
+                startDateTime = java.time.LocalDate.now().minusMonths(6).withDayOfMonth(1).atStartOfDay();
+            }
+        } catch (Exception e) {
+            startDateTime = java.time.LocalDate.now().minusMonths(6).withDayOfMonth(1).atStartOfDay();
+        }
+
+        try {
+            if (endDateStr != null && !endDateStr.isBlank()) {
+                String e = endDateStr.trim();
+                if (e.length() == 7) {
+                    java.time.YearMonth ym = java.time.YearMonth.parse(e);
+                    endDateTime = ym.atEndOfMonth().atTime(23, 59, 59);
+                } else {
+                    endDateTime = java.time.LocalDate.parse(e).atTime(23, 59, 59);
+                }
+            } else {
+                endDateTime = java.time.LocalDateTime.now();
+            }
+        } catch (Exception e) {
+            endDateTime = java.time.LocalDateTime.now();
+        }
+
+        String finalClassFilter = (classNameFilter != null && !classNameFilter.isBlank() && !"ALL".equalsIgnoreCase(classNameFilter.trim()))
+                ? classNameFilter.trim() : null;
+
+        final java.time.LocalDateTime finalStart = startDateTime;
+        final java.time.LocalDateTime finalEnd = endDateTime;
+
+        List<ClassSession> allSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart) && !s.getStartTime().isAfter(finalEnd))
+                .filter(s -> finalClassFilter == null || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(finalClassFilter)))
+                .collect(Collectors.toList());
+
+        long totalSessions = allSessions.size();
+
+        List<AttendanceRecord> allRecords = attendanceRecordRepository.findAll().stream()
+                .filter(r -> r.getMarkedAt() != null && !r.getMarkedAt().isBefore(finalStart) && !r.getMarkedAt().isAfter(finalEnd))
+                .filter(r -> r.getStatus() == AttendanceStatus.PRESENT || r.getStatus() == AttendanceStatus.LATE)
+                .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
+                .filter(r -> finalClassFilter == null || (r.getSession() != null && r.getSession().getClassName() != null && r.getSession().getClassName().equalsIgnoreCase(finalClassFilter)))
+                .collect(Collectors.toList());
+
+        long totalPresentRecords = allRecords.size();
+
+        long totalStudents = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.STUDENT)
+                .filter(u -> finalClassFilter == null || (u.getClassName() != null && u.getClassName().equalsIgnoreCase(finalClassFilter)))
+                .count();
+
+        long possibleAttendanceCount = totalSessions * Math.max(1, totalStudents);
+        long totalAbsentRecords = Math.max(0, possibleAttendanceCount - totalPresentRecords);
+
+        double overallPercentage = possibleAttendanceCount > 0
+                ? ((double) totalPresentRecords / possibleAttendanceCount) * 100.0
+                : 0.0;
+        overallPercentage = Math.round(overallPercentage * 10.0) / 10.0;
+
+        // Subject Breakdown
+        Map<String, List<ClassSession>> subjectSessionsMap = allSessions.stream()
+                .filter(s -> s.getSubject() != null && !s.getSubject().isBlank())
+                .collect(Collectors.groupingBy(s -> s.getSubject().trim()));
+
+        List<AdminDTOs.SubjectAnalyticsDTO> subjectBreakdown = new java.util.ArrayList<>();
+        for (Map.Entry<String, List<ClassSession>> entry : subjectSessionsMap.entrySet()) {
+            String subject = entry.getKey();
+            long subSessionsHeld = entry.getValue().size();
+            long subPresent = allRecords.stream()
+                    .filter(r -> r.getSession() != null && subject.equalsIgnoreCase(r.getSession().getSubject()))
+                    .count();
+
+            long subPossible = subSessionsHeld * Math.max(1, totalStudents);
+            double subPercent = subPossible > 0 ? ((double) subPresent / subPossible) * 100.0 : 0.0;
+            subjectBreakdown.add(new AdminDTOs.SubjectAnalyticsDTO(subject, subSessionsHeld, subPresent, Math.round(subPercent * 10.0) / 10.0));
+        }
+
+        // Class Breakdown
+        Map<String, List<ClassSession>> classSessionsMap = allSessions.stream()
+                .filter(s -> s.getClassName() != null && !s.getClassName().isBlank())
+                .collect(Collectors.groupingBy(s -> s.getClassName().trim()));
+
+        List<AdminDTOs.ClassAnalyticsDTO> classBreakdown = new java.util.ArrayList<>();
+        for (Map.Entry<String, List<ClassSession>> entry : classSessionsMap.entrySet()) {
+            String clsName = entry.getKey();
+            long clsSessions = entry.getValue().size();
+            long clsStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, clsName).size();
+            long clsPresent = allRecords.stream()
+                    .filter(r -> r.getSession() != null && clsName.equalsIgnoreCase(r.getSession().getClassName()))
+                    .count();
+
+            long clsPossible = clsSessions * Math.max(1, clsStudents);
+            double clsPercent = clsPossible > 0 ? ((double) clsPresent / clsPossible) * 100.0 : 0.0;
+            classBreakdown.add(new AdminDTOs.ClassAnalyticsDTO(clsName, clsStudents, clsSessions, Math.round(clsPercent * 10.0) / 10.0));
+        }
+
+        return new AdminDTOs.DateRangeAnalyticsDTO(
+                finalStart.toLocalDate().toString(),
+                finalEnd.toLocalDate().toString(),
+                totalSessions,
+                totalPresentRecords,
+                totalAbsentRecords,
+                overallPercentage,
+                totalStudents,
+                subjectBreakdown,
+                classBreakdown
+        );
+    }
 }
