@@ -38,6 +38,9 @@ class DeviceAntiProxyTest {
     @Autowired
     private AttendanceRecordRepository attendanceRecordRepository;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     private User student1;
     private User student2;
     private ClassSession activeSession;
@@ -47,18 +50,20 @@ class DeviceAntiProxyTest {
         attendanceRecordRepository.deleteAll();
         classSessionRepository.deleteAll();
 
+        String encPass = passwordEncoder.encode("pass123");
+
         User teacher = userRepository.findByUsernameIgnoreCase("teacher_proxy").orElseGet(() -> {
-            User u = new User("Prof. AntiProxy", "teacher_proxy", "teacher_proxy@example.com", "pass123", Role.TEACHER);
+            User u = new User("Prof. AntiProxy", "teacher_proxy", "teacher_proxy@example.com", encPass, Role.TEACHER);
             return userRepository.save(u);
         });
 
         student1 = userRepository.findByUsernameIgnoreCase("student_proxy_1").orElseGet(() -> {
-            User u = new User("Student One", "student_proxy_1", "proxy1@example.com", "pass123", Role.STUDENT);
+            User u = new User("Student One", "student_proxy_1", "proxy1@example.com", encPass, Role.STUDENT);
             return userRepository.save(u);
         });
 
         student2 = userRepository.findByUsernameIgnoreCase("student_proxy_2").orElseGet(() -> {
-            User u = new User("Student Two", "student_proxy_2", "proxy2@example.com", "pass123", Role.STUDENT);
+            User u = new User("Student Two", "student_proxy_2", "proxy2@example.com", encPass, Role.STUDENT);
             return userRepository.save(u);
         });
 
@@ -98,6 +103,31 @@ class DeviceAntiProxyTest {
 
         assertTrue(ex.getMessage().contains("Proxy attempt blocked"));
         assertTrue(ex.getMessage().contains("already been marked from this device"));
+    }
+
+    @Autowired
+    private AuthService authService;
+
+    @Test
+    void testAntiProxyDeviceCheck_RejectsSecondStudentLoginOnSameDeviceDuringActiveSession() {
+        String sharedDeviceId = "phone-uuid-888_fp_canvas123";
+
+        // Step 1: Student 1 marks attendance on device
+        MarkAttendanceRequest req1 = new MarkAttendanceRequest(null, 28.6139, 77.2090, activeSession.getId());
+        req1.setDeviceId(sharedDeviceId);
+        attendanceService.markAttendance(req1, student1.getUsername(), "192.168.1.50");
+
+        // Step 2: Student 2 attempts to login on the same device while active session is running
+        LoginRequest loginReq = new LoginRequest(student2.getUsername(), "pass123");
+        loginReq.setDeviceId(sharedDeviceId);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login(loginReq)
+        );
+
+        assertTrue(ex.getMessage().contains("Login Blocked (Proxy Prevention)"));
+        assertTrue(ex.getMessage().contains("already been used to mark attendance"));
     }
 
     @Test

@@ -23,7 +23,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtAuthResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<JwtAuthResponse> login(@RequestBody LoginRequest loginRequest,
+                                                 jakarta.servlet.http.HttpServletRequest httpRequest) {
+        if (httpRequest != null && (loginRequest.getDeviceId() == null || loginRequest.getDeviceId().isBlank())) {
+            String headerDeviceId = httpRequest.getHeader("X-Device-Id");
+            if (headerDeviceId != null && !headerDeviceId.isBlank()) {
+                loginRequest.setDeviceId(headerDeviceId.trim());
+            }
+        }
         JwtAuthResponse response = authService.login(loginRequest);
         return ResponseEntity.ok(response);
     }

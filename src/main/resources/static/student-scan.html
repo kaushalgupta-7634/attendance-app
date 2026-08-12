@@ -575,7 +575,11 @@
             if (html5QrCode && isScanning) {
                 html5QrCode.stop();
             }
+            const savedDevId = localStorage.getItem('attendx_device_id');
             localStorage.clear();
+            if (savedDevId) {
+                localStorage.setItem('attendx_device_id', savedDevId);
+            }
             window.location.href = '/login.html';
         }
 
@@ -720,17 +724,60 @@
             return ssid;
         }
 
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function setCookie(name, value, days = 365) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
+        }
+
+        function getBrowserFingerprint() {
+            try {
+                const screenInfo = `${screen.width}x${screen.height}x${screen.colorDepth}`;
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                const hc = navigator.hardwareConcurrency || 1;
+                const ua = navigator.userAgent || '';
+                
+                let canvasHash = '';
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillText('AttendX_FP_Check', 2, 2);
+                    canvasHash = canvas.toDataURL().slice(-30);
+                } catch (e) {}
+
+                const raw = `${screenInfo}_${tz}_${hc}_${canvasHash}_${ua.slice(0, 40)}`;
+                let hash = 0;
+                for (let i = 0; i < raw.length; i++) {
+                    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+                    hash |= 0;
+                }
+                return 'fp_' + Math.abs(hash).toString(36);
+            } catch (e) {
+                return 'fp_default';
+            }
+        }
+
         function getOrCreateDeviceId() {
-            let devId = localStorage.getItem('attendx_device_id');
+            let devId = localStorage.getItem('attendx_device_id') || getCookie('attendx_device_id');
             if (!devId) {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     devId = 'dev_' + crypto.randomUUID();
                 } else {
                     devId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10);
                 }
-                localStorage.setItem('attendx_device_id', devId);
             }
-            return devId;
+            localStorage.setItem('attendx_device_id', devId);
+            setCookie('attendx_device_id', devId);
+            return devId + '_' + getBrowserFingerprint();
         }
 
         async function sendAttendanceSubmission(qrToken, bypassLocation = false) {

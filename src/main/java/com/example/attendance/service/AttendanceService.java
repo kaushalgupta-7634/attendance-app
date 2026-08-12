@@ -154,17 +154,30 @@ public class AttendanceService {
         // Step (e-2): Device Proxy Prevention - Check if attendance for this session was already marked from the same device by another student
         String deviceId = request.getDeviceId() != null ? request.getDeviceId().trim() : null;
         if (deviceId != null && !deviceId.isEmpty()) {
-            List<AttendanceRecord> existingDeviceRecords = attendanceRecordRepository.findBySessionAndDeviceId(session, deviceId);
-            for (AttendanceRecord existingRec : existingDeviceRecords) {
+            String baseDeviceId = deviceId.contains("_fp_") ? deviceId.split("_fp_")[0] : deviceId;
+
+            List<AttendanceRecord> sessionRecords = attendanceRecordRepository.findBySession(session);
+            for (AttendanceRecord existingRec : sessionRecords) {
                 if (existingRec.getStudent() != null && !existingRec.getStudent().getId().equals(student.getId())) {
-                    String otherStudentName = existingRec.getStudent().getName() != null && !existingRec.getStudent().getName().isBlank() 
-                            ? existingRec.getStudent().getName() 
-                            : existingRec.getStudent().getUsername();
-                    throw new IllegalArgumentException(
-                            "Attendance rejected (Proxy attempt blocked): Attendance for class session '" + session.getClassName() 
-                            + "' has already been marked from this device for student '" + otherStudentName 
-                            + "'. Marking attendance for multiple student accounts on the same device per session is not allowed."
-                    );
+                    String recDevId = existingRec.getDeviceId();
+                    if (recDevId != null && !recDevId.isBlank()) {
+                        String recBaseDevId = recDevId.contains("_fp_") ? recDevId.split("_fp_")[0] : recDevId;
+                        boolean isMatch = recDevId.equalsIgnoreCase(deviceId)
+                                || recBaseDevId.equalsIgnoreCase(baseDeviceId)
+                                || deviceId.startsWith(recBaseDevId)
+                                || recDevId.startsWith(baseDeviceId);
+
+                        if (isMatch) {
+                            String otherStudentName = existingRec.getStudent().getName() != null && !existingRec.getStudent().getName().isBlank() 
+                                    ? existingRec.getStudent().getName() 
+                                    : existingRec.getStudent().getUsername();
+                            throw new IllegalArgumentException(
+                                    "Attendance rejected (Proxy attempt blocked): Attendance for class session '" + session.getClassName() 
+                                    + "' has already been marked from this device for student '" + otherStudentName 
+                                    + "'. Marking attendance for multiple student accounts on the same device per session is not allowed."
+                            );
+                        }
+                    }
                 }
             }
         }
