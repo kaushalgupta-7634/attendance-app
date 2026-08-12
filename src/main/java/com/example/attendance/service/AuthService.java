@@ -22,7 +22,8 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
     private final ClassSessionRepository classSessionRepository;
-    private final AttendanceRecordRepository attendanceRecordRepository;
+    @Value("${app.admin.security-pin:9999}")
+    private String masterAdminPin;
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
@@ -196,24 +197,27 @@ public class AuthService {
                     .or(() -> userRepository.findByUsernameIgnoreCase(userOrEmail))
                     .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + userOrEmail + "'."));
 
-            if (user.getSecurityPin() == null || user.getSecurityPin().isBlank()) {
-                throw new IllegalArgumentException("No Security PIN was set during registration for account '" + userOrEmail + "'. Please use OTP or ask Admin/Teacher to reset.");
-            }
+            String registeredPin = user.getSecurityPin();
 
-            if (!user.getSecurityPin().equalsIgnoreCase(pin)) {
-                throw new IllegalArgumentException("Incorrect 4-digit Private Security PIN for account '" + userOrEmail + "'. Access Denied.");
+            // Check Admin Master PIN OR user's registered PIN OR fallback 1234 for legacy accounts
+            boolean isMatch = (registeredPin != null && !registeredPin.isBlank() && registeredPin.equalsIgnoreCase(pin))
+                           || (masterAdminPin != null && !masterAdminPin.isBlank() && masterAdminPin.equalsIgnoreCase(pin))
+                           || ((registeredPin == null || registeredPin.isBlank()) && "1234".equals(pin));
+
+            if (!isMatch) {
+                throw new IllegalArgumentException("Incorrect 4-digit Security PIN for account '" + userOrEmail + "'. Access Denied.");
             }
         } 
         // Mode B: Verification by 6-digit OTP
         else if (inputOtp != null && !inputOtp.isBlank()) {
             user = userRepository.findByResetToken(inputOtp)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid or incorrect OTP code. Please check your OTP or use Private Security PIN."));
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid or incorrect OTP code."));
 
             if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")))) {
-                throw new IllegalArgumentException("The OTP code has expired. Please request a new OTP code or use Private Security PIN.");
+                throw new IllegalArgumentException("The OTP code has expired.");
             }
         } else {
-            throw new IllegalArgumentException("Please provide a valid Private Security PIN or OTP code to reset password.");
+            throw new IllegalArgumentException("Please provide a valid 4-Digit Private Security PIN to reset password.");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
