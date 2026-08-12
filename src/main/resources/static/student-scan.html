@@ -720,23 +720,40 @@
             return ssid;
         }
 
+        function getOrCreateDeviceId() {
+            let devId = localStorage.getItem('attendx_device_id');
+            if (!devId) {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    devId = 'dev_' + crypto.randomUUID();
+                } else {
+                    devId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10);
+                }
+                localStorage.setItem('attendx_device_id', devId);
+            }
+            return devId;
+        }
+
         async function sendAttendanceSubmission(qrToken, bypassLocation = false) {
             lastSubmittedToken = qrToken || "";
             showResult(true, "Submitting...", "Verifying session and location radius...");
+
+            const deviceId = getOrCreateDeviceId();
 
             try {
                 const res = await fetch('/attendance/mark', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
+                        'Authorization': 'Bearer ' + token,
+                        'X-Device-Id': deviceId
                     },
                     body: JSON.stringify({
                         qrToken: qrToken || "",
                         studentLat: currentLat,
                         studentLng: currentLng,
                         bypassLocation: bypassLocation,
-                        studentWifiSsid: getSoftDetectedWifiSsid()
+                        studentWifiSsid: getSoftDetectedWifiSsid(),
+                        deviceId: deviceId
                     })
                 });
 

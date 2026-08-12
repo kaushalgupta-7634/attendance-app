@@ -170,4 +170,26 @@ public class AttendanceRecord {
     public void setWifiMismatchWarning(Boolean wifiMismatchWarning) {
         this.wifiMismatchWarning = wifiMismatchWarning;
     }
+
+    @Column(name = "device_id")
+    private String deviceId;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
 }
