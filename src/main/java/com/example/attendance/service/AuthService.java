@@ -124,13 +124,19 @@ public class AuthService {
         user.setResetTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(15));
         userRepository.save(user);
 
-        String recipientEmail = (user.getEmail() != null && !user.getEmail().isBlank()) 
-                ? user.getEmail().trim() 
-                : (cleanInput.contains("@") ? cleanInput : null);
-
-        if (recipientEmail != null && (user.getEmail() == null || user.getEmail().isBlank())) {
+        String recipientEmail;
+        if (cleanInput.contains("@") && !cleanInput.toLowerCase().endsWith("@example.com")) {
+            recipientEmail = cleanInput;
             user.setEmail(recipientEmail);
             userRepository.save(user);
+        } else if (user.getEmail() != null && !user.getEmail().isBlank() && !user.getEmail().toLowerCase().endsWith("@example.com")) {
+            recipientEmail = user.getEmail().trim();
+        } else if (cleanInput.contains("@")) {
+            recipientEmail = cleanInput;
+            user.setEmail(recipientEmail);
+            userRepository.save(user);
+        } else {
+            recipientEmail = user.getEmail() != null ? user.getEmail().trim() : null;
         }
 
         boolean emailSent = false;
