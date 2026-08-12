@@ -240,6 +240,61 @@
         .form-input:focus {
             border-color: var(--accent-cyan);
         }
+
+        .portal-tabs {
+            width: 100%;
+            max-width: 540px;
+            display: flex;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 0.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .portal-tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.65rem 0.75rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            font-size: 0.825rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .portal-tab-btn:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .portal-tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue), #1d4ed8);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+
+        .tab-content-section {
+            width: 100%;
+            max-width: 540px;
+            display: none;
+        }
+
+        .tab-content-section.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -252,146 +307,195 @@
         <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
 
-    <div class="card">
-        <h3 class="card-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Location & Attendance Check
-        </h3>
-
-        <!-- GPS STATUS BANNER -->
-        <div class="geo-banner">
-            <div class="geo-status">
-                <span id="geoDot" class="dot"></span>
-                <span id="geoStatusText">Requesting GPS Location...</span>
-            </div>
-            <button style="background: none; border: none; color: var(--accent-cyan); font-size: 0.8rem; cursor: pointer;" onclick="fetchLocation()">Retry GPS</button>
-        </div>
-
-        <!-- CAMERA SCANNER VIEWPORT -->
-        <div id="reader"></div>
-
-        <!-- BUTTON 1: LIVE STREAM CAMERA SCANNER -->
-        <button id="scanToggleBtn" class="btn-action" onclick="toggleCameraScanner()">Start Live Camera Scanner</button>
-
-        <!-- BUTTON 2: GALLERY IMAGE UPLOAD -->
-        <button class="btn-action btn-photo" style="background: linear-gradient(135deg, #0284c7, #2563eb);" onclick="document.getElementById('qrGalleryInput').click()">🖼️ Select QR Image from Gallery</button>
-        <input type="file" id="qrGalleryInput" accept="image/*" style="display: none;" onchange="handleQrFileUpload(event)">
-
-        <!-- BUTTON 3: 1-CLICK QUICK CHECK-IN -->
-        <button class="btn-action btn-quick" onclick="sendAttendanceSubmission('')">⚡ Mark Attendance for Active Session</button>
-
-        <!-- SUBMISSION RESULT CARD -->
-        <div id="resultCard" class="result-card">
-            <h4 id="resultTitle" style="font-size: 1.1rem; margin-bottom: 0.4rem;"></h4>
-            <p id="resultMessage" style="font-size: 0.875rem;"></p>
-        </div>
-
-        <!-- MANUAL / 6-DIGIT TOKEN INPUT FALLBACK -->
-        <div class="manual-box">
-            <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 500;">
-                Or enter 6-Digit Token Number (shown on teacher screen, rotates every 30s):
-            </p>
-            <input type="text" id="manualTokenInput" class="form-input" placeholder="e.g. 849201" maxlength="20">
-            <button class="btn-action btn-secondary-action" onclick="submitManualToken()">Submit Token Number</button>
-        </div>
-
+    <!-- SEPARATE QUICK ACCESS TAB BUTTONS -->
+    <div class="portal-tabs">
+        <button id="studentTabScan" class="portal-tab-btn active" onclick="switchStudentTab('scan')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Scan & Check-in
+        </button>
+        <button id="studentTabStats" class="portal-tab-btn" onclick="switchStudentTab('stats')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            Attendance Stats
+        </button>
+        <button id="studentTabClasses" class="portal-tab-btn" onclick="switchStudentTab('classes')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+            My Classes
+        </button>
+        <button id="studentTabAssignments" class="portal-tab-btn" onclick="switchStudentTab('assignments')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Assignments
+        </button>
     </div>
 
-    <!-- ATTENDANCE STATS & HISTORY RECORD CARD -->
-    <div class="card" style="margin-top: 1rem;">
-        <h3 class="card-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-            My Attendance Performance & Month Filter
-        </h3>
+    <!-- TAB 1: LOCATION & ATTENDANCE SCAN CHECK-IN -->
+    <div id="sectionScan" class="tab-content-section active">
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Location & Attendance Check
+            </h3>
 
-        <!-- MONTH RANGE FILTER BAR -->
-        <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--input-border);">
-            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; flex: 1;">
-                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">From:</label>
-                <input type="month" id="studentStartMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
-
-                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">To:</label>
-                <input type="month" id="studentEndMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
+            <!-- GPS STATUS BANNER -->
+            <div class="geo-banner">
+                <div class="geo-status">
+                    <span id="geoDot" class="dot"></span>
+                    <span id="geoStatusText">Requesting GPS Location...</span>
+                </div>
+                <button style="background: none; border: none; color: var(--accent-cyan); font-size: 0.8rem; cursor: pointer;" onclick="fetchLocation()">Retry GPS</button>
             </div>
-            <button style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;" onclick="fetchStudentAttendanceSummary()">Filter</button>
-        </div>
 
-        <!-- CIRCULAR PERCENTAGE DONUT RING GRAPH -->
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--input-border); text-align: center;">
-            <div style="position: relative; width: 170px; height: 170px;">
-                <svg width="170" height="170" viewBox="0 0 170 170">
-                    <circle cx="85" cy="85" r="65" fill="none" stroke="#334155" stroke-width="12" />
-                    <circle id="studentCircleProgressPath" cx="85" cy="85" r="65" fill="none" stroke="#10b981" stroke-width="12" 
-                            stroke-linecap="round" stroke-dasharray="408.4" stroke-dashoffset="408.4" 
-                            style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
-                </svg>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                    <div id="overallPercentageText" style="font-size: 1.8rem; font-weight: 800; color: #ffffff;">0.0%</div>
-                    <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Overall Rate</div>
+            <!-- CAMERA SCANNER VIEWPORT -->
+            <div id="reader"></div>
+
+            <!-- BUTTON 1: LIVE STREAM CAMERA SCANNER -->
+            <button id="scanToggleBtn" class="btn-action" onclick="toggleCameraScanner()">Start Live Camera Scanner</button>
+
+            <!-- BUTTON 2: GALLERY IMAGE UPLOAD -->
+            <button class="btn-action btn-photo" style="background: linear-gradient(135deg, #0284c7, #2563eb);" onclick="document.getElementById('qrGalleryInput').click()">🖼️ Select QR Image from Gallery</button>
+            <input type="file" id="qrGalleryInput" accept="image/*" style="display: none;" onchange="handleQrFileUpload(event)">
+
+            <!-- BUTTON 3: 1-CLICK QUICK CHECK-IN -->
+            <button class="btn-action btn-quick" onclick="sendAttendanceSubmission('')">⚡ Mark Attendance for Active Session</button>
+
+            <!-- SUBMISSION RESULT CARD -->
+            <div id="resultCard" class="result-card">
+                <h4 id="resultTitle" style="font-size: 1.1rem; margin-bottom: 0.4rem;"></h4>
+                <p id="resultMessage" style="font-size: 0.875rem;"></p>
+            </div>
+
+            <!-- MANUAL / 6-DIGIT TOKEN INPUT FALLBACK -->
+            <div class="manual-box">
+                <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 500;">
+                    Or enter 6-Digit Token Number (shown on teacher screen, rotates every 30s):
+                </p>
+                <input type="text" id="manualTokenInput" class="form-input" placeholder="e.g. 849201" maxlength="20">
+                <button class="btn-action btn-secondary-action" onclick="submitManualToken()">Submit Token Number</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: ATTENDANCE STATS & HISTORY RECORD CARD -->
+    <div id="sectionStats" class="tab-content-section">
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                My Attendance Performance & Month Filter
+            </h3>
+
+            <!-- MONTH RANGE FILTER BAR -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--input-border);">
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">From:</label>
+                    <input type="month" id="studentStartMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
+
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">To:</label>
+                    <input type="month" id="studentEndMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
+                </div>
+                <button style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;" onclick="fetchStudentAttendanceSummary()">Filter</button>
+            </div>
+
+            <!-- CIRCULAR PERCENTAGE DONUT RING GRAPH -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--input-border); text-align: center;">
+                <div style="position: relative; width: 170px; height: 170px;">
+                    <svg width="170" height="170" viewBox="0 0 170 170">
+                        <circle cx="85" cy="85" r="65" fill="none" stroke="#334155" stroke-width="12" />
+                        <circle id="studentCircleProgressPath" cx="85" cy="85" r="65" fill="none" stroke="#10b981" stroke-width="12" 
+                                stroke-linecap="round" stroke-dasharray="408.4" stroke-dashoffset="408.4" 
+                                style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <div id="overallPercentageText" style="font-size: 1.8rem; font-weight: 800; color: #ffffff;">0.0%</div>
+                        <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Overall Rate</div>
+                    </div>
+                </div>
+                <div id="studentCircleBadge" style="margin-top: 0.75rem; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
+                    Calculating...
                 </div>
             </div>
-            <div id="studentCircleBadge" style="margin-top: 0.75rem; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
-                Calculating...
+
+            <!-- SUBJECT WISE BREAKDOWN GRID -->
+            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Subject Average Breakdown</h4>
+            <div id="subjectBreakdownContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">Loading subject percentages...</p>
             </div>
-        </div>
 
-        <!-- SUBJECT WISE BREAKDOWN GRID -->
-        <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Subject Average Breakdown</h4>
-        <div id="subjectBreakdownContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem;">
-            <p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">Loading subject percentages...</p>
-        </div>
-
-        <!-- DAILY ATTENDANCE RECORDS HISTORY LIST -->
-        <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Attendance Log & Daily History</h4>
-        <div id="attendanceHistoryContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
-            <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading attendance history...</p>
+            <!-- DAILY ATTENDANCE RECORDS HISTORY LIST -->
+            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Attendance Log & Daily History</h4>
+            <div id="attendanceHistoryContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading attendance history...</p>
+            </div>
         </div>
     </div>
 
-    <!-- JOIN A CLASS COURSE CARD -->
-    <div class="card" style="margin-top: 1rem;">
-        <h3 class="card-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
-            Join a Class Course
-        </h3>
-        <form id="joinClassForm" onsubmit="handleJoinClass(event)">
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                <input type="text" id="joinClassCodeInput" class="form-input" placeholder="Enter Unique Class Code from Teacher (e.g. CS101-A)" style="margin-bottom: 0; text-transform: uppercase;" required>
-                <button type="submit" id="joinClassBtn" class="btn-action" style="width: auto; white-space: nowrap; margin-bottom: 0; padding: 0.7rem 1.2rem;">Join Class</button>
-            </div>
-        </form>
-        <div id="joinClassAlert" style="display: none; padding: 0.6rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 1rem;"></div>
+    <!-- TAB 3: JOIN A CLASS COURSE CARD -->
+    <div id="sectionClasses" class="tab-content-section">
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                Join a Class Course
+            </h3>
+            <form id="joinClassForm" onsubmit="handleJoinClass(event)">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <input type="text" id="joinClassCodeInput" class="form-input" placeholder="Enter Unique Class Code from Teacher (e.g. CS101-A)" style="margin-bottom: 0; text-transform: uppercase;" required>
+                    <button type="submit" id="joinClassBtn" class="btn-action" style="width: auto; white-space: nowrap; margin-bottom: 0; padding: 0.7rem 1.2rem;">Join Class</button>
+                </div>
+            </form>
+            <div id="joinClassAlert" style="display: none; padding: 0.6rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 1rem;"></div>
 
-        <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">My Enrolled Class Courses</h4>
-        <div id="enrolledCoursesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading enrolled classes...</p>
+            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">My Enrolled Class Courses</h4>
+            <div id="enrolledCoursesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading enrolled classes...</p>
+            </div>
         </div>
     </div>
 
-    <!-- STUDENT ASSIGNMENTS & HOMEWORK CARD -->
-    <div class="card" style="margin-top: 1rem;">
-        <h3 class="card-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Course Assignments & Homework
-        </h3>
+    <!-- TAB 4: STUDENT ASSIGNMENTS & HOMEWORK CARD -->
+    <div id="sectionAssignments" class="tab-content-section">
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Course Assignments & Homework
+            </h3>
 
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
-            <input type="text" id="studentClassNameInput" class="form-input" placeholder="Enter Class Name (e.g. CS101 - Algorithms)" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-            <button class="btn-action" style="width: auto; white-space: nowrap; padding: 0.7rem 1rem; margin-bottom: 0;" onclick="fetchStudentAssignments()">Search</button>
-        </div>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                <input type="text" id="studentClassNameInput" class="form-input" placeholder="Enter Class Name (e.g. CS101 - Algorithms)" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                <button class="btn-action" style="width: auto; white-space: nowrap; padding: 0.7rem 1rem; margin-bottom: 0;" onclick="fetchStudentAssignments()">Search</button>
+            </div>
 
-        <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap;">
-            <button type="button" class="btn-action" id="studentBtnFilterActive" onclick="setStudentAssignmentFilter('active')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: linear-gradient(135deg, #10b981, #06b6d4);">🟢 Active</button>
-            <button type="button" class="btn-action" id="studentBtnFilterExpired" onclick="setStudentAssignmentFilter('expired')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: #fca5a5;">🔴 Expired</button>
-            <button type="button" class="btn-action" id="studentBtnFilterAll" onclick="setStudentAssignmentFilter('all')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--input-border); color: var(--text-secondary);">All</button>
-        </div>
+            <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <button type="button" class="btn-action" id="studentBtnFilterActive" onclick="setStudentAssignmentFilter('active')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: linear-gradient(135deg, #10b981, #06b6d4);">🟢 Active</button>
+                <button type="button" class="btn-action" id="studentBtnFilterExpired" onclick="setStudentAssignmentFilter('expired')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: #fca5a5;">🔴 Expired</button>
+                <button type="button" class="btn-action" id="studentBtnFilterAll" onclick="setStudentAssignmentFilter('all')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--input-border); color: var(--text-secondary);">All</button>
+            </div>
 
-        <div id="studentAssignmentsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading course assignments...</p>
+            <div id="studentAssignmentsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading course assignments...</p>
+            </div>
         </div>
     </div>
 
     <script>
+        function switchStudentTab(tabId) {
+            document.querySelectorAll('.portal-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content-section').forEach(sec => sec.classList.remove('active'));
+
+            if (tabId === 'scan') {
+                document.getElementById('studentTabScan').classList.add('active');
+                document.getElementById('sectionScan').classList.add('active');
+            } else if (tabId === 'stats') {
+                document.getElementById('studentTabStats').classList.add('active');
+                document.getElementById('sectionStats').classList.add('active');
+                fetchStudentAttendanceSummary();
+            } else if (tabId === 'classes') {
+                document.getElementById('studentTabClasses').classList.add('active');
+                document.getElementById('sectionClasses').classList.add('active');
+                loadStudentEnrolledCourses();
+            } else if (tabId === 'assignments') {
+                document.getElementById('studentTabAssignments').classList.add('active');
+                document.getElementById('sectionAssignments').classList.add('active');
+                fetchStudentAssignments();
+            }
+        }
         function parseJwtPayload(token) {
             try {
                 const base64Url = token.split('.')[1];
