@@ -364,6 +364,7 @@ public class AttendanceService {
                 targetStudent.getUsername(),
                 targetStudent.getEmail(),
                 Math.round(overallPercentage * 10.0) / 10.0,
+                totalSessionsAll,
                 breakdown,
                 recentRecords
         );
