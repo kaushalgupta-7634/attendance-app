@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
@@ -30,12 +31,24 @@ public class AttendanceSummaryController {
      * Accessible by logged-in student to get their own attendance summary & records history.
      */
     @GetMapping("/students/me/attendance-summary")
-    public ResponseEntity<StudentAttendanceSummaryDTO> getMyAttendanceSummary(Principal principal) {
+    public ResponseEntity<StudentAttendanceSummaryDTO> getMyAttendanceSummary(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            Principal principal) {
         User user = userRepository.findByUsernameIgnoreCase(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + principal.getName()));
 
-        StudentAttendanceSummaryDTO summary = attendanceService.getStudentAttendanceSummary(user.getId(), principal.getName());
+        StudentAttendanceSummaryDTO summary;
+        if (startDate != null || endDate != null) {
+            summary = attendanceService.getStudentAttendanceSummary(user.getId(), principal.getName(), startDate, endDate);
+        } else {
+            summary = attendanceService.getStudentAttendanceSummary(user.getId(), principal.getName());
+        }
         return ResponseEntity.ok(summary);
+    }
+
+    public ResponseEntity<StudentAttendanceSummaryDTO> getMyAttendanceSummary(Principal principal) {
+        return getMyAttendanceSummary(null, null, principal);
     }
 
     /**
@@ -45,10 +58,21 @@ public class AttendanceSummaryController {
     @GetMapping("/students/{id}/attendance-summary")
     public ResponseEntity<StudentAttendanceSummaryDTO> getStudentAttendanceSummary(
             @PathVariable("id") Long id,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             Principal principal) {
 
-        StudentAttendanceSummaryDTO summary = attendanceService.getStudentAttendanceSummary(id, principal.getName());
+        StudentAttendanceSummaryDTO summary;
+        if (startDate != null || endDate != null) {
+            summary = attendanceService.getStudentAttendanceSummary(id, principal.getName(), startDate, endDate);
+        } else {
+            summary = attendanceService.getStudentAttendanceSummary(id, principal.getName());
+        }
         return ResponseEntity.ok(summary);
+    }
+
+    public ResponseEntity<StudentAttendanceSummaryDTO> getStudentAttendanceSummary(Long id, Principal principal) {
+        return getStudentAttendanceSummary(id, null, null, principal);
     }
 
     /**

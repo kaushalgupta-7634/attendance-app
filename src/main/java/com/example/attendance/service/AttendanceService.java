@@ -224,15 +224,46 @@ public class AttendanceService {
     }
 
     public StudentAttendanceSummaryDTO getStudentAttendanceSummary(Long studentId, String requestingUsername) {
+        return getStudentAttendanceSummary(studentId, requestingUsername, null, null);
+    }
+
+    public StudentAttendanceSummaryDTO getStudentAttendanceSummary(Long studentId, String requestingUsername, String startDateStr, String endDateStr) {
         User targetStudent = userRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found with ID: " + studentId));
 
-        User requester = userRepository.findByUsername(requestingUsername)
+        User requester = userRepository.findByUsernameIgnoreCase(requestingUsername)
+                .or(() -> userRepository.findByUsername(requestingUsername))
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + requestingUsername));
 
         if (requester.getRole() != Role.TEACHER && !targetStudent.getUsername().equalsIgnoreCase(requestingUsername)) {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: You can only view your own attendance summary.");
         }
+
+        java.time.LocalDateTime startDateTime = null;
+        java.time.LocalDateTime endDateTime = null;
+
+        if (startDateStr != null && !startDateStr.isBlank()) {
+            try {
+                String s = startDateStr.trim();
+                if (s.length() == 7) s += "-01";
+                startDateTime = java.time.LocalDate.parse(s).atStartOfDay();
+            } catch (Exception ignored) {}
+        }
+
+        if (endDateStr != null && !endDateStr.isBlank()) {
+            try {
+                String e = endDateStr.trim();
+                if (e.length() == 7) {
+                    java.time.YearMonth ym = java.time.YearMonth.parse(e);
+                    endDateTime = ym.atEndOfMonth().atTime(23, 59, 59);
+                } else {
+                    endDateTime = java.time.LocalDate.parse(e).atTime(23, 59, 59);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        final java.time.LocalDateTime finalStart = startDateTime;
+        final java.time.LocalDateTime finalEnd = endDateTime;
 
         List<String> subjectNames = classSessionRepository.findDistinctSubjects();
         List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
@@ -242,12 +273,32 @@ public class AttendanceService {
         long totalSessionsAll = 0;
 
         for (String subject : subjectNames) {
-            long totalSessions = classSessionRepository.countBySubjectAndCancelledFalse(subject);
-            if (totalSessions == 0) continue;
+            long totalSessions;
+            long presentCount;
 
-            long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
-                    targetStudent, subject, attendedStatuses
-            );
+            if (finalStart == null && finalEnd == null) {
+                totalSessions = classSessionRepository.countBySubjectAndCancelledFalse(subject);
+                if (totalSessions == 0) continue;
+                presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
+                        targetStudent, subject, attendedStatuses
+                );
+            } else {
+                List<ClassSession> subjectSessions = classSessionRepository.findAll().stream()
+                        .filter(s -> !s.isCancelled())
+                        .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
+                        .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart))
+                        .filter(s -> s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd))
+                        .collect(java.util.stream.Collectors.toList());
+
+                totalSessions = subjectSessions.size();
+                if (totalSessions == 0) continue;
+
+                List<Long> sessionIds = subjectSessions.stream().map(ClassSession::getId).collect(java.util.stream.Collectors.toList());
+                presentCount = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent).stream()
+                        .filter(r -> r.getSession() != null && sessionIds.contains(r.getSession().getId()))
+                        .filter(r -> attendedStatuses.contains(r.getStatus()))
+                        .count();
+            }
 
             double percentage = ((double) presentCount / totalSessions) * 100.0;
             breakdown.add(new StudentAttendanceSummaryDTO.SubjectSummaryDTO(
@@ -258,7 +309,11 @@ public class AttendanceService {
             totalSessionsAll += totalSessions;
         }
 
-        List<AttendanceRecord> existingRecords = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent);
+        List<AttendanceRecord> existingRecords = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent).stream()
+                .filter(r -> finalStart == null || (r.getMarkedAt() != null && !r.getMarkedAt().isBefore(finalStart)))
+                .filter(r -> finalEnd == null || (r.getMarkedAt() != null && !r.getMarkedAt().isAfter(finalEnd)))
+                .collect(java.util.stream.Collectors.toList());
+
         java.util.Map<Long, AttendanceRecord> existingMap = existingRecords.stream()
                 .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
                 .collect(java.util.stream.Collectors.toMap(r -> r.getSession().getId(), r -> r, (r1, r2) -> r1));
@@ -271,19 +326,24 @@ public class AttendanceService {
             }
             recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                     r.getId(),
-                    r.getSession() != null ? r.getSession().getClassName() : "General",
+                    r.getSession() != null ? (r.getSession().getSubject() != null ? r.getSession().getSubject() : r.getSession().getClassName()) : "General",
                     r.getMarkedAt() != null ? r.getMarkedAt().toString() : "",
                     r.getStatus() != null ? r.getStatus().name() : "PRESENT"
             ));
         }
 
-        List<ClassSession> allSessions = classSessionRepository.findAll();
+        List<ClassSession> allSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled() && !s.isActive())
+                .filter(s -> finalStart == null || (s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)))
+                .filter(s -> finalEnd == null || (s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd)))
+                .collect(java.util.stream.Collectors.toList());
+
         for (ClassSession s : allSessions) {
-            if (!s.isCancelled() && !s.isActive() && !existingMap.containsKey(s.getId())) {
+            if (!existingMap.containsKey(s.getId())) {
                 String timeStr = s.getEndTime() != null ? s.getEndTime().toString() : (s.getStartTime() != null ? s.getStartTime().toString() : "");
                 recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                         0L,
-                        s.getClassName() != null ? s.getClassName() : "General",
+                        s.getSubject() != null ? s.getSubject() : (s.getClassName() != null ? s.getClassName() : "General"),
                         timeStr,
                         "ABSENT"
                 ));

@@ -301,17 +301,37 @@
     <div class="card" style="margin-top: 1rem;">
         <h3 class="card-title">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-            My Attendance Performance & Records
+            My Attendance Performance & Month Filter
         </h3>
 
-        <!-- OVERALL PERCENTAGE DISPLAY -->
-        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--input-border);">
-            <div>
-                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Overall Attendance Rate</span>
-                <span id="overallPercentageText" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">0.0%</span>
+        <!-- MONTH RANGE FILTER BAR -->
+        <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--input-border);">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">From:</label>
+                <input type="month" id="studentStartMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
+
+                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">To:</label>
+                <input type="month" id="studentEndMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
             </div>
-            <div style="width: 50%; background: rgba(255, 255, 255, 0.1); height: 12px; border-radius: 6px; overflow: hidden;">
-                <div id="overallProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #06b6d4); transition: width 0.5s ease;"></div>
+            <button style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;" onclick="fetchStudentAttendanceSummary()">Filter</button>
+        </div>
+
+        <!-- CIRCULAR PERCENTAGE DONUT RING GRAPH -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--input-border); text-align: center;">
+            <div style="position: relative; width: 170px; height: 170px;">
+                <svg width="170" height="170" viewBox="0 0 170 170">
+                    <circle cx="85" cy="85" r="65" fill="none" stroke="#334155" stroke-width="12" />
+                    <circle id="studentCircleProgressPath" cx="85" cy="85" r="65" fill="none" stroke="#10b981" stroke-width="12" 
+                            stroke-linecap="round" stroke-dasharray="408.4" stroke-dashoffset="408.4" 
+                            style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
+                </svg>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                    <div id="overallPercentageText" style="font-size: 1.8rem; font-weight: 800; color: #ffffff;">0.0%</div>
+                    <div style="font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Overall Rate</div>
+                </div>
+            </div>
+            <div id="studentCircleBadge" style="margin-top: 0.75rem; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
+                Calculating...
             </div>
         </div>
 
@@ -836,37 +856,92 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
+        function drawStudentCircularChart(percentage) {
+            const circle = document.getElementById('studentCircleProgressPath');
+            const text = document.getElementById('overallPercentageText');
+            const badge = document.getElementById('studentCircleBadge');
+
+            if (!circle || !text) return;
+
+            const radius = 65;
+            const circumference = 2 * Math.PI * radius; // ~408.4
+            const validPercent = Math.min(100, Math.max(0, parseFloat(percentage) || 0));
+            const offset = circumference - (validPercent / 100) * circumference;
+
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = offset;
+
+            text.textContent = validPercent.toFixed(1) + '%';
+
+            let strokeColor = '#10b981';
+            let label = 'Good Attendance (>=75%)';
+            let badgeBg = 'rgba(16, 185, 129, 0.2)';
+            let badgeColor = '#6ee7b7';
+
+            if (validPercent < 60) {
+                strokeColor = '#ef4444';
+                label = 'Low Attendance Warning (<60%)';
+                badgeBg = 'rgba(239, 68, 68, 0.2)';
+                badgeColor = '#fca5a5';
+            } else if (validPercent < 75) {
+                strokeColor = '#eab308';
+                label = 'Average Attendance (60%-74%)';
+                badgeBg = 'rgba(234, 179, 8, 0.2)';
+                badgeColor = '#fef08a';
+            }
+
+            circle.style.stroke = strokeColor;
+            if (badge) {
+                badge.textContent = label;
+                badge.style.background = badgeBg;
+                badge.style.color = badgeColor;
+            }
+        }
+
+        function initStudentDateControls() {
+            const startInput = document.getElementById('studentStartMonth');
+            const endInput = document.getElementById('studentEndMonth');
+
+            if (!startInput || !endInput) return;
+
+            const now = new Date();
+            const endYm = now.toISOString().slice(0, 7);
+
+            const pastDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+            const startYm = pastDate.toISOString().slice(0, 7);
+
+            if (!startInput.value) startInput.value = startYm;
+            if (!endInput.value) endInput.value = endYm;
+        }
+
         async function fetchStudentAttendanceSummary() {
+            initStudentDateControls();
+
+            const startMonth = document.getElementById('studentStartMonth') ? document.getElementById('studentStartMonth').value : '';
+            const endMonth = document.getElementById('studentEndMonth') ? document.getElementById('studentEndMonth').value : '';
+
             try {
-                const res = await fetch('/students/me/attendance-summary', {
+                const url = `/students/me/attendance-summary?startDate=${encodeURIComponent(startMonth)}&endDate=${encodeURIComponent(endMonth)}`;
+                const res = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) return;
 
                 const data = await res.json();
                 
-                // Update overall percentage & bar
+                // Update overall percentage SVG circle
                 const percent = data.overallPercentage || 0.0;
-                document.getElementById('overallPercentageText').textContent = percent + '%';
-                const bar = document.getElementById('overallProgressBar');
-                bar.style.width = Math.min(percent, 100) + '%';
-                if (percent < 75) {
-                    bar.style.background = 'linear-gradient(90deg, #ef4444, #f59e0b)';
-                    document.getElementById('overallPercentageText').style.color = '#ef4444';
-                } else {
-                    bar.style.background = 'linear-gradient(90deg, #10b981, #06b6d4)';
-                    document.getElementById('overallPercentageText').style.color = '#86efac';
-                }
+                drawStudentCircularChart(percent);
 
                 // Render Subject Breakdown Grid
                 const subContainer = document.getElementById('subjectBreakdownContainer');
                 if (!data.subjectBreakdown || data.subjectBreakdown.length === 0) {
-                    subContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">No subject sessions recorded yet.</p>';
+                    subContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">No subject sessions recorded yet in selected month range.</p>';
                 } else {
                     subContainer.innerHTML = data.subjectBreakdown.map(sb => `
                         <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 0.75rem; border-radius: 8px;">
                             <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sb.subject)}</span>
-                            <span style="font-size: 1.1rem; font-weight: 700; color: ${sb.percentage >= 75 ? 'var(--accent-green)' : 'var(--accent-red)'};">${sb.percentage}%</span>
+                            <span style="font-size: 1.1rem; font-weight: 700; color: ${sb.percentage >= 75 ? 'var(--accent-green)' : (sb.percentage >= 60 ? '#fde047' : 'var(--accent-red)')};">${sb.percentage}%</span>
                             <span style="font-size: 0.7rem; color: var(--text-secondary); display: block;">(${sb.presentCount}/${sb.totalSessions} sessions)</span>
                         </div>
                     `).join('');
