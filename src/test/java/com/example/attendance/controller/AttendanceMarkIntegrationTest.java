@@ -98,8 +98,8 @@ class AttendanceMarkIntegrationTest {
         activeSession.setSubject("Computer Science");
         activeSession.setStartTime(LocalDateTime.now().minusMinutes(5));
         activeSession.setEndTime(LocalDateTime.now().plusMinutes(55));
-        activeSession.setClassroomLat(12.9716);
-        activeSession.setClassroomLng(77.5946);
+        activeSession.setClassroomLat(28.6139);
+        activeSession.setClassroomLng(77.2090);
         activeSession.setRadiusMeters(50.0);
         activeSession.setActive(true);
         activeSession.setPasscode("123456");
@@ -113,7 +113,7 @@ class AttendanceMarkIntegrationTest {
         String validQrToken = qrCodeService.generateQrToken(activeSession.getId());
 
         MarkAttendanceRequest request = new MarkAttendanceRequest(
-                validQrToken, 12.9716, 77.5946, activeSession.getId()
+                validQrToken, 28.6139, 77.2090, activeSession.getId()
         );
 
         mockMvc.perform(post("/attendance/mark")
@@ -136,7 +136,7 @@ class AttendanceMarkIntegrationTest {
         String expiredToken = activeSession.getId() + ":" + expiredHash;
 
         MarkAttendanceRequest request = new MarkAttendanceRequest(
-                expiredToken, 12.9716, 77.5946, activeSession.getId()
+                expiredToken, 28.6139, 77.2090, activeSession.getId()
         );
 
         mockMvc.perform(post("/attendance/mark")

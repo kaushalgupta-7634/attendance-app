@@ -17,6 +17,7 @@ import java.util.Optional;
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
     Optional<AttendanceRecord> findBySessionAndStudent(ClassSession session, User student);
     Boolean existsBySessionAndStudent(ClassSession session, User student);
+    List<AttendanceRecord> findBySessionAndDeviceId(ClassSession session, String deviceId);
     List<AttendanceRecord> findBySession(ClassSession session);
     List<AttendanceRecord> findByStudent(User student);
     List<AttendanceRecord> findByStudentOrderByMarkedAtDesc(User student);

@@ -28,6 +28,10 @@ public class AttendanceService {
     }
 
     public AttendanceRecord markAttendance(MarkAttendanceRequest request, String studentUsername) {
+        return markAttendance(request, studentUsername, null);
+    }
+
+    public AttendanceRecord markAttendance(MarkAttendanceRequest request, String studentUsername, String clientIp) {
         if (request.getStudentLat() == null || request.getStudentLng() == null) {
             throw new IllegalArgumentException("Student location coordinates are required.");
         }
@@ -147,6 +151,24 @@ public class AttendanceService {
             throw new IllegalStateException("Attendance already marked PRESENT for session '" + session.getClassName() + "'.");
         }
 
+        // Step (e-2): Device Proxy Prevention - Check if attendance for this session was already marked from the same device by another student
+        String deviceId = request.getDeviceId() != null ? request.getDeviceId().trim() : null;
+        if (deviceId != null && !deviceId.isEmpty()) {
+            List<AttendanceRecord> existingDeviceRecords = attendanceRecordRepository.findBySessionAndDeviceId(session, deviceId);
+            for (AttendanceRecord existingRec : existingDeviceRecords) {
+                if (existingRec.getStudent() != null && !existingRec.getStudent().getId().equals(student.getId())) {
+                    String otherStudentName = existingRec.getStudent().getName() != null && !existingRec.getStudent().getName().isBlank() 
+                            ? existingRec.getStudent().getName() 
+                            : existingRec.getStudent().getUsername();
+                    throw new IllegalArgumentException(
+                            "Attendance rejected (Proxy attempt blocked): Attendance for class session '" + session.getClassName() 
+                            + "' has already been marked from this device for student '" + otherStudentName 
+                            + "'. Marking attendance for multiple student accounts on the same device per session is not allowed."
+                    );
+                }
+            }
+        }
+
         // Save record with status PRESENT on success (with soft WiFi SSID mismatch warning if applicable)
         String studentWifi = request.getStudentWifiSsid() != null ? request.getStudentWifiSsid().trim() : null;
         String expectedWifi = session.getExpectedWifiSsid() != null ? session.getExpectedWifiSsid().trim() : null;
@@ -171,6 +193,8 @@ public class AttendanceService {
         record.setStatus(AttendanceStatus.PRESENT);
         record.setStudentWifiSsid(studentWifi);
         record.setWifiMismatchWarning(wifiMismatch);
+        record.setDeviceId(deviceId);
+        record.setIpAddress(clientIp);
 
         return attendanceRecordRepository.save(record);
     }

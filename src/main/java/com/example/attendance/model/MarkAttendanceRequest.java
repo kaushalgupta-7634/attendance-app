@@ -7,6 +7,7 @@ public class MarkAttendanceRequest {
     private Long sessionId;
     private boolean bypassLocation = false;
     private String studentWifiSsid;
+    private String deviceId;
 
     public MarkAttendanceRequest() {
     }
@@ -70,5 +71,13 @@ public class MarkAttendanceRequest {
 
     public void setStudentWifiSsid(String studentWifiSsid) {
         this.studentWifiSsid = studentWifiSsid;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 }

@@ -35,8 +35,24 @@ public class AttendanceController {
 
     @PostMapping("/mark")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<AttendanceRecord> markAttendance(@RequestBody MarkAttendanceRequest request, Principal principal) {
-        AttendanceRecord record = attendanceService.markAttendance(request, principal.getName());
+    public ResponseEntity<AttendanceRecord> markAttendance(@RequestBody MarkAttendanceRequest request, 
+                                                            Principal principal,
+                                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = httpRequest != null ? httpRequest.getHeader("X-Forwarded-For") : null;
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest != null ? httpRequest.getRemoteAddr() : null;
+        } else if (clientIp.contains(",")) {
+            clientIp = clientIp.split(",")[0].trim();
+        }
+
+        if (httpRequest != null && (request.getDeviceId() == null || request.getDeviceId().isBlank())) {
+            String headerDeviceId = httpRequest.getHeader("X-Device-Id");
+            if (headerDeviceId != null && !headerDeviceId.isBlank()) {
+                request.setDeviceId(headerDeviceId.trim());
+            }
+        }
+
+        AttendanceRecord record = attendanceService.markAttendance(request, principal.getName(), clientIp);
         return new ResponseEntity<>(record, HttpStatus.CREATED);
     }
 
