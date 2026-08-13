@@ -829,20 +829,18 @@
             } else if (tabId === 'courses') {
                 document.getElementById('teacherTabCourses').classList.add('active');
                 document.getElementById('teacherSectionCourses').classList.add('active');
-                loadMyCreatedClassCourses();
+                if (typeof loadMyCreatedClassCourses === 'function') loadMyCreatedClassCourses();
             } else if (tabId === 'analytics') {
                 document.getElementById('teacherTabAnalytics').classList.add('active');
                 document.getElementById('teacherSectionAnalytics').classList.add('active');
-                loadTeacherClassSessionsDropdown();
+                if (typeof loadTeacherClassSessionsDropdown === 'function') loadTeacherClassSessionsDropdown();
             } else if (tabId === 'assignments') {
                 document.getElementById('teacherTabAssignments').classList.add('active');
                 document.getElementById('teacherSectionAssignments').classList.add('active');
-                fetchUploadedAssignments();
+                if (typeof fetchUploadedAssignments === 'function') fetchUploadedAssignments();
             }
-        }   </div>
-    </div>
+        }
 
-    <script>
         function parseJwtPayload(token) {
             try {
                 const base64Url = token.split('.')[1];
@@ -968,6 +966,7 @@
             if (countdownTimer) clearInterval(countdownTimer);
             if (attendancePollTimer) clearInterval(attendancePollTimer);
             localStorage.clear();
+            sessionStorage.clear();
             window.location.href = '/login.html';
         }
 
