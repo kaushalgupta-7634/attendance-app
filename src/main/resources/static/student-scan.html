@@ -508,7 +508,7 @@
             } else if (tabId === 'assignments') {
                 document.getElementById('studentTabAssignments').classList.add('active');
                 document.getElementById('sectionAssignments').classList.add('active');
-                fetchStudentAssignments();
+                autoLoadActiveAssignments();
             }
         }
         function parseJwtPayload(token) {

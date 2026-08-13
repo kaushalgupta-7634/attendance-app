@@ -634,6 +634,7 @@
                         </select>
                         <input type="text" id="teacherClassNameSearch" class="form-input" placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 220px;" oninput="loadSelectedClassAnalytics()">
                         <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;" onclick="loadSelectedClassAnalytics()">Search Stats</button>
+                        <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;" onclick="exportSelectedClassSummaryCsv()">📥 Export Summary (CSV)</button>
                         <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts (&lt;75%)</button>
                     </div>
                 </div>
@@ -829,7 +830,7 @@
             } else if (tabId === 'courses') {
                 document.getElementById('teacherTabCourses').classList.add('active');
                 document.getElementById('teacherSectionCourses').classList.add('active');
-                if (typeof loadMyCreatedClassCourses === 'function') loadMyCreatedClassCourses();
+                if (typeof loadTeacherCourses === 'function') loadTeacherCourses();
             } else if (tabId === 'analytics') {
                 document.getElementById('teacherTabAnalytics').classList.add('active');
                 document.getElementById('teacherSectionAnalytics').classList.add('active');
@@ -1339,6 +1340,33 @@
 
             } catch (err) {
                 alert(err.message || 'Error downloading CSV export');
+            }
+        }
+
+        async function exportSelectedClassSummaryCsv() {
+            const selectVal = document.getElementById('teacherClassSelect').value;
+            if (!selectVal) {
+                alert('Please select a class session from the dropdown to export summary CSV.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/classes/${selectVal}/attendance-summary/export`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to export class attendance summary CSV.');
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Class_${selectVal}_Attendance_Summary.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                alert(err.message || 'Error downloading class summary CSV');
             }
         }
 
