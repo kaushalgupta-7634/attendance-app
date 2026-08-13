@@ -199,10 +199,9 @@ public class AuthService {
             String registeredPin = user.getSecurityPin();
             String effectiveMasterPin = getEffectiveMasterAdminPin();
 
-            // Check Admin Master PIN OR user's registered PIN OR fallback 1234 for legacy accounts
+            // Check Admin Master PIN OR user's registered PIN
             boolean isMatch = (registeredPin != null && !registeredPin.isBlank() && registeredPin.equalsIgnoreCase(pin))
-                           || (effectiveMasterPin != null && !effectiveMasterPin.isBlank() && effectiveMasterPin.equalsIgnoreCase(pin))
-                           || ((registeredPin == null || registeredPin.isBlank()) && "1234".equals(pin));
+                           || (effectiveMasterPin != null && !effectiveMasterPin.isBlank() && effectiveMasterPin.equalsIgnoreCase(pin));
 
             if (!isMatch) {
                 throw new IllegalArgumentException("Incorrect 4-digit Security PIN for account '" + userOrEmail + "'. Access Denied.");
@@ -268,6 +267,6 @@ public class AuthService {
         if (envPin != null && !envPin.isBlank()) {
             return envPin.trim();
         }
-        return "9999";
+        return null;
     }
 }
