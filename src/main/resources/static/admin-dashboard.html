@@ -578,7 +578,11 @@
 
         function handleLogout() {
             localStorage.clear();
+            sessionStorage.clear();
             window.location.href = '/login.html';
+        }
+        function logout() {
+            handleLogout();
         }
 
         function switchSection(type) {
