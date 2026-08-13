@@ -867,14 +867,18 @@
 
         async function exportUsersCSV() {
             try {
-                const res = await fetch('/admin/users?role=ALL', {
+                const roleVal = document.getElementById('roleFilter') ? document.getElementById('roleFilter').value : 'ALL';
+                const queryVal = document.getElementById('userSearch') ? document.getElementById('userSearch').value.trim() : '';
+                const url = `/admin/users?role=${encodeURIComponent(roleVal)}&query=${encodeURIComponent(queryVal)}`;
+
+                const res = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed to fetch user roster.');
                 const users = await res.json();
 
                 if (!users || users.length === 0) {
-                    alert('No users available to export.');
+                    alert('No users available to export for the selected filter.');
                     return;
                 }
 
@@ -894,7 +898,8 @@
                     csvContent += row.join(',') + '\n';
                 });
 
-                downloadCSV(csvContent, `User_Roster_${new Date().toISOString().slice(0, 10)}.csv`);
+                const roleLabel = roleVal !== 'ALL' ? `${roleVal}_` : '';
+                downloadCSV(csvContent, `${roleLabel}User_Roster_${new Date().toISOString().slice(0, 10)}.csv`);
 
             } catch (err) {
                 alert('Export failed: ' + err.message);
