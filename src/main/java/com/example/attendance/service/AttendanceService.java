@@ -98,17 +98,20 @@ public class AttendanceService {
         }
 
         // Validate QR Token Hash (15s window) or 6-Digit Passcode (30s window)
+        boolean tokenVerified = false;
         if (tokenHash != null && !tokenHash.isEmpty()) {
-            boolean isValidToken = qrCodeService.validateToken(session.getId(), tokenHash);
-            if (!isValidToken) {
+            tokenVerified = qrCodeService.validateToken(session.getId(), tokenHash);
+            if (!tokenVerified) {
                 throw new IllegalArgumentException("Attendance rejected: QR token expired (15s rotation). Please scan the live QR code on teacher screen.");
             }
         } else if (rawToken != null && rawToken.trim().matches("\\d{6}")) {
             String code = rawToken.trim();
-            boolean isValidPasscode = qrCodeService.validatePasscode(session.getId(), code) || code.equalsIgnoreCase(session.getPasscode());
-            if (!isValidPasscode) {
-                throw new IllegalArgumentException("Attendance rejected: 6-digit token number expired (30s rotation). Please enter the current token number shown on teacher screen.");
+            tokenVerified = qrCodeService.validatePasscode(session.getId(), code);
+            if (!tokenVerified) {
+                throw new IllegalArgumentException("Attendance rejected: 6-digit passcode expired (30s rotation). Please enter the current passcode shown on teacher screen.");
             }
+        } else {
+            throw new IllegalArgumentException("Attendance rejected: Valid live QR code scan or current 6-digit passcode is required.");
         }
 
         // Step (b): Verify current time is within session's startTime/endTime
@@ -119,11 +122,11 @@ public class AttendanceService {
         }
 
         // Step (c): Calculate distance via haversine formula and verify radius
-        // If bypassLocation is true, or radiusMeters <= 0 or radiusMeters >= 99999, or teacher location is dummy default (12.9716, 77.5946 / 0,0), distance check is bypassed
+        // Server-side anti-proxy enforcement: ignores client-supplied bypass flags
         boolean isDefaultTeacherLocation = (Math.abs(session.getClassroomLat() - 12.9716) < 0.01 && Math.abs(session.getClassroomLng() - 77.5946) < 0.01)
                 || session.getClassroomLat() == 0.0 || session.getClassroomLng() == 0.0;
 
-        if (!request.isBypassLocation() && !isDefaultTeacherLocation && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
+        if (!isDefaultTeacherLocation && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
             double distanceMeters = calculateHaversineMeters(
                     request.getStudentLat(), request.getStudentLng(),
                     session.getClassroomLat(), session.getClassroomLng()
@@ -151,32 +154,38 @@ public class AttendanceService {
             throw new IllegalStateException("Attendance already marked PRESENT for session '" + session.getClassName() + "'.");
         }
 
-        // Step (e-2): Device Proxy Prevention - Check if attendance for this session was already marked from the same device by another student
+        // Step (e-2): Device & Fingerprint Proxy Prevention - Check if attendance for this session was already marked from the same device by another student
         String deviceId = request.getDeviceId() != null ? request.getDeviceId().trim() : null;
-        if (deviceId != null && !deviceId.isEmpty()) {
-            String baseDeviceId = deviceId.contains("_fp_") ? deviceId.split("_fp_")[0] : deviceId;
+        if (deviceId == null || deviceId.isBlank()) {
+            if (clientIp != null && !clientIp.isBlank()) {
+                deviceId = "ip_" + clientIp;
+            } else {
+                throw new IllegalArgumentException("Attendance rejected: Valid device identification signature is required.");
+            }
+        }
 
-            List<AttendanceRecord> sessionRecords = attendanceRecordRepository.findBySession(session);
-            for (AttendanceRecord existingRec : sessionRecords) {
-                if (existingRec.getStudent() != null && !existingRec.getStudent().getId().equals(student.getId())) {
-                    String recDevId = existingRec.getDeviceId();
-                    if (recDevId != null && !recDevId.isBlank()) {
-                        String recBaseDevId = recDevId.contains("_fp_") ? recDevId.split("_fp_")[0] : recDevId;
-                        boolean isMatch = recDevId.equalsIgnoreCase(deviceId)
-                                || recBaseDevId.equalsIgnoreCase(baseDeviceId)
-                                || deviceId.startsWith(recBaseDevId)
-                                || recDevId.startsWith(baseDeviceId);
+        String baseDeviceId = deviceId.contains("_fp_") ? deviceId.split("_fp_")[0] : deviceId;
 
-                        if (isMatch) {
-                            String otherStudentName = existingRec.getStudent().getName() != null && !existingRec.getStudent().getName().isBlank() 
-                                    ? existingRec.getStudent().getName() 
-                                    : existingRec.getStudent().getUsername();
-                            throw new IllegalArgumentException(
-                                    "Attendance rejected (Proxy attempt blocked): Attendance for class session '" + session.getClassName() 
-                                    + "' has already been marked from this device for student '" + otherStudentName 
-                                    + "'. Marking attendance for multiple student accounts on the same device per session is not allowed."
-                            );
-                        }
+        List<AttendanceRecord> sessionRecords = attendanceRecordRepository.findBySession(session);
+        for (AttendanceRecord existingRec : sessionRecords) {
+            if (existingRec.getStudent() != null && !existingRec.getStudent().getId().equals(student.getId())) {
+                String recDevId = existingRec.getDeviceId();
+                if (recDevId != null && !recDevId.isBlank()) {
+                    String recBaseDevId = recDevId.contains("_fp_") ? recDevId.split("_fp_")[0] : recDevId;
+                    boolean isMatch = recDevId.equalsIgnoreCase(deviceId)
+                            || recBaseDevId.equalsIgnoreCase(baseDeviceId)
+                            || deviceId.startsWith(recBaseDevId)
+                            || recDevId.startsWith(baseDeviceId);
+
+                    if (isMatch) {
+                        String otherStudentName = existingRec.getStudent().getName() != null && !existingRec.getStudent().getName().isBlank() 
+                                ? existingRec.getStudent().getName() 
+                                : existingRec.getStudent().getUsername();
+                        throw new IllegalArgumentException(
+                                "Attendance rejected (Proxy attempt blocked): Attendance for class session '" + session.getClassName() 
+                                + "' has already been marked from this device for student '" + otherStudentName 
+                                + "'. Marking attendance for multiple student accounts on the same device per session is not allowed."
+                        );
                     }
                 }
             }
