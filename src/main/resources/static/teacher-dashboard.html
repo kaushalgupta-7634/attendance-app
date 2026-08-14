@@ -754,6 +754,9 @@
                             style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;"
                             onclick="exportSelectedClassSummaryCsv()">📥 Export Summary (CSV)</button>
                         <button class="btn-secondary"
+                            style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;"
+                            onclick="exportSelectedClassSummaryPdf()">📄 Export PDF</button>
+                        <button class="btn-secondary"
                             style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;"
                             onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts (&lt;75%)</button>
                     </div>
@@ -2497,7 +2500,7 @@
             }
         }
 
-        function updateSubjectDropdownOptions(className) {
+        async function updateSubjectDropdownOptions(className) {
             const subSelect = document.getElementById('teacherSubjectSelect');
             if (!subSelect) return;
 
@@ -2516,11 +2519,118 @@
                     subjectsSet.forEach(sub => {
                         subOptionsHtml += `<option value="${escapeHtml(sub)}">📖 ${escapeHtml(sub)}</option>`;
                     });
+                } else {
+                    // Fallback database query binding if search filter does not match local cache
+                    try {
+                        const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(className)}/attendance-summary`, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (sumRes.ok) {
+                            const summary = await sumRes.json();
+                            if (summary.subjectAverages && summary.subjectAverages.length > 0) {
+                                if (!classSubjectsMap.has(className)) {
+                                    classSubjectsMap.set(className, new Set());
+                                }
+                                summary.subjectAverages.forEach(sa => {
+                                    if (sa.subject) {
+                                        classSubjectsMap.get(className).add(sa.subject);
+                                        subOptionsHtml += `<option value="${escapeHtml(sa.subject)}">📖 ${escapeHtml(sa.subject)}</option>`;
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {}
                 }
             }
 
             subSelect.innerHTML = subOptionsHtml;
             subSelect.value = currentSubjectFilter || 'all';
+        }
+
+        function exportSelectedClassSummaryPdf() {
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            const targetClass = searchVal || classSelectVal || 'All Classes';
+            const subVal = currentSubjectFilter || 'all';
+            const subjectDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
+
+            const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
+            const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
+
+            const rosterTbody = document.getElementById('classRosterTableBody');
+            const dailyLogTbody = document.getElementById('classDailyLogTableBody');
+
+            const printWin = window.open('', '_blank', 'width=950,height=750');
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Attendance Report - Class: ${escapeHtml(targetClass)} | Subject: ${escapeHtml(subjectDisplay)}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; color: #1e293b; }
+                        h2 { margin-bottom: 5px; color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+                        .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+                        .meta-box strong { color: #0f172a; }
+                        h3 { font-size: 15px; color: #334155; margin-top: 20px; margin-bottom: 8px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 12px; text-align: left; }
+                        th { background-color: #f1f5f9; font-weight: 700; color: #334155; }
+                        tr:nth-child(even) { background-color: #f8fafc; }
+                        .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: right; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Faculty Attendance Summary Report</h2>
+                    <div class="meta-box">
+                        <strong>Class Name:</strong> ${escapeHtml(targetClass)} &nbsp;|&nbsp; 
+                        <strong>Subject Filter:</strong> ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
+                        <strong>Overall Class Average:</strong> ${escapeHtml(overallAvgText)} &nbsp;|&nbsp; 
+                        <strong>Total Students:</strong> ${escapeHtml(totalStudentsText)}<br>
+                        <strong>Export Format:</strong> Class: ${escapeHtml(targetClass)} | Subject: ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
+                        <strong>Export Date:</strong> ${new Date().toLocaleString()}
+                    </div>
+
+                    <h3>Enrolled Student Roster & Individual Performance</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Attendance %</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rosterTbody ? rosterTbody.innerHTML : ''}
+                        </tbody>
+                    </table>
+
+                    <h3>Everyday Student Attendance Log</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Student Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dailyLogTbody ? dailyLogTbody.innerHTML : ''}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">Smart Attendance Management System • Official Faculty PDF Report</div>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => {
+                printWin.print();
+            }, 300);
         }
 
         function onAnalyticsClassChange() {
