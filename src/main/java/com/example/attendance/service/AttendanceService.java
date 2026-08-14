@@ -448,22 +448,57 @@ public class AttendanceService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class attendance summary.");
         }
 
+        boolean isAll = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+
         List<User> distinctStudents;
-        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
+        if (!isAll) {
             distinctStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
         }
 
-        List<String> subjects = classSessionRepository.findDistinctSubjects();
-        List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
+        if (!isAll && (distinctStudents == null || distinctStudents.isEmpty())) {
+            return new ClassAttendanceSummaryDTO(
+                    0L,
+                    className,
+                    0,
+                    0.0,
+                    java.util.Collections.emptyList()
+            );
+        }
 
+        List<ClassSession> classSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> isAll || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(className)))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!isAll && classSessions.isEmpty()) {
+            return new ClassAttendanceSummaryDTO(
+                    0L,
+                    className,
+                    distinctStudents.size(),
+                    0.0,
+                    java.util.Collections.emptyList()
+            );
+        }
+
+        List<String> subjects = classSessions.stream()
+                .map(ClassSession::getSubject)
+                .filter(java.util.Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .map(String::trim)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
         List<ClassAttendanceSummaryDTO.ClassSubjectAverageDTO> subjectAverages = new java.util.ArrayList<>();
         double totalAverageSum = 0.0;
         int activeSubjectCount = 0;
 
         for (String subject : subjects) {
-            long totalSessionsHeld = classSessionRepository.countBySubjectAndCancelledFalse(subject);
+            long totalSessionsHeld = classSessions.stream()
+                    .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
+                    .count();
             if (totalSessionsHeld == 0) continue;
 
             double subjectTotalPercent = 0.0;
