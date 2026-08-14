@@ -489,14 +489,14 @@
                     <div class="form-group">
                         <label class="form-label" for="className">Course / Class Name</label>
                         <input type="text" id="className" class="form-input" placeholder="e.g. CS101 - Computer Science"
-                            required oninput="fetchDefaultLiveFeed()">
+                            required>
                         <input type="hidden" id="selectedClassCourseId" value="">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="sessionSubject">Subject Name</label>
                         <input type="text" id="sessionSubject" class="form-input"
-                            placeholder="e.g. Data Structures / Mathematics" required oninput="fetchDefaultLiveFeed()">
+                            placeholder="e.g. Data Structures / Mathematics" required>
                     </div>
 
                     <div class="form-grid">
@@ -1503,59 +1503,16 @@
 
                         const panel = document.getElementById('activeSessionPanel');
                         if (panel) panel.style.display = 'none';
+
+                        const tbody = document.getElementById('attendanceTableBody');
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No active session selected. Launch a session to track attendance live.</td></tr>`;
+
+                        const badge = document.getElementById('attendanceCountBadge');
+                        if (badge) badge.textContent = '0 Students';
                     }
-                    fetchDefaultLiveFeed();
                 }
             } catch (err) {
                 console.error("Error auto-detecting active session:", err);
-            }
-        }
-
-        async function fetchDefaultLiveFeed() {
-            if (activeSessionId) return;
-
-            const classNameInput = document.getElementById('className')?.value.trim();
-            const searchName = classNameInput || 'all';
-
-            try {
-                // Fetch registered student roster for the class/system
-                let studentsList = [];
-                const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(searchName)}/roster`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (rosterRes.ok) {
-                    const roster = await rosterRes.json();
-                    if (roster.students && roster.students.length > 0) {
-                        studentsList = roster.students;
-                    }
-                }
-
-                // If class roster is empty, fetch all registered students in system
-                if (studentsList.length === 0) {
-                    const allRosterRes = await fetch('/classes/by-name/all/roster', {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (allRosterRes.ok) {
-                        const allRoster = await allRosterRes.json();
-                        if (allRoster.students) studentsList = allRoster.students;
-                    }
-                }
-
-                // Build clean student rows for the upcoming session (ABSENT / N/A until active session starts)
-                const cleanStudentRows = studentsList.map(s => ({
-                    id: null,
-                    studentId: s.id,
-                    studentName: s.name || s.username,
-                    studentUsername: s.username,
-                    studentEmail: s.email,
-                    markedAt: null,
-                    status: 'ABSENT'
-                }));
-
-                renderAttendanceTable(cleanStudentRows);
-            } catch (err) {
-                console.error("Error fetching default live feed:", err);
             }
         }
 
