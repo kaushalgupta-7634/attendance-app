@@ -1121,13 +1121,19 @@
                         if (pct < 60) barColor = 'linear-gradient(90deg, #ef4444, #f87171)';
                         else if (pct < 75) barColor = 'linear-gradient(90deg, #eab308, #fde047)';
 
+                        const absentCount = Math.max(0, (sb.sessionsHeld * (data.totalStudents || 1)) - sb.presentCount);
+
                         return `
-                            <div onclick="filterAdminLogsBySubject('${escapeHtml(sb.subject)}')" style="cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(51, 65, 85, 0.5)'" onmouseout="this.style.background='transparent'">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #f8fafc; margin-bottom: 0.35rem;">
-                                    <span><strong>📖 ${escapeHtml(sb.subject)}</strong> (${sb.sessionsHeld} sessions) • <span style="color: var(--accent-cyan); font-weight: 600;">Filter Logs ➔</span></span>
-                                    <span><strong>${pct.toFixed(1)}%</strong> (${sb.presentCount} present)</span>
+                            <div onclick="showSubjectAnalyticsDetail('${escapeHtml(sb.subject)}', 'ALL')" style="cursor: pointer; padding: 0.65rem 0.85rem; border-radius: 10px; background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); margin-bottom: 0.5rem; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateX(3px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: #f8fafc; margin-bottom: 0.4rem;">
+                                    <span><strong>📖 ${escapeHtml(sb.subject)}</strong> (${sb.sessionsHeld} sessions) • <span style="color: var(--accent-cyan); font-weight: 600;">Click for Subject Details ➔</span></span>
+                                    <span style="font-size: 0.82rem;">
+                                        <strong style="color: #6ee7b7; cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); showSubjectAnalyticsDetail('${escapeHtml(sb.subject)}', 'PRESENT');">Present: ${sb.presentCount}</strong> | 
+                                        <strong style="color: #fca5a5; cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); showSubjectAnalyticsDetail('${escapeHtml(sb.subject)}', 'ABSENT');">Absent: ${absentCount}</strong> | 
+                                        <strong>${pct.toFixed(1)}%</strong>
+                                    </span>
                                 </div>
-                                <div style="width: 100%; background: #1e293b; height: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--card-border);">
+                                <div style="width: 100%; background: #0f172a; height: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--card-border);">
                                     <div style="width: ${pct}%; height: 100%; background: ${barColor}; border-radius: 6px; transition: width 0.8s ease;"></div>
                                 </div>
                             </div>
@@ -1147,7 +1153,9 @@
                     });
                 }
 
-                if (activeAnalyticsMetric) {
+                if (activeSubjectName) {
+                    showSubjectAnalyticsDetail(activeSubjectName, activeSubjectStatusFilter);
+                } else if (activeAnalyticsMetric) {
                     showAnalyticsDetail(activeAnalyticsMetric);
                 }
 
@@ -1157,7 +1165,92 @@
         }
 
         let activeAnalyticsMetric = null;
+        let activeSubjectName = null;
+        let activeSubjectStatusFilter = 'ALL';
         let activeAnalyticsDetailData = [];
+
+        async function showSubjectAnalyticsDetail(subjectName, statusFilter) {
+            activeSubjectName = subjectName;
+            activeSubjectStatusFilter = statusFilter || 'ALL';
+            activeAnalyticsMetric = null;
+
+            const panel = document.getElementById('analyticsDetailPanel');
+            const title = document.getElementById('analyticsDetailTitle');
+            const subtitle = document.getElementById('analyticsDetailSubtitle');
+            const thead = document.getElementById('analyticsDetailTableHeader');
+            const tbody = document.getElementById('analyticsDetailTableBody');
+
+            if (!panel) return;
+            panel.style.display = 'block';
+
+            const startMonth = document.getElementById('analyticsStartMonth')?.value || '';
+            const endMonth = document.getElementById('analyticsEndMonth')?.value || '';
+            const classFilter = document.getElementById('analyticsClassFilter')?.value || 'ALL';
+
+            title.textContent = `📖 Subject Report: ${subjectName}`;
+            subtitle.innerHTML = `
+                <span>Range: ${startMonth || 'All Time'} to ${endMonth || 'Now'} | Class: ${classFilter}</span> | Filter Status: 
+                <span onclick="showSubjectAnalyticsDetail('${escapeJs(subjectName)}', 'ALL')" style="cursor: pointer; padding: 2px 8px; border-radius: 4px; background: ${activeSubjectStatusFilter === 'ALL' ? '#3b82f6' : '#1e293b'}; color: white; margin-left: 4px;">🌐 All</span>
+                <span onclick="showSubjectAnalyticsDetail('${escapeJs(subjectName)}', 'PRESENT')" style="cursor: pointer; padding: 2px 8px; border-radius: 4px; background: ${activeSubjectStatusFilter === 'PRESENT' ? '#10b981' : '#1e293b'}; color: #6ee7b7; margin-left: 4px;">✅ Present</span>
+                <span onclick="showSubjectAnalyticsDetail('${escapeJs(subjectName)}', 'ABSENT')" style="cursor: pointer; padding: 2px 8px; border-radius: 4px; background: ${activeSubjectStatusFilter === 'ABSENT' ? '#ef4444' : '#1e293b'}; color: #fca5a5; margin-left: 4px;">❌ Absent</span>
+            `;
+
+            thead.innerHTML = `
+                <tr>
+                    <th>Record ID</th>
+                    <th>Student Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Date & Time</th>
+                </tr>
+            `;
+
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading records for subject '${escapeHtml(subjectName)}'...</td></tr>`;
+
+            try {
+                const res = await fetch('/admin/attendance-records', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to fetch attendance records.');
+                const records = await res.json();
+
+                activeAnalyticsDetailData = records.filter(r => {
+                    const matchesSubject = r.subject && r.subject.toLowerCase() === subjectName.toLowerCase();
+                    const matchesClass = (!classFilter || classFilter === 'ALL') ? true : (r.className && r.className.toLowerCase() === classFilter.toLowerCase());
+                    let matchesStatus = true;
+                    if (activeSubjectStatusFilter === 'PRESENT') {
+                        matchesStatus = (r.status === 'PRESENT' || r.status === 'LATE');
+                    } else if (activeSubjectStatusFilter === 'ABSENT') {
+                        matchesStatus = (r.status === 'ABSENT');
+                    }
+                    return matchesSubject && matchesClass && matchesStatus;
+                });
+
+                if (activeAnalyticsDetailData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No ${activeSubjectStatusFilter !== 'ALL' ? activeSubjectStatusFilter.toLowerCase() : ''} records found for subject '${escapeHtml(subjectName)}'.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = activeAnalyticsDetailData.map(r => `
+                    <tr>
+                        <td>#${r.id}</td>
+                        <td><strong>${escapeHtml(r.studentName)}</strong></td>
+                        <td>${escapeHtml(r.studentUsername || r.username || '-')}</td>
+                        <td>${escapeHtml(r.email || '-')}</td>
+                        <td>${escapeHtml(r.className && r.className !== '-' ? r.className : 'General')}</td>
+                        <td><strong>${escapeHtml(r.subject)}</strong></td>
+                        <td><span class="badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'badge-active' : 'badge-teacher'}">${escapeHtml(r.status)}</span></td>
+                        <td>${escapeHtml(r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : '-')}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
 
         async function showAnalyticsDetail(metricType) {
             activeAnalyticsMetric = metricType || 'PRESENT';
@@ -1333,6 +1426,7 @@
 
         function closeAnalyticsDetail() {
             activeAnalyticsMetric = null;
+            activeSubjectName = null;
             const panel = document.getElementById('analyticsDetailPanel');
             if (panel) panel.style.display = 'none';
         }
