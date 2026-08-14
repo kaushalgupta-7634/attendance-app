@@ -80,7 +80,7 @@ public class AttendanceSummaryController {
      * Accessible by teachers for that class.
      */
     @GetMapping("/classes/{classId}/attendance-summary")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassAttendanceSummaryDTO> getClassAttendanceSummary(
             @PathVariable("classId") Long classId,
             Principal principal) {
@@ -94,7 +94,7 @@ public class AttendanceSummaryController {
      * Accessible by teachers for any class name.
      */
     @GetMapping("/classes/by-name/{className}/attendance-summary")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassAttendanceSummaryDTO> getClassAttendanceSummaryByName(
             @PathVariable("className") String className,
             Principal principal) {
@@ -104,7 +104,7 @@ public class AttendanceSummaryController {
     }
 
     @GetMapping("/classes/{classId}/attendance-summary/export")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<byte[]> exportClassAttendanceSummary(
             @PathVariable("classId") Long classId,
             Principal principal) {
