@@ -62,7 +62,12 @@ public class ClassRosterController {
             @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
             Principal principal) {
 
-        List<AttendanceRecordDTO> records = classSessionService.getClassDailyAttendanceRecords(className, subject, principal.getName());
+        List<AttendanceRecordDTO> records;
+        if (subject != null && !subject.isBlank()) {
+            records = classSessionService.getClassDailyAttendanceRecords(className, subject, principal.getName());
+        } else {
+            records = classSessionService.getClassDailyAttendanceRecords(className, principal.getName());
+        }
         return ResponseEntity.ok(records);
     }
 

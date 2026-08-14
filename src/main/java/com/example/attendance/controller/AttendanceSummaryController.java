@@ -100,7 +100,12 @@ public class AttendanceSummaryController {
             @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
             Principal principal) {
 
-        ClassAttendanceSummaryDTO summary = attendanceService.getClassAttendanceSummaryByName(className, subject, principal.getName());
+        ClassAttendanceSummaryDTO summary;
+        if (subject != null && !subject.isBlank()) {
+            summary = attendanceService.getClassAttendanceSummaryByName(className, subject, principal.getName());
+        } else {
+            summary = attendanceService.getClassAttendanceSummaryByName(className, principal.getName());
+        }
         return ResponseEntity.ok(summary);
     }
 
