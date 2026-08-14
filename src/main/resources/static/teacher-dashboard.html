@@ -9,6 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js Library for Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF & AutoTable for Professional PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --bg-gradient: #0f172a;
@@ -408,7 +413,12 @@
                 <span class="role-badge">TEACHER</span>
             </div>
         </div>
-        <button class="btn-secondary" onclick="logout()">Logout</button>
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <button class="btn-excel" style="background: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fcd34d; padding: 0.45rem 0.85rem; font-size: 0.825rem;" onclick="sendLowAttendanceAlerts()">
+                📧 Alert Low Attendance (&lt;75%)
+            </button>
+            <button class="btn-secondary" onclick="logout()">Logout</button>
+        </div>
     </div>
 
 
@@ -611,9 +621,30 @@
                             </svg>
                             Export Excel / CSV
                         </button>
+                        <button id="exportPdfBtn" class="btn-excel" style="display: none; background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #fca5a5;"
+                            onclick="exportAttendancePdf()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <path d="M12 18v-6m-3 3l3 3 3-3" />
+                            </svg>
+                            Export PDF Report
+                        </button>
                         <span id="attendanceCountBadge" class="timer-badge"
                             style="background: rgba(6, 182, 212, 0.15); border-color: var(--accent-cyan); color: #7dd3fc;">0
                             Students</span>
+                    </div>
+                </div>
+
+                <!-- LIVE ATTENDANCE DISTRIBUTION CHART -->
+                <div id="chartContainer" style="display: none; margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); padding: 1rem; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Live Participation Distribution</span>
+                        <span id="chartRatioBadge" style="font-size: 0.75rem; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.25rem 0.55rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">0% Present</span>
+                    </div>
+                    <div style="height: 150px; position: relative;">
+                        <canvas id="liveAttendanceChart"></canvas>
                     </div>
                 </div>
 
@@ -1722,9 +1753,12 @@
             if (!tbody) return;
 
             if (records.length === 0) {
+                updateLiveChart(records);
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Waiting for students to scan QR code...</td></tr>`;
                 return;
             }
+
+            updateLiveChart(records);
 
             tbody.innerHTML = records.map(r => {
                 const name = escapeHtml(r.studentName || r.studentUsername || 'Student');
@@ -1756,6 +1790,145 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        let liveChartInstance = null;
+
+        function updateLiveChart(records) {
+            const chartBox = document.getElementById('chartContainer');
+            const ratioBadge = document.getElementById('chartRatioBadge');
+            const pdfBtn = document.getElementById('exportPdfBtn');
+
+            if (!records || records.length === 0) {
+                if (chartBox) chartBox.style.display = 'none';
+                if (pdfBtn) pdfBtn.style.display = 'none';
+                return;
+            }
+
+            if (chartBox) chartBox.style.display = 'block';
+            if (pdfBtn) pdfBtn.style.display = 'inline-flex';
+
+            const presentCount = records.filter(r => r.status === 'PRESENT').length;
+            const absentCount = records.length - presentCount;
+            const percentage = records.length > 0 ? Math.round((presentCount / records.length) * 100) : 0;
+
+            if (ratioBadge) {
+                ratioBadge.textContent = `${percentage}% Present (${presentCount}/${records.length})`;
+            }
+
+            const canvas = document.getElementById('liveAttendanceChart');
+            if (!canvas) return;
+
+            if (liveChartInstance) {
+                liveChartInstance.data.datasets[0].data = [presentCount, absentCount];
+                liveChartInstance.update();
+            } else {
+                const ctx = canvas.getContext('2d');
+                liveChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Present', 'Absent'],
+                        datasets: [{
+                            data: [presentCount, absentCount],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderColor: '#1e293b',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#cbd5e1', font: { family: 'Inter', size: 12 } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function exportAttendancePdf() {
+            if (!activeSessionId) {
+                alert('No active class session selected.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/sessions/${activeSessionId}/attendance-full`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to fetch attendance data for PDF export.');
+
+                const records = await res.json();
+                if (!records || records.length === 0) {
+                    alert('No attendance records available for PDF export.');
+                    return;
+                }
+
+                if (!window.jspdf) {
+                    alert('PDF Library is still loading. Please try again in a moment.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(18);
+                doc.setTextColor(37, 99, 235);
+                doc.text("ATTENDX - Official Class Attendance Report", 14, 20);
+
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
+                doc.text(`Session ID: #${activeSessionId}`, 14, 34);
+
+                const tableData = records.map((r, index) => [
+                    index + 1,
+                    r.studentName || r.studentUsername || 'Student',
+                    r.studentEmail || 'N/A',
+                    formatMarkedAtTime(r.markedAt),
+                    r.status || 'ABSENT',
+                    r.wifiMismatchWarning ? '⚠️ WiFi Mismatch' : 'OK'
+                ]);
+
+                if (doc.autoTable) {
+                    doc.autoTable({
+                        startY: 42,
+                        head: [['#', 'Student Name', 'Email', 'Marked Time', 'Status', 'Verification']],
+                        body: tableData,
+                        headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+                        alternateRowStyles: { fillColor: [248, 250, 252] },
+                        margin: { top: 40 }
+                    });
+                }
+
+                doc.save(`Attendance_Report_Session_${activeSessionId}.pdf`);
+            } catch (err) {
+                alert(err.message || 'Error exporting PDF report');
+            }
+        }
+
+        async function sendLowAttendanceAlerts() {
+            if (!confirm("Are you sure you want to send automated Low Attendance (<75%) warning emails to all eligible students?")) return;
+
+            try {
+                const res = await fetch('/attendance/send-alerts', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to trigger low attendance alert emails');
+                }
+
+                const msg = await res.text();
+                alert(`✅ Low Attendance Alerts Triggered!\n\n${msg || 'Warning emails have been dispatched to students under 75% threshold.'}`);
+            } catch (err) {
+                alert(err.message || 'Error triggering attendance alert emails.');
+            }
         }
 
         function openOverrideModal(studentId, studentName, currentStatus) {
