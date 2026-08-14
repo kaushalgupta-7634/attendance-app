@@ -526,9 +526,6 @@ public class ClassSessionService {
         List<User> students;
         if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
             students = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
-            if (students == null || students.isEmpty()) {
-                students = userRepository.findByRole(Role.STUDENT);
-            }
         } else {
             students = userRepository.findByRole(Role.STUDENT);
         }

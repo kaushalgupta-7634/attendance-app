@@ -451,9 +451,6 @@ public class AttendanceService {
         List<User> distinctStudents;
         if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
             distinctStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
-            if (distinctStudents.isEmpty()) {
-                distinctStudents = userRepository.findByRole(Role.STUDENT);
-            }
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
         }
