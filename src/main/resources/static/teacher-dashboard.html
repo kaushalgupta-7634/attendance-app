@@ -2027,15 +2027,18 @@
         }
 
         async function loadTeacherAssignments(className) {
-            const targetClass = (className && className.trim()) ? className.trim() : "all";
+            const targetClass = (className && typeof className === 'string' && className.trim()) ? className.trim() : "all";
+            const tbody = document.getElementById('teacherAssignmentsTableBody');
+            if (!tbody) return;
             try {
                 const res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    console.error("Failed to load assignments: HTTP " + res.status);
+                    return;
+                }
                 const assignments = await res.json();
-                const tbody = document.getElementById('teacherAssignmentsTableBody');
-                if (!tbody) return;
 
                 if (!assignments || assignments.length === 0) {
                     const filterText = currentAssignFilter !== 'all' ? ` (${currentAssignFilter})` : '';
