@@ -1522,11 +1522,16 @@
         async function fetchDefaultLiveFeed() {
             if (activeSessionId) return;
 
-            const className = document.getElementById('className')?.value.trim() || 'BCA';
-            const subject = document.getElementById('sessionSubject')?.value.trim() || '';
+            const classNameInput = document.getElementById('className')?.value.trim();
+            const subjectInput = document.getElementById('sessionSubject')?.value.trim();
+            const searchName = classNameInput || 'all';
 
             try {
-                const url = subject ? `/classes/by-name/${encodeURIComponent(className)}/daily-records?subject=${encodeURIComponent(subject)}` : `/classes/by-name/${encodeURIComponent(className)}/daily-records`;
+                let url = `/classes/by-name/${encodeURIComponent(searchName)}/daily-records`;
+                if (subjectInput) {
+                    url += `?subject=${encodeURIComponent(subjectInput)}`;
+                }
+
                 const res = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1539,7 +1544,7 @@
                     }
                 }
 
-                const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(className)}/roster`, {
+                const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(searchName)}/roster`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
@@ -1557,6 +1562,27 @@
                         }));
                         renderAttendanceTable(fallbackRecords);
                         return;
+                    }
+                }
+
+                // Global Fallback: Fetch ALL registered students
+                const allRosterRes = await fetch('/classes/by-name/all/roster', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (allRosterRes.ok) {
+                    const allRoster = await allRosterRes.json();
+                    if (allRoster.students && allRoster.students.length > 0) {
+                        const fallbackRecords = allRoster.students.map(s => ({
+                            id: null,
+                            studentId: s.id,
+                            studentName: s.name,
+                            studentUsername: s.username,
+                            studentEmail: s.email,
+                            markedAt: null,
+                            status: 'ABSENT'
+                        }));
+                        renderAttendanceTable(fallbackRecords);
                     }
                 }
             } catch (err) {

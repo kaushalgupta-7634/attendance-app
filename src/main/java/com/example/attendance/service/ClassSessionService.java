@@ -558,6 +558,10 @@ public class ClassSessionService {
                     }
                 }
             }
+
+            if (students.isEmpty()) {
+                students = userRepository.findByRole(Role.STUDENT);
+            }
         } else {
             students = userRepository.findByRole(Role.STUDENT);
         }
