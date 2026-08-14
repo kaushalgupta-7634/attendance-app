@@ -51,18 +51,7 @@ public class ClassSessionService {
             throw new org.springframework.security.access.AccessDeniedException("Only teachers can start a class session.");
         }
 
-        // Auto-end any previous active session if in progress before launching a new one
-        List<ClassSession> existingActive = classSessionRepository.findByActiveTrue();
-        for (ClassSession active : existingActive) {
-            if (active.getTeacher() == null || active.getTeacher().getId().equals(teacher.getId())) {
-                try {
-                    endSession(active.getId(), teacherUsername);
-                } catch (Exception e) {
-                    active.setActive(false);
-                    classSessionRepository.save(active);
-                }
-            }
-        }
+
 
         ClassSession session = new ClassSession();
         session.setTeacher(teacher);
