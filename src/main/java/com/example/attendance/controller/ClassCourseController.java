@@ -56,6 +56,16 @@ public class ClassCourseController {
     }
 
     /**
+     * GET /classes/available-classes
+     * Returns all available classes from the database with their associated subjects.
+     */
+    @GetMapping("/available-classes")
+    public ResponseEntity<List<com.example.attendance.model.ClassWithSubjectsDTO>> getAvailableClasses() {
+        List<com.example.attendance.model.ClassWithSubjectsDTO> list = classCourseService.getAllAvailableClassesWithSubjects();
+        return ResponseEntity.ok(list);
+    }
+
+    /**
      * DELETE /classes/{id} (TEACHER only)
      * Deletes a ClassCourse by ID.
      */

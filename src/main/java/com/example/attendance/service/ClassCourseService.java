@@ -147,4 +147,57 @@ public class ClassCourseService {
 
         return code;
     }
+
+    public List<ClassWithSubjectsDTO> getAllAvailableClassesWithSubjects() {
+        java.util.Map<String, java.util.Set<String>> map = new java.util.LinkedHashMap<>();
+
+        // 1. Collect from ClassCourse entities
+        List<ClassCourse> courses = classCourseRepository.findAll();
+        for (ClassCourse c : courses) {
+            if (c.getClassName() != null && !c.getClassName().isBlank()) {
+                String clsName = c.getClassName().trim();
+                map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+                if (c.getSubject() != null && !c.getSubject().isBlank()) {
+                    map.get(clsName).add(c.getSubject().trim());
+                }
+            }
+        }
+
+        // 2. Collect from ClassSession entities
+        List<ClassSession> sessions = classSessionRepository.findAll();
+        for (ClassSession s : sessions) {
+            if (s.getClassName() != null && !s.getClassName().isBlank()) {
+                String clsName = s.getClassName().trim();
+                map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+                if (s.getSubject() != null && !s.getSubject().isBlank()) {
+                    map.get(clsName).add(s.getSubject().trim());
+                }
+            }
+        }
+
+        // 3. Collect from User (Student) entities
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+        for (User u : students) {
+            if (u.getClassName() != null && !u.getClassName().isBlank()) {
+                String clsName = u.getClassName().trim();
+                map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+            }
+        }
+
+        // Default fallback if database has no records yet
+        if (map.isEmpty()) {
+            java.util.Set<String> bcaSubs = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            bcaSubs.add("ai");
+            bcaSubs.add("Math");
+            map.put("BCA", bcaSubs);
+            map.put("BBA", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+            map.put("CS101", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+        }
+
+        List<ClassWithSubjectsDTO> result = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, java.util.Set<String>> entry : map.entrySet()) {
+            result.add(new ClassWithSubjectsDTO(entry.getKey(), new java.util.ArrayList<>(entry.getValue())));
+        }
+        return result;
+    }
 }
