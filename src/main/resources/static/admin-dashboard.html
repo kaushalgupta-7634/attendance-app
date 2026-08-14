@@ -1502,11 +1502,19 @@
                 }
             });
 
-            downloadCSV(csvContent, `${activeAnalyticsMetric || 'Analytics'}_Detailed_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+            const fileNameLabel = activeSubjectName 
+                ? `${activeSubjectName}_${activeSubjectStatusFilter}_Report` 
+                : `${activeAnalyticsMetric || 'Analytics'}_Detailed_Report`;
+
+            downloadCSV(csvContent, `${fileNameLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
         }
 
         async function triggerAdminLowAttendanceAlerts() {
-            if (!confirm("Do you want to calculate low attendance (<75%) and send warning email alerts to all affected students?")) {
+            const subjectLabel = activeSubjectName ? `for Subject '${activeSubjectName}'` : `across all subjects`;
+            const classFilter = document.getElementById('analyticsClassFilter')?.value || 'ALL';
+            const classLabel = classFilter !== 'ALL' ? ` (Class: ${classFilter})` : '';
+
+            if (!confirm(`Do you want to calculate low attendance (<75%) ${subjectLabel}${classLabel} and send warning email alerts to affected students?`)) {
                 return;
             }
 

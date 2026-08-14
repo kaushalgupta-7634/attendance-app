@@ -351,7 +351,25 @@ public class AdminService {
                     .filter(r -> r.getSession() != null && subject.equalsIgnoreCase(r.getSession().getSubject()))
                     .count();
 
-            long subPossible = subSessionsHeld * Math.max(1, totalStudents);
+            long subStudentsCount = totalStudents;
+            if (finalClassFilter == null) {
+                java.util.Set<String> classNamesForSubject = entry.getValue().stream()
+                        .map(ClassSession::getClassName)
+                        .filter(c -> c != null && !c.isBlank())
+                        .map(String::trim)
+                        .collect(Collectors.toSet());
+                if (!classNamesForSubject.isEmpty()) {
+                    long countInSubjectClasses = userRepository.findAll().stream()
+                            .filter(u -> u.getRole() == Role.STUDENT)
+                            .filter(u -> u.getClassName() != null && classNamesForSubject.stream().anyMatch(c -> c.equalsIgnoreCase(u.getClassName().trim())))
+                            .count();
+                    if (countInSubjectClasses > 0) {
+                        subStudentsCount = countInSubjectClasses;
+                    }
+                }
+            }
+
+            long subPossible = subSessionsHeld * Math.max(1, subStudentsCount);
             double subPercent = subPossible > 0 ? ((double) subPresent / subPossible) * 100.0 : 0.0;
             subjectBreakdown.add(new AdminDTOs.SubjectAnalyticsDTO(subject, subSessionsHeld, subPresent, Math.round(subPercent * 10.0) / 10.0));
         }
