@@ -2720,8 +2720,10 @@
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
 
-                    document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
-                    document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
+                    const overallAvgElem = document.getElementById('classOverallAvgText');
+                    const totalStudentsElem = document.getElementById('classTotalStudentsText');
+                    if (overallAvgElem) overallAvgElem.textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
+                    if (totalStudentsElem) totalStudentsElem.textContent = (summary.totalStudents || 0) + ' Students';
 
                     const headerClassElem = document.getElementById('analyticsHeaderClassText');
                     const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
@@ -2729,40 +2731,42 @@
                     if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
-                    if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
-                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
-                    } else {
-                        let filterPillsHtml = `
-                            <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
-                                <button onclick="filterBySubjectCard('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                    🌐 All Subjects
-                                </button>
-                        `;
-
-                        summary.subjectAverages.forEach(sa => {
-                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
-                            filterPillsHtml += `
-                                <button onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                    📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
-                                </button>
+                    if (avgGrid) {
+                        if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
+                            avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
+                        } else {
+                            let filterPillsHtml = `
+                                <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
+                                    <button onclick="filterBySubjectCard('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                        🌐 All Subjects
+                                    </button>
                             `;
-                        });
 
-                        filterPillsHtml += `</div>`;
+                            summary.subjectAverages.forEach(sa => {
+                                const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
+                                filterPillsHtml += `
+                                    <button onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                        📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
+                                    </button>
+                                `;
+                            });
 
-                        const cardsHtml = summary.subjectAverages.map(sa => {
-                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
-                            return `
-                                <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.7)'}; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(196, 181, 253, 0.25)'}; padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                                    <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
-                                    <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
-                                    <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">${isActive ? 'Active Subject Filter' : 'Click to Filter ➔'}</strong></span>
-                                </div>
-                            `;
-                        }).join('');
+                            filterPillsHtml += `</div>`;
 
-                        avgGrid.innerHTML = filterPillsHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; width: 100%;">${cardsHtml}</div>`;
+                            const cardsHtml = summary.subjectAverages.map(sa => {
+                                const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
+                                return `
+                                    <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.7)'}; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(196, 181, 253, 0.25)'}; padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                                        <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
+                                        <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
+                                        <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">${isActive ? 'Active Subject Filter' : 'Click to Filter ➔'}</strong></span>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            avgGrid.innerHTML = filterPillsHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; width: 100%;">${cardsHtml}</div>`;
+                        }
                     }
                 }
 
@@ -2943,6 +2947,15 @@
 
         function closeStudentModal() {
             document.getElementById('studentDetailModal').style.display = 'none';
+        }
+
+        // Auto initialize teacher classes & rosters on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
+            });
+        } else {
+            if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
         }
     </script>
 
