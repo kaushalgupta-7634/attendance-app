@@ -1002,20 +1002,26 @@
             document.querySelectorAll('.tab-content-teacher').forEach(sec => sec.classList.remove('active'));
 
             if (tabId === 'session') {
-                document.getElementById('teacherTabSession').classList.add('active');
-                document.getElementById('teacherSectionSession').classList.add('active');
+                document.getElementById('teacherTabSession')?.classList.add('active');
+                document.getElementById('teacherSectionSession')?.classList.add('active');
             } else if (tabId === 'courses') {
-                document.getElementById('teacherTabCourses').classList.add('active');
-                document.getElementById('teacherSectionCourses').classList.add('active');
+                document.getElementById('teacherTabCourses')?.classList.add('active');
+                document.getElementById('teacherSectionCourses')?.classList.add('active');
                 if (typeof loadTeacherCourses === 'function') loadTeacherCourses();
             } else if (tabId === 'analytics') {
-                document.getElementById('teacherTabAnalytics').classList.add('active');
-                document.getElementById('teacherSectionAnalytics').classList.add('active');
-                if (typeof loadTeacherClassSessionsDropdown === 'function') loadTeacherClassSessionsDropdown();
+                document.getElementById('teacherTabAnalytics')?.classList.add('active');
+                document.getElementById('teacherSectionAnalytics')?.classList.add('active');
+                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
+                if (typeof loadSelectedClassAnalytics === 'function') loadSelectedClassAnalytics();
             } else if (tabId === 'assignments') {
-                document.getElementById('teacherTabAssignments').classList.add('active');
-                document.getElementById('teacherSectionAssignments').classList.add('active');
-                if (typeof fetchUploadedAssignments === 'function') fetchUploadedAssignments();
+                document.getElementById('teacherTabAssignments')?.classList.add('active');
+                document.getElementById('teacherSectionAssignments')?.classList.add('active');
+                if (typeof loadTeacherAssignments === 'function') {
+                    const className = document.getElementById('assignClassName')?.value.trim() || 'all';
+                    loadTeacherAssignments(className);
+                } else if (typeof fetchUploadedAssignments === 'function') {
+                    fetchUploadedAssignments();
+                }
             }
         }
 
@@ -2290,9 +2296,7 @@
             const val = document.getElementById('teacherClassSelect').value;
             const textInput = document.getElementById('teacherClassNameSearch');
             if (val) {
-                textInput.value = val;
-            } else {
-                textInput.value = '';
+                textInput.value = val === 'all' ? '' : val;
             }
             loadSelectedClassAnalytics();
         }
