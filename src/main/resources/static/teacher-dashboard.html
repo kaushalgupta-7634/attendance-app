@@ -426,6 +426,14 @@
             </svg>
             Session & Live Feed
         </button>
+        <button id="teacherTabAnalytics" class="portal-tab-btn" onclick="switchTeacherTab('analytics')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Class Analytics & Roster
+        </button>
         <button id="teacherTabCourses" class="portal-tab-btn" onclick="switchTeacherTab('courses')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -707,6 +715,165 @@
                     </div>
                 </div>
             </div>
+    <!-- TAB 3: CLASS ATTENDANCE ANALYTICS, ROSTER & DEFAULTERS -->
+    <div id="teacherSectionAnalytics" class="tab-content-teacher">
+        <div class="container" style="display: block;">
+            <div class="card full-width">
+                <!-- TOP HEADER & CLASS SELECTOR BAR -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--input-border); padding-bottom: 1rem;">
+                    <div>
+                        <h3 class="card-title" style="margin-bottom: 0.2rem;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                            Class Analytics, Student Roster & Performance
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                            Select a class and subject below to inspect roster attendance, low attendance defaulters, and daily check-in logs.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+                        <button type="button" class="btn-excel" onclick="exportSelectedClassSummaryCsv()">📥 Export CSV</button>
+                        <button type="button" class="btn-excel" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #fca5a5;" onclick="exportSelectedClassSummaryPdf()">🖨️ PDF Report</button>
+                    </div>
+                </div>
+
+                <!-- FILTER CONTROLS BAR -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; border: 1px solid var(--input-border); margin-bottom: 1.5rem;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label class="form-label" style="font-size: 0.78rem; font-weight: 600; color: var(--accent-cyan);">Select Created Class</label>
+                        <select id="teacherClassSelect" class="form-input" onchange="onAnalyticsClassChange()" style="margin: 0; padding: 0.5rem;">
+                            <option value="all">🌐 All Classes & Courses (Overall)</option>
+                        </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 200px;">
+                        <label class="form-label" style="font-size: 0.78rem; font-weight: 600; color: #c4b5fd;">Search Class Name</label>
+                        <input type="text" id="teacherClassNameSearch" class="form-input" placeholder="e.g. BCA / CS101 / BBA..." style="margin: 0; padding: 0.5rem;" oninput="onAnalyticsClassSearchInput()">
+                    </div>
+
+                    <div style="flex: 1; min-width: 200px;">
+                        <label class="form-label" style="font-size: 0.78rem; font-weight: 600; color: #86efac;">Subject Filter</label>
+                        <select id="teacherSubjectSelect" class="form-input" onchange="loadSelectedClassAnalytics(this.value)" style="margin: 0; padding: 0.5rem;">
+                            <option value="all">🌐 All Subjects (Combined)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS CONTENT PANEL -->
+                <div id="classAnalyticsPanel">
+                    <!-- HEADER TITLE DISPLAY -->
+                    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 id="analyticsHeaderClassText" style="font-size: 1.1rem; color: #ffffff; margin: 0; font-weight: 700;">Class: All Classes & Courses (Overall)</h4>
+                        <span id="analyticsHeaderSubjectText" style="font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Subject: All Subjects (Combined)</span>
+                    </div>
+
+                    <!-- TOP KPI SUMMARY METRICS -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 14px;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Overall Class Average</span>
+                            <div id="classOverallAvgText" style="font-size: 2.2rem; font-weight: 800; color: #38bdf8; margin-top: 0.3rem;">0%</div>
+                        </div>
+
+                        <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 14px;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Total Enrolled Students</span>
+                            <div id="classTotalStudentsText" style="font-size: 2.2rem; font-weight: 800; color: #a7f3d0; margin-top: 0.3rem;">0 Students</div>
+                        </div>
+                    </div>
+
+                    <!-- SUBJECT PROGRESS CARDS GRID -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">Subject-wise Attendance Breakdown</h4>
+                        <div id="subjectProgressCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">Loading subject performance breakdown...</p>
+                        </div>
+                    </div>
+
+                    <!-- SMART SUB-TABS NAVIGATION BAR -->
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--input-border); padding-bottom: 0.75rem; flex-wrap: wrap;">
+                        <button type="button" id="subTabRosterBtn" class="btn-secondary" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-color: var(--accent-purple); padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="switchSmartSubTab('roster')">🎓 Enrolled Student Roster</button>
+                        <button type="button" id="subTabHistoryBtn" class="btn-secondary" style="background: rgba(30, 41, 59, 0.6); color: #cbd5e1; border-color: rgba(255,255,255,0.15); padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="switchSmartSubTab('history')">📅 Everyday Attendance Log</button>
+                        <button type="button" id="subTabDefaultersBtn" class="btn-secondary" style="background: rgba(30, 41, 59, 0.6); color: #cbd5e1; border-color: rgba(255,255,255,0.15); padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="switchSmartSubTab('defaulters')">⚠️ Defaulters (&lt;75% Attendance)</button>
+                    </div>
+
+                    <!-- SUB-TAB 1: ENROLLED STUDENT ROSTER VIEW -->
+                    <div id="smartSubTabRosterView" style="display: block;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Attendance % & Subject Badges</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classRosterTableBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Select a class above to load enrolled student roster.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SUB-TAB 2: EVERYDAY ATTENDANCE LOG VIEW -->
+                    <div id="smartSubTabHistoryView" style="display: none;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Student Name</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classDailyLogTableBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">No attendance records loaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SUB-TAB 3: DEFAULTERS WARNING VIEW -->
+                    <div id="smartSubTabDefaultersView" style="display: none;">
+                        <div style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <span style="font-size: 0.85rem; color: #fca5a5; font-weight: 600;">⚠️ Students below mandatory 75% attendance threshold:</span>
+                            <button type="button" class="btn-secondary" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts to All Defaulters</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Attendance %</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="defaultersTableBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Select a class above to view defaulters.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="classAnalyticsPlaceholder" style="display: none;" class="empty-state">
+                    Select or search a class above to display full attendance analytics, student roster, and daily logs.
+                </div>
+            </div>
         </div>
     </div>
 
@@ -783,6 +950,7 @@
                         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
                         <h4 style="font-size: 1rem; margin: 0; color: var(--text-secondary);">Uploaded Assignments</h4>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                            <input type="text" id="assignSearchClassFilter" class="form-input" placeholder="🔍 Search Class (e.g. BCA)..." style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: 190px; margin: 0;" oninput="onAssignmentClassFilterInput()">
                             <button type="button" class="btn-secondary" id="btnFilterAll"
                                 onclick="setAssignmentFilter('all')"
                                 style="padding: 0.3rem 0.7rem; font-size: 0.8rem; background: var(--accent-purple); color: #fff; border-color: var(--accent-purple);">All</button>
@@ -870,6 +1038,10 @@
             if (tabId === 'session') {
                 document.getElementById('teacherTabSession')?.classList.add('active');
                 document.getElementById('teacherSectionSession')?.classList.add('active');
+            } else if (tabId === 'analytics') {
+                document.getElementById('teacherTabAnalytics')?.classList.add('active');
+                document.getElementById('teacherSectionAnalytics')?.classList.add('active');
+                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
             } else if (tabId === 'courses') {
                 document.getElementById('teacherTabCourses')?.classList.add('active');
                 document.getElementById('teacherSectionCourses')?.classList.add('active');
@@ -877,8 +1049,16 @@
             } else if (tabId === 'assignments') {
                 document.getElementById('teacherTabAssignments')?.classList.add('active');
                 document.getElementById('teacherSectionAssignments')?.classList.add('active');
+                const selectedCls = document.getElementById('teacherClassSelect')?.value?.trim() || document.getElementById('teacherClassNameSearch')?.value?.trim() || '';
+                const assignClassInput = document.getElementById('assignClassName');
+                if (assignClassInput && (!assignClassInput.value || assignClassInput.value === '')) {
+                    if (selectedCls && selectedCls !== 'all') {
+                        assignClassInput.value = selectedCls;
+                    }
+                }
+                const filterCls = document.getElementById('assignSearchClassFilter')?.value?.trim() || selectedCls || 'all';
                 if (typeof loadTeacherAssignments === 'function') {
-                    loadTeacherAssignments('all');
+                    loadTeacherAssignments(filterCls);
                 } else if (typeof fetchUploadedAssignments === 'function') {
                     fetchUploadedAssignments();
                 }
@@ -905,7 +1085,7 @@
         const token = localStorage.getItem('jwtToken');
         const role = localStorage.getItem('userRole');
 
-        if (!token || role !== 'TEACHER') {
+        if (!token || (role !== 'TEACHER' && role !== 'ADMIN')) {
             window.location.href = '/login.html';
         }
 
@@ -1824,7 +2004,7 @@
             if (!confirm("Are you sure you want to send automated Low Attendance (<75%) warning emails to all eligible students?")) return;
 
             try {
-                const res = await fetch('/attendance/send-alerts', {
+                const res = await fetch('/attendance/trigger-low-attendance-alerts', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -2001,6 +2181,15 @@
 
         let currentAssignFilter = 'all';
 
+        let assignSearchDebounce = null;
+        function onAssignmentClassFilterInput() {
+            if (assignSearchDebounce) clearTimeout(assignSearchDebounce);
+            assignSearchDebounce = setTimeout(() => {
+                const val = document.getElementById('assignSearchClassFilter')?.value?.trim() || 'all';
+                loadTeacherAssignments(val);
+            }, 300);
+        }
+
         function setAssignmentFilter(filter) {
             currentAssignFilter = filter;
             ['btnFilterAll', 'btnFilterActive', 'btnFilterExpired'].forEach(id => {
@@ -2028,13 +2217,26 @@
                     activeBtn.style.color = '#fff';
                 }
             }
-            loadTeacherAssignments('all');
+            const currentCls = document.getElementById('assignSearchClassFilter')?.value?.trim() || 'all';
+            loadTeacherAssignments(currentCls);
         }
 
         async function loadTeacherAssignments(className) {
-            const targetClass = (className && typeof className === 'string' && className.trim()) ? className.trim() : "all";
+            const searchVal = document.getElementById('assignSearchClassFilter')?.value?.trim();
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value?.trim();
+
+            let targetClass = "all";
+            if (className && typeof className === 'string' && className.trim()) {
+                targetClass = className.trim();
+            } else if (searchVal && searchVal !== '') {
+                targetClass = searchVal;
+            } else if (classSelectVal && classSelectVal !== 'all') {
+                targetClass = classSelectVal;
+            }
+
             const tbody = document.getElementById('teacherAssignmentsTableBody');
             if (!tbody) return;
+
             try {
                 let res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`, {
                     headers: token ? { 'Authorization': 'Bearer ' + token } : {}
@@ -2045,11 +2247,12 @@
                 }
                 if (!res.ok) {
                     console.error("Failed to load assignments: HTTP " + res.status);
+                    tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="color: #fca5a5;">⚠️ Failed to load assignments (HTTP ${res.status}). Please check server logs or log in again.</td></tr>`;
                     return;
                 }
                 const assignments = await res.json();
 
-                if (!assignments || assignments.length === 0) {
+                if (!Array.isArray(assignments) || assignments.length === 0) {
                     const filterText = currentAssignFilter !== 'all' ? ` (${currentAssignFilter})` : '';
                     const displayMsg = targetClass === 'all'
                         ? `No assignments uploaded yet${filterText}. Fill the form above to upload a PDF assignment.`
@@ -2063,12 +2266,12 @@
                         ? `<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent-red); color: #fca5a5; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 0.2rem;">🔴 Expired</span>`
                         : `<span style="background: rgba(34, 197, 94, 0.2); border: 1px solid var(--accent-green); color: #86efac; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin-bottom: 0.2rem;">🟢 Active</span>`;
 
-                    const dueDateFormatted = new Date(a.dueDate).toLocaleString();
+                    const dueDateFormatted = a.dueDate ? new Date(a.dueDate).toLocaleString() : 'No Due Date';
 
                     return `
                     <tr>
                         <td><strong>${escapeHtml(a.className)}</strong><br><span style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(a.subject)}</span></td>
-                        <td>${escapeHtml(a.title)}</td>
+                        <td><strong>${escapeHtml(a.title)}</strong>${a.description ? `<br><span style="font-size: 0.78rem; color: var(--text-secondary);">${escapeHtml(a.description)}</span>` : ''}</td>
                         <td>
                             ${statusBadge}<br>
                             <span style="font-size: 0.82rem; color: ${a.expired ? '#fca5a5' : 'var(--text-primary)'};">${dueDateFormatted}</span>
@@ -2084,6 +2287,7 @@
                 }).join('');
             } catch (err) {
                 console.error("Error loading assignments:", err);
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="color: #fca5a5;">⚠️ Error loading assignments: ${escapeHtml(err.message)}</td></tr>`;
             }
         }
 
@@ -2749,6 +2953,8 @@
 
                 if (rosterRes.ok) {
                     roster = await rosterRes.json();
+                } else {
+                    console.warn(`Roster fetch for '${targetVal}' returned HTTP ${rosterRes.status}, trying fallback...`);
                 }
 
                 if (!roster || !roster.students || roster.students.length === 0) {
@@ -2758,10 +2964,9 @@
                     if (fallbackRes.ok) roster = await fallbackRes.json();
                 }
 
-                if (roster) {
-                    const tbody = document.getElementById('classRosterTableBody');
-
-                    if (!roster.students || roster.students.length === 0) {
+                const tbody = document.getElementById('classRosterTableBody');
+                if (tbody) {
+                    if (!roster || !roster.students || roster.students.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
                     } else {
                         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
@@ -2798,8 +3003,9 @@
                                             const isOk = sb.percentage >= 75;
                                             const badgeColor = isOk ? '#86efac' : '#fca5a5';
                                             const badgeBg = isOk ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                                            const attendedVal = sb.presentCount !== undefined ? sb.presentCount : (sb.totalAttended || 0);
                                             return `<span style="display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; margin-right: 0.3rem; margin-top: 0.2rem; font-weight: 600; border: 1px solid ${isOk ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};">
-                                                ${escapeHtml(sb.subject)}: ${sb.percentage}% (${sb.totalAttended}/${sb.totalSessions})
+                                                ${escapeHtml(sb.subject)}: ${sb.percentage}% (${attendedVal}/${sb.totalSessions})
                                             </span>`;
                                         }).join('');
                                     }

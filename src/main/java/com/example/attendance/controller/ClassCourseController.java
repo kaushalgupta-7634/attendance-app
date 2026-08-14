@@ -1,10 +1,13 @@
 package com.example.attendance.controller;
 
+import com.example.attendance.model.AttendanceRecordDTO;
 import com.example.attendance.model.ClassCourse;
+import com.example.attendance.model.ClassRosterResponseDTO;
 import com.example.attendance.model.CreateClassCourseRequest;
 import com.example.attendance.model.Enrollment;
 import com.example.attendance.model.JoinClassRequest;
 import com.example.attendance.service.ClassCourseService;
+import com.example.attendance.service.ClassSessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,17 +21,19 @@ import java.util.List;
 public class ClassCourseController {
 
     private final ClassCourseService classCourseService;
+    private final ClassSessionService classSessionService;
 
-    public ClassCourseController(ClassCourseService classCourseService) {
+    public ClassCourseController(ClassCourseService classCourseService, ClassSessionService classSessionService) {
         this.classCourseService = classCourseService;
+        this.classSessionService = classSessionService;
     }
 
     /**
-     * POST /classes/create (TEACHER only)
+     * POST /classes/create (TEACHER and ADMIN)
      * Creates a new ClassCourse and returns a unique classCode.
      */
     @PostMapping("/create")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassCourse> createClassCourse(@RequestBody CreateClassCourseRequest request, Principal principal) {
         ClassCourse createdCourse = classCourseService.createClassCourse(request, principal.getName());
         return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
@@ -66,11 +71,51 @@ public class ClassCourseController {
     }
 
     /**
-     * DELETE /classes/{id} (TEACHER only)
+     * GET /classes/by-name/{className}/roster
+     * Returns student roster for a class by class name.
+     */
+    @GetMapping("/by-name/{className}/roster")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<ClassRosterResponseDTO> getClassRosterByName(
+            @PathVariable("className") String className,
+            Principal principal) {
+        ClassRosterResponseDTO roster = classSessionService.getClassRosterByName(className, principal.getName());
+        return ResponseEntity.ok(roster);
+    }
+
+    /**
+     * GET /classes/{classId}/roster
+     * Returns student roster for a class by class ID.
+     */
+    @GetMapping("/{classId}/roster")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<ClassRosterResponseDTO> getClassRoster(
+            @PathVariable("classId") Long classId,
+            Principal principal) {
+        ClassRosterResponseDTO roster = classSessionService.getClassRoster(classId, principal.getName());
+        return ResponseEntity.ok(roster);
+    }
+
+    /**
+     * GET /classes/by-name/{className}/daily-records
+     * Returns daily attendance records log for a class and optional subject filter.
+     */
+    @GetMapping("/by-name/{className}/daily-records")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<AttendanceRecordDTO>> getClassDailyAttendanceRecords(
+            @PathVariable("className") String className,
+            @RequestParam(value = "subject", required = false) String subject,
+            Principal principal) {
+        List<AttendanceRecordDTO> records = classSessionService.getClassDailyAttendanceRecords(className, subject, principal.getName());
+        return ResponseEntity.ok(records);
+    }
+
+    /**
+     * DELETE /classes/{id} (TEACHER and ADMIN)
      * Deletes a ClassCourse by ID.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Void> deleteClassCourse(@PathVariable("id") Long id, Principal principal) {
         classCourseService.deleteClassCourse(id, principal.getName());
         return ResponseEntity.noContent().build();
