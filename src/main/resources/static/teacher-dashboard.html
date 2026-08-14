@@ -1519,23 +1519,8 @@
             const searchName = classNameInput || 'all';
 
             try {
-                let url = `/classes/by-name/${encodeURIComponent(searchName)}/daily-records`;
-                if (subjectInput) {
-                    url += `?subject=${encodeURIComponent(subjectInput)}`;
-                }
-
-                const res = await fetch(url, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (res.ok) {
-                    const records = await res.json();
-                    if (records && records.length > 0) {
-                        renderAttendanceTable(records);
-                        return;
-                    }
-                }
-
+                // 1. Fetch registered student roster
+                let studentsList = [];
                 const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(searchName)}/roster`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1543,40 +1528,88 @@
                 if (rosterRes.ok) {
                     const roster = await rosterRes.json();
                     if (roster.students && roster.students.length > 0) {
-                        const fallbackRecords = roster.students.map(s => ({
-                            id: null,
-                            studentId: s.id,
-                            studentName: s.name,
-                            studentUsername: s.username,
-                            studentEmail: s.email,
-                            markedAt: null,
-                            status: 'ABSENT'
-                        }));
-                        renderAttendanceTable(fallbackRecords);
-                        return;
+                        studentsList = roster.students;
                     }
                 }
 
-                // Global Fallback: Fetch ALL registered students
-                const allRosterRes = await fetch('/classes/by-name/all/roster', {
+                // If class roster is empty, fetch all registered students in system
+                if (studentsList.length === 0) {
+                    const allRosterRes = await fetch('/classes/by-name/all/roster', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (allRosterRes.ok) {
+                        const allRoster = await allRosterRes.json();
+                        if (allRoster.students) studentsList = allRoster.students;
+                    }
+                }
+
+                // 2. Fetch daily/recent attendance records for class
+                let url = `/classes/by-name/${encodeURIComponent(searchName)}/daily-records`;
+                if (subjectInput) {
+                    url += `?subject=${encodeURIComponent(subjectInput)}`;
+                }
+
+                let rawRecords = [];
+                const recRes = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (recRes.ok) {
+                    rawRecords = await recRes.json();
+                }
 
-                if (allRosterRes.ok) {
-                    const allRoster = await allRosterRes.json();
-                    if (allRoster.students && allRoster.students.length > 0) {
-                        const fallbackRecords = allRoster.students.map(s => ({
+                // Map latest attendance record for each student
+                const latestRecordByStudent = new Map();
+                if (rawRecords && rawRecords.length > 0) {
+                    for (const r of rawRecords) {
+                        const sKey = r.studentId || (r.studentUsername ? r.studentUsername.toLowerCase() : null) || (r.studentEmail ? r.studentEmail.toLowerCase() : null);
+                        if (!sKey) continue;
+                        if (!latestRecordByStudent.has(sKey)) {
+                            latestRecordByStudent.set(sKey, r);
+                        } else {
+                            const existing = latestRecordByStudent.get(sKey);
+                            if (existing.status !== 'PRESENT' && r.status === 'PRESENT') {
+                                latestRecordByStudent.set(sKey, r);
+                            }
+                        }
+                    }
+                }
+
+                // 3. Build unique student rows (1 row per registered student)
+                const uniqueStudentRows = studentsList.map(s => {
+                    const sKeyId = s.id;
+                    const sKeyUser = s.username ? s.username.toLowerCase() : '';
+                    const sKeyEmail = s.email ? s.email.toLowerCase() : '';
+                    const latestRec = latestRecordByStudent.get(sKeyId) || latestRecordByStudent.get(sKeyUser) || latestRecordByStudent.get(sKeyEmail);
+
+                    if (latestRec) {
+                        return {
+                            id: latestRec.id,
+                            studentId: s.id,
+                            studentName: s.name || s.username,
+                            studentUsername: s.username,
+                            studentEmail: s.email,
+                            markedAt: latestRec.markedAt,
+                            status: latestRec.status || 'ABSENT',
+                            manuallyOverridden: latestRec.manuallyOverridden,
+                            overrideReason: latestRec.overrideReason,
+                            overriddenByName: latestRec.overriddenByName,
+                            wifiMismatchWarning: latestRec.wifiMismatchWarning,
+                            studentWifiSsid: latestRec.studentWifiSsid
+                        };
+                    } else {
+                        return {
                             id: null,
                             studentId: s.id,
-                            studentName: s.name,
+                            studentName: s.name || s.username,
                             studentUsername: s.username,
                             studentEmail: s.email,
                             markedAt: null,
                             status: 'ABSENT'
-                        }));
-                        renderAttendanceTable(fallbackRecords);
+                        };
                     }
-                }
+                });
+
+                renderAttendanceTable(uniqueStudentRows);
             } catch (err) {
                 console.error("Error fetching default live feed:", err);
             }
@@ -1830,21 +1863,37 @@
 
             if (!records) records = [];
 
+            // Strictly deduplicate by student key so each registered student gets EXACTLY ONE ROW
+            const uniqueMap = new Map();
+            for (const r of records) {
+                const key = r.studentId || (r.studentUsername ? r.studentUsername.toLowerCase() : null) || (r.studentEmail ? r.studentEmail.toLowerCase() : 'unknown');
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, r);
+                } else {
+                    const existing = uniqueMap.get(key);
+                    if (existing.status !== 'PRESENT' && r.status === 'PRESENT') {
+                        uniqueMap.set(key, r);
+                    }
+                }
+            }
+
+            const uniqueRecords = Array.from(uniqueMap.values());
+
             if (badge) {
-                badge.textContent = `${records.length} Student${records.length === 1 ? '' : 's'}`;
+                badge.textContent = `${uniqueRecords.length} Student${uniqueRecords.length === 1 ? '' : 's'}`;
             }
 
             if (!tbody) return;
 
-            if (records.length === 0) {
-                updateLiveChart(records);
-                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Waiting for students to scan QR code...</td></tr>`;
+            if (uniqueRecords.length === 0) {
+                updateLiveChart(uniqueRecords);
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No registered students found.</td></tr>`;
                 return;
             }
 
-            updateLiveChart(records);
+            updateLiveChart(uniqueRecords);
 
-            tbody.innerHTML = records.map(r => {
+            tbody.innerHTML = uniqueRecords.map(r => {
                 const name = escapeHtml(r.studentName || r.studentUsername || 'Student');
                 const email = escapeHtml(r.studentEmail || '');
                 const timeStr = formatMarkedAtTime(r.markedAt);
