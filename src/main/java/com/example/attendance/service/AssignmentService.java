@@ -165,15 +165,16 @@ public class AssignmentService {
         }
 
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
 
         // Filter if requested
         if ("active".equalsIgnoreCase(filter)) {
             assignments = assignments.stream()
-                    .filter(a -> a.getDueDate() == null || a.getDueDate().isAfter(now) || a.getDueDate().isEqual(now))
+                    .filter(a -> a.getDueDate() == null || !a.getDueDate().isBefore(startOfToday) || (a.getUploadedAt() != null && a.getUploadedAt().isAfter(now.minusDays(30))))
                     .collect(Collectors.toList());
         } else if ("expired".equalsIgnoreCase(filter)) {
             assignments = assignments.stream()
-                    .filter(a -> a.getDueDate() != null && a.getDueDate().isBefore(now))
+                    .filter(a -> a.getDueDate() != null && a.getDueDate().isBefore(startOfToday) && (a.getUploadedAt() == null || a.getUploadedAt().isBefore(now.minusDays(30))))
                     .collect(Collectors.toList());
         }
 
@@ -287,7 +288,8 @@ public class AssignmentService {
 
     public AssignmentResponseDTO mapToDTO(Assignment assignment) {
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
-        boolean isExpired = assignment.getDueDate() != null && assignment.getDueDate().isBefore(now);
+        LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
+        boolean isExpired = assignment.getDueDate() != null && assignment.getDueDate().isBefore(startOfToday) && (assignment.getUploadedAt() == null || assignment.getUploadedAt().isBefore(now.minusDays(30)));
         String status = isExpired ? "EXPIRED" : "ACTIVE";
 
         return new AssignmentResponseDTO(
