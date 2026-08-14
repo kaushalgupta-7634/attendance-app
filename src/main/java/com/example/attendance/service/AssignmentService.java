@@ -236,7 +236,10 @@ public class AssignmentService {
                 .orElseThrow(() -> new IllegalArgumentException("Assignment not found with ID: " + assignmentId));
 
         try {
-            Path filePath = Paths.get(assignment.getPdfFilePath()).normalize();
+            Path filePath = Paths.get(assignment.getPdfFilePath()).toAbsolutePath().normalize();
+            if (!filePath.startsWith(this.uploadDir)) {
+                throw new SecurityException("Access denied: File path is outside assignment upload directory.");
+            }
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {

@@ -55,7 +55,7 @@ public class AuthService {
 
         User user = userRepository.findByUsernameIgnoreCase(cleanUsername)
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
-                .orElseThrow(() -> new RuntimeException("User not found with username/email: " + cleanUsername));
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
@@ -71,11 +71,11 @@ public class AuthService {
         String cleanEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().trim().toLowerCase() : "";
 
         if (userRepository.existsByUsernameIgnoreCase(cleanUsername)) {
-            throw new RuntimeException("Username is already taken!");
+            throw new IllegalArgumentException("Username is already taken!");
         }
 
         if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
-            throw new RuntimeException("Email is already in use!");
+            throw new IllegalArgumentException("Email is already in use!");
         }
 
         User user = new User();

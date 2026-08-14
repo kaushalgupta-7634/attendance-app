@@ -79,8 +79,7 @@ public class AttendanceService {
                     .orElseThrow(() -> new IllegalArgumentException("Class session not found with ID: " + targetSessionId));
         } else if (rawToken != null && rawToken.trim().matches("\\d{6}")) {
             final String code = rawToken.trim();
-            session = classSessionRepository.findAll().stream()
-                    .filter(ClassSession::isActive)
+            session = classSessionRepository.findByActiveTrue().stream()
                     .filter(s -> qrCodeService.validatePasscode(s.getId(), code) || code.equalsIgnoreCase(s.getPasscode()))
                     .findFirst()
                     .orElseGet(() -> classSessionRepository.findTopByActiveTrueOrderByIdDesc().orElse(null));
@@ -333,9 +332,12 @@ public class AttendanceService {
             if (r.getSession() != null && r.getSession().isCancelled()) {
                 continue;
             }
+            String sub = r.getSession() != null ? r.getSession().getSubject() : "General";
+            String cls = r.getSession() != null ? r.getSession().getClassName() : "General";
             recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                     r.getId(),
-                    r.getSession() != null ? (r.getSession().getSubject() != null ? r.getSession().getSubject() : r.getSession().getClassName()) : "General",
+                    sub != null ? sub : "General",
+                    cls != null ? cls : "General",
                     r.getMarkedAt() != null ? r.getMarkedAt().toString() : "",
                     r.getStatus() != null ? r.getStatus().name() : "PRESENT"
             ));
@@ -350,9 +352,12 @@ public class AttendanceService {
         for (ClassSession s : allSessions) {
             if (!existingMap.containsKey(s.getId())) {
                 String timeStr = s.getEndTime() != null ? s.getEndTime().toString() : (s.getStartTime() != null ? s.getStartTime().toString() : "");
+                String sub = s.getSubject() != null ? s.getSubject() : "General";
+                String cls = s.getClassName() != null ? s.getClassName() : "General";
                 recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                         0L,
-                        s.getSubject() != null ? s.getSubject() : (s.getClassName() != null ? s.getClassName() : "General"),
+                        sub,
+                        cls,
                         timeStr,
                         "ABSENT"
                 ));

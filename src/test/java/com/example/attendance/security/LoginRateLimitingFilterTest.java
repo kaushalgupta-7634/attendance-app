@@ -76,4 +76,26 @@ class LoginRateLimitingFilterTest {
         assertFalse(jsonOutput.contains(rawPassword), "User JSON output must NOT contain raw password");
         assertFalse(jsonOutput.contains(encodedPassword), "User JSON output must NOT contain hashed password");
     }
+
+    @Test
+    void testRateLimit_NormalizesApiPrefixAndTrailingSlashes() throws Exception {
+        String testIp = "10.0.0.5";
+
+        for (int i = 1; i <= 20; i++) {
+            MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login/");
+            request.setRemoteAddr(testIp);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            rateLimitingFilter.doFilterInternal(request, response, filterChain);
+            assertEquals(200, response.getStatus());
+        }
+
+        MockHttpServletRequest request21 = new MockHttpServletRequest("POST", "/api/auth/login");
+        request21.setRemoteAddr(testIp);
+        MockHttpServletResponse response21 = new MockHttpServletResponse();
+
+        rateLimitingFilter.doFilterInternal(request21, response21, filterChain);
+
+        assertEquals(429, response21.getStatus(), "21st attempt to /api/auth/login should be blocked with HTTP 429");
+    }
 }

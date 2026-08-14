@@ -159,6 +159,7 @@ public class StudentAttendanceSummaryDTO {
     public static class AttendanceRecordItemDTO {
         private Long recordId;
         private String subject;
+        private String className;
         private String markedAt;
         private String status;
 
@@ -166,8 +167,13 @@ public class StudentAttendanceSummaryDTO {
         }
 
         public AttendanceRecordItemDTO(Long recordId, String subject, String markedAt, String status) {
+            this(recordId, subject, null, markedAt, status);
+        }
+
+        public AttendanceRecordItemDTO(Long recordId, String subject, String className, String markedAt, String status) {
             this.recordId = recordId;
             this.subject = subject;
+            this.className = className;
             this.markedAt = markedAt;
             this.status = status;
         }
@@ -186,6 +192,14 @@ public class StudentAttendanceSummaryDTO {
 
         public void setSubject(String subject) {
             this.subject = subject;
+        }
+
+        public String getClassName() {
+            return className;
+        }
+
+        public void setClassName(String className) {
+            this.className = className;
         }
 
         public String getMarkedAt() {
