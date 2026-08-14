@@ -1034,6 +1034,13 @@
     </div>
 
     <script>
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            window.location.href = '/login.html';
+        }
+
         function switchTeacherTab(tabId) {
             document.querySelectorAll('.portal-tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content-teacher').forEach(sec => sec.classList.remove('active'));
