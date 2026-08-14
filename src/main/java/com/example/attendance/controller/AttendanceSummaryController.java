@@ -15,15 +15,21 @@ import java.security.Principal;
 import com.example.attendance.model.User;
 import com.example.attendance.repository.UserRepository;
 
+import com.example.attendance.model.AdminDTOs;
+import com.example.attendance.service.AdminService;
+import java.util.List;
+
 @RestController
 public class AttendanceSummaryController {
 
     private final AttendanceService attendanceService;
     private final UserRepository userRepository;
+    private final AdminService adminService;
 
-    public AttendanceSummaryController(AttendanceService attendanceService, UserRepository userRepository) {
+    public AttendanceSummaryController(AttendanceService attendanceService, UserRepository userRepository, AdminService adminService) {
         this.attendanceService = attendanceService;
         this.userRepository = userRepository;
+        this.adminService = adminService;
     }
 
     /**
@@ -141,5 +147,21 @@ public class AttendanceSummaryController {
         String subName = (subject != null && !subject.isBlank() && !"all".equalsIgnoreCase(subject)) ? subject.trim() : "All_Subjects";
         headers.setContentDispositionFormData("attachment", "Class_" + className + "_" + subName + "_Attendance_Summary.csv");
         return new ResponseEntity<>(csvData, headers, org.springframework.http.HttpStatus.OK);
+    }
+
+    @GetMapping("/classes/attendance-analytics")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<AdminDTOs.DateRangeAnalyticsDTO> getAttendanceAnalytics(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "ALL") String className,
+            @RequestParam(required = false, defaultValue = "ALL") String subject) {
+        return ResponseEntity.ok(adminService.getDateRangeAnalytics(startDate, endDate, className, subject));
+    }
+
+    @GetMapping("/classes/attendance-records")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<AdminDTOs.AttendanceRecordSummaryDTO>> getAttendanceRecords() {
+        return ResponseEntity.ok(adminService.getAttendanceRecords());
     }
 }

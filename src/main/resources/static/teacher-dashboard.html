@@ -2741,16 +2741,39 @@
             }, 300);
         }
 
+        function initTeacherAnalyticsDateControls() {
+            const startInput = document.getElementById('teacherStartMonth');
+            const endInput = document.getElementById('teacherEndMonth');
+            const now = new Date();
+
+            if (endInput && !endInput.value) {
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                endInput.value = `${year}-${month}`;
+            }
+            if (startInput && !startInput.value) {
+                const pastDate = new Date();
+                pastDate.setMonth(pastDate.getMonth() - 5);
+                const pastYear = pastDate.getFullYear();
+                const pastMonth = String(pastDate.getMonth() + 1).padStart(2, '0');
+                startInput.value = `${pastYear}-${pastMonth}`;
+            }
+        }
+
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
+            initTeacherAnalyticsDateControls();
+
             if (selectedSubject !== undefined && selectedSubject !== null) {
                 currentSubjectFilter = selectedSubject;
             }
 
+            const startMonth = document.getElementById('teacherStartMonth')?.value || '';
+            const endMonth = document.getElementById('teacherEndMonth')?.value || '';
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
 
-            let targetVal = 'all';
-            if (classSelectVal && classSelectVal !== '') {
+            let targetVal = 'ALL';
+            if (classSelectVal && classSelectVal !== '' && classSelectVal !== 'all') {
                 targetVal = classSelectVal;
             } else if (searchVal && searchVal !== '') {
                 targetVal = searchVal;
@@ -2773,22 +2796,27 @@
             if (panel) panel.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            const sumUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary?subject=${encodeURIComponent(currentSubjectFilter)}`;
-            const rosterUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
-            const logUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
+            const headerClassElem = document.getElementById('analyticsHeaderClassText');
+            const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
+            if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal === 'ALL' ? 'All Classes' : targetVal}`;
+            if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
             try {
-                // 1. Fetch Class Summary Analytics
-                const sumRes = await fetch(sumUrl, {
+                // 1. Fetch Class Summary Analytics from date-range endpoint
+                const analyticsUrl = `/classes/attendance-analytics?startDate=${encodeURIComponent(startMonth)}&endDate=${encodeURIComponent(endMonth)}&className=${encodeURIComponent(targetVal)}&subject=${encodeURIComponent(currentSubjectFilter)}`;
+                const analyticsRes = await fetch(analyticsUrl, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
-                if (sumRes.ok) {
-                    const summary = await sumRes.json();
+                if (analyticsRes.ok) {
+                    const data = await analyticsRes.json();
 
-                    const overallPct = summary.overallClassAveragePercentage || 0.0;
-                    document.getElementById('classOverallAvgText').textContent = overallPct + '%';
-                    document.getElementById('classTotalStudentsText').textContent = summary.totalStudents || 0;
+                    const overallPct = data.overallPercentage || 0.0;
+                    document.getElementById('classOverallAvgText').textContent = overallPct.toFixed(1) + '%';
+                    document.getElementById('classTotalStudentsText').textContent = data.totalStudents || 0;
+                    document.getElementById('teacherSessionsHeld').textContent = data.totalSessions || 0;
+                    document.getElementById('teacherPresentCount').textContent = data.totalPresentRecords || 0;
+                    document.getElementById('teacherAbsentCount').textContent = data.totalAbsentRecords || 0;
 
                     // Update Circle Donut Gauge Path & Status Badge
                     const circlePath = document.getElementById('teacherCircleProgressPath');
@@ -2801,65 +2829,42 @@
                     }
                     if (circleBadge) {
                         if (overallPct >= 75) {
-                            circleBadge.textContent = '🟢 75%+ Good Attendance';
+                            circleBadge.textContent = '🟢 75%+ High Attendance Rate';
                             circleBadge.style.background = 'rgba(16, 185, 129, 0.2)';
                             circleBadge.style.color = '#6ee7b7';
+                        } else if (overallPct >= 50) {
+                            circleBadge.textContent = '🟡 Average Attendance Rate';
+                            circleBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                            circleBadge.style.color = '#fde047';
                         } else {
-                            circleBadge.textContent = '🔴 Low Attendance Warning (<75%)';
+                            circleBadge.textContent = '🔴 Low Attendance Warning (<50%)';
                             circleBadge.style.background = 'rgba(239, 68, 68, 0.2)';
                             circleBadge.style.color = '#fca5a5';
                         }
                     }
 
-                    // Calculate Metric Tiles: Sessions Held, Present Check-ins, Absences
-                    let totalSessions = 0;
-                    let totalPresent = 0;
-                    let totalAbsent = 0;
-
-                    if (summary.subjectAverages && summary.subjectAverages.length > 0) {
-                        summary.subjectAverages.forEach(sa => {
-                            totalSessions += (sa.totalSessionsHeld || 0);
-                            const totalPoss = (sa.totalSessionsHeld || 0) * (sa.studentCount || summary.totalStudents || 1);
-                            const pres = Math.round(totalPoss * (sa.averagePercentage || 0) / 100);
-                            totalPresent += pres;
-                            totalAbsent += Math.max(0, totalPoss - pres);
-                        });
-                    }
-
-                    const sessElem = document.getElementById('teacherSessionsHeld');
-                    const presElem = document.getElementById('teacherPresentCount');
-                    const absElem = document.getElementById('teacherAbsentCount');
-                    if (sessElem) sessElem.textContent = totalSessions;
-                    if (presElem) presElem.textContent = totalPresent;
-                    if (absElem) absElem.textContent = totalAbsent;
-
-                    const headerClassElem = document.getElementById('analyticsHeaderClassText');
-                    const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
-                    if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal}`;
-                    if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
-
                     // Subject Breakdown Progress Bars with Clickable Present & Absent Badges
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
-                    if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
-                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
+                    if (!data.subjectBreakdown || data.subjectBreakdown.length === 0) {
+                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject records found for selected class & date range.</p>';
                     } else {
-                        avgGrid.innerHTML = summary.subjectAverages.map(sa => {
-                            const pct = sa.averagePercentage || 0.0;
-                            const totalPoss = (sa.totalSessionsHeld || 0) * (sa.studentCount || summary.totalStudents || 1);
-                            const pres = Math.round(totalPoss * pct / 100);
+                        avgGrid.innerHTML = data.subjectBreakdown.map(sb => {
+                            const pct = Math.min(100, Math.max(0, sb.percentage || 0));
+                            const totalPoss = (sb.sessionsHeld || 0) * (data.totalStudents || 1);
+                            const pres = sb.presentCount || 0;
                             const abs = Math.max(0, totalPoss - pres);
                             const barColor = pct >= 75 ? 'linear-gradient(90deg, #10b981, #34d399)' : (pct >= 50 ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : 'linear-gradient(90deg, #ef4444, #f87171)');
 
                             return `
                                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem; transition: all 0.2s ease;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.3rem;">
-                                        <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'ALL')" style="font-size: 0.88rem; font-weight: 700; color: #ffffff; cursor: pointer;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='#ffffff'">
-                                            📖 ${escapeHtml(sa.subject)} (${sa.totalSessionsHeld} sessions) • <span style="font-size: 0.75rem; color: var(--accent-cyan); text-decoration: underline;">Click for Details ➔</span>
+                                        <span onclick="showTeacherSubjectDetail('${escapeHtml(sb.subject)}', 'ALL')" style="font-size: 0.88rem; font-weight: 700; color: #ffffff; cursor: pointer;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='#ffffff'">
+                                            📖 ${escapeHtml(sb.subject)} (${sb.sessionsHeld} sessions) • <span style="font-size: 0.75rem; color: var(--accent-cyan); text-decoration: underline;">Click for Details ➔</span>
                                         </span>
                                         <div style="font-size: 0.8rem; font-weight: 600;">
-                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'PRESENT')" style="color: #4ade80; cursor: pointer; text-decoration: underline; margin-right: 0.3rem;">Present: ${pres}</span> | 
-                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'ABSENT')" style="color: #f87171; cursor: pointer; text-decoration: underline; margin-left: 0.3rem; margin-right: 0.3rem;">Absent: ${abs}</span> | 
-                                            <span style="color: #ffffff; font-weight: 700;">${pct}%</span>
+                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sb.subject)}', 'PRESENT')" style="color: #4ade80; cursor: pointer; text-decoration: underline; margin-right: 0.3rem;">Present: ${pres}</span> | 
+                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sb.subject)}', 'ABSENT')" style="color: #f87171; cursor: pointer; text-decoration: underline; margin-left: 0.3rem; margin-right: 0.3rem;">Absent: ${abs}</span> | 
+                                            <span style="color: #ffffff; font-weight: 700;">${pct.toFixed(1)}%</span>
                                         </div>
                                     </div>
                                     <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
@@ -3071,7 +3076,7 @@
 
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            let targetClass = classSelectVal || searchVal || 'all';
+            let targetClass = (classSelectVal && classSelectVal !== 'all') ? classSelectVal : (searchVal || 'ALL');
 
             subtitle.textContent = `Class: ${targetClass} | Subject: ${currentSubjectFilter === 'all' ? 'All Subjects' : currentSubjectFilter}`;
             tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading detailed records...</td></tr>`;
@@ -3092,14 +3097,15 @@
                         </tr>
                     `;
 
-                    const logUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
-                    const res = await fetch(logUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                    const res = await fetch('/classes/attendance-records', { headers: { 'Authorization': 'Bearer ' + token } });
                     if (!res.ok) throw new Error('Failed to fetch attendance records.');
                     const records = await res.json();
 
                     teacherAnalyticsDetailData = records.filter(r => {
                         const matchesStatus = (metricType === 'PRESENT') ? (r.status === 'PRESENT' || r.status === 'LATE') : (r.status === 'ABSENT');
-                        return matchesStatus;
+                        const matchesClass = (targetClass === 'ALL' || !targetClass || targetClass === 'all') ? true : (r.className && r.className.toLowerCase() === targetClass.toLowerCase());
+                        const matchesSubject = (currentSubjectFilter === 'all' || !currentSubjectFilter) ? true : (r.subject && r.subject.toLowerCase() === currentSubjectFilter.toLowerCase());
+                        return matchesStatus && matchesClass && matchesSubject;
                     });
 
                     if (teacherAnalyticsDetailData.length === 0) {
@@ -3111,12 +3117,12 @@
                         <tr>
                             <td>#${r.id || (idx + 1)}</td>
                             <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
-                            <td>${escapeHtml(r.studentUsername || '-')}</td>
-                            <td>${escapeHtml(r.studentEmail || '-')}</td>
-                            <td>${escapeHtml(targetClass)}</td>
-                            <td><strong>${escapeHtml(currentSubjectFilter === 'all' ? 'General' : currentSubjectFilter)}</strong></td>
+                            <td>${escapeHtml(r.studentUsername || r.username || '-')}</td>
+                            <td>${escapeHtml(r.email || r.studentEmail || '-')}</td>
+                            <td>${escapeHtml(r.className || targetClass)}</td>
+                            <td><strong>${escapeHtml(r.subject || 'General')}</strong></td>
                             <td><span class="status-badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'status-present' : 'status-absent'}">${escapeHtml(r.status || 'ABSENT')}</span></td>
-                            <td>${r.markedAt ? new Date(r.markedAt).toLocaleString() : '-'}</td>
+                            <td>${r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : (r.markedAt ? new Date(r.markedAt).toLocaleString() : '-')}</td>
                         </tr>
                     `).join('');
 
@@ -3139,7 +3145,7 @@
                     const sessions = await res.json();
 
                     teacherAnalyticsDetailData = sessions.filter(s => {
-                        return (targetClass === 'all') ? true : (s.className && s.className.toLowerCase() === targetClass.toLowerCase());
+                        return (targetClass === 'ALL' || targetClass === 'all') ? true : (s.className && s.className.toLowerCase() === targetClass.toLowerCase());
                     });
 
                     if (teacherAnalyticsDetailData.length === 0) {
@@ -3173,7 +3179,7 @@
                         </tr>
                     `;
 
-                    const rosterUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/roster`;
+                    const rosterUrl = `/classes/by-name/${encodeURIComponent(targetClass === 'ALL' ? 'all' : targetClass)}/roster`;
                     const res = await fetch(rosterUrl, { headers: { 'Authorization': 'Bearer ' + token } });
                     if (!res.ok) throw new Error('Failed to fetch enrolled students.');
                     const roster = await res.json();
@@ -3234,7 +3240,7 @@
 
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            let targetClass = classSelectVal || searchVal || 'all';
+            let targetClass = (classSelectVal && classSelectVal !== 'all') ? classSelectVal : (searchVal || 'ALL');
 
             title.textContent = `📖 Subject Report: ${subjectName} (${statusFilter} Status)`;
             subtitle.textContent = `Class: ${targetClass} | Filtered by Subject: ${subjectName}`;
@@ -3254,15 +3260,20 @@
             tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading records for subject '${escapeHtml(subjectName)}'...</td></tr>`;
 
             try {
-                const logUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/daily-records?subject=${encodeURIComponent(subjectName)}`;
-                const res = await fetch(logUrl, { headers: { 'Authorization': 'Bearer ' + token } });
-                if (!res.ok) throw new Error('Failed to fetch attendance records for subject.');
+                const res = await fetch('/classes/attendance-records', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to fetch attendance records.');
                 const records = await res.json();
 
                 teacherAnalyticsDetailData = records.filter(r => {
-                    if (statusFilter === 'PRESENT') return r.status === 'PRESENT' || r.status === 'LATE';
-                    if (statusFilter === 'ABSENT') return r.status === 'ABSENT';
-                    return true;
+                    const matchesSubject = r.subject && r.subject.toLowerCase() === subjectName.toLowerCase();
+                    const matchesClass = (targetClass === 'ALL' || !targetClass || targetClass === 'all') ? true : (r.className && r.className.toLowerCase() === targetClass.toLowerCase());
+                    let matchesStatus = true;
+                    if (statusFilter === 'PRESENT') {
+                        matchesStatus = (r.status === 'PRESENT' || r.status === 'LATE');
+                    } else if (statusFilter === 'ABSENT') {
+                        matchesStatus = (r.status === 'ABSENT');
+                    }
+                    return matchesSubject && matchesClass && matchesStatus;
                 });
 
                 if (teacherAnalyticsDetailData.length === 0) {
@@ -3274,12 +3285,12 @@
                     <tr>
                         <td>#${r.id || (idx + 1)}</td>
                         <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
-                        <td>${escapeHtml(r.studentUsername || '-')}</td>
-                        <td>${escapeHtml(r.studentEmail || '-')}</td>
-                        <td>${escapeHtml(targetClass)}</td>
-                        <td><strong>${escapeHtml(subjectName)}</strong></td>
+                        <td>${escapeHtml(r.studentUsername || r.username || '-')}</td>
+                        <td>${escapeHtml(r.email || r.studentEmail || '-')}</td>
+                        <td>${escapeHtml(r.className || targetClass)}</td>
+                        <td><strong>${escapeHtml(r.subject || subjectName)}</strong></td>
                         <td><span class="status-badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'status-present' : 'status-absent'}">${escapeHtml(r.status || 'ABSENT')}</span></td>
-                        <td>${r.markedAt ? new Date(r.markedAt).toLocaleString() : '-'}</td>
+                        <td>${r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : (r.markedAt ? new Date(r.markedAt).toLocaleString() : '-')}</td>
                     </tr>
                 `).join('');
             } catch (err) {
