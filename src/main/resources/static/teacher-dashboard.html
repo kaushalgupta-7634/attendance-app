@@ -2426,6 +2426,7 @@
                     // Fetch individual attendance summary for each student
                     const studentRows = await Promise.all(roster.students.map(async s => {
                         let percent = 0.0;
+                        let subjectBadges = '';
                         try {
                             const sRes = await fetch(`/students/${s.id}/attendance-summary`, {
                                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2433,6 +2434,16 @@
                             if (sRes.ok) {
                                 const sSum = await sRes.json();
                                 percent = sSum.overallPercentage || 0.0;
+                                if (sSum.subjectBreakdown && sSum.subjectBreakdown.length > 0) {
+                                    subjectBadges = sSum.subjectBreakdown.map(sb => {
+                                        const isOk = sb.percentage >= 75;
+                                        const badgeColor = isOk ? '#86efac' : '#fca5a5';
+                                        const badgeBg = isOk ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                                        return `<span style="display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; margin-right: 0.3rem; margin-top: 0.2rem; font-weight: 600; border: 1px solid ${isOk ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};">
+                                            ${escapeHtml(sb.subject)}: ${sb.percentage}% (${sb.totalAttended}/${sb.totalSessions})
+                                        </span>`;
+                                    }).join('');
+                                }
                             }
                         } catch (e) { }
 
@@ -2443,10 +2454,11 @@
                                 <td>${escapeHtml(s.username)}</td>
                                 <td>${escapeHtml(s.email)}</td>
                                 <td>
-                                    <span style="font-weight: 700; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</span>
+                                    <div style="font-weight: 700; font-size: 1.05rem; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</div>
+                                    <div style="margin-top: 0.25rem;">${subjectBadges || '<span style="font-size: 0.72rem; color: var(--text-secondary);">No subject records</span>'}</div>
                                 </td>
                                 <td>
-                                    <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${s.id}, '${escapeHtml(s.name)}')">📊 View Breakdown</button>
+                                    <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${s.id}, '${escapeHtml(s.name)}')">📊 Full Report</button>
                                 </td>
                             </tr>
                         `;
