@@ -527,31 +527,41 @@ public class AttendanceService {
             );
         }
 
-        List<String> subjects = classSessions.stream()
-                .map(ClassSession::getSubject)
-                .filter(java.util.Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .map(String::trim)
-                .distinct()
-                .collect(java.util.stream.Collectors.toList());
+        java.util.Set<String> subjectSet = new java.util.LinkedHashSet<>();
 
-        if (subjects.isEmpty()) {
-            subjects = classSessionRepository.findDistinctSubjects();
-            if (subjects == null || subjects.isEmpty()) {
-                subjects = classCourseRepository.findAll().stream()
-                        .map(ClassCourse::getSubject)
-                        .filter(java.util.Objects::nonNull)
-                        .filter(s -> !s.isBlank())
-                        .distinct()
-                        .collect(java.util.stream.Collectors.toList());
+        // 1. Gather subjects from ClassCourse matching the class
+        classCourseRepository.findAll().stream()
+                .filter(c -> isAllClass ||
+                             (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
+                             (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)) ||
+                             (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)))
+                .forEach(c -> {
+                    if (c.getSubject() != null && !c.getSubject().isBlank()) {
+                        subjectSet.add(c.getSubject().trim());
+                    }
+                });
+
+        // 2. Gather subjects from ClassSession matching the class
+        classSessions.forEach(s -> {
+            if (s.getSubject() != null && !s.getSubject().isBlank()) {
+                subjectSet.add(s.getSubject().trim());
             }
+        });
+
+        // 3. Fallback to all distinct subjects if still empty
+        if (subjectSet.isEmpty()) {
+            List<String> globalSubs = classSessionRepository.findDistinctSubjects();
+            if (globalSubs != null) {
+                globalSubs.stream().filter(java.util.Objects::nonNull).filter(s -> !s.isBlank()).forEach(s -> subjectSet.add(s.trim()));
+            }
+            classCourseRepository.findAll().stream()
+                    .map(ClassCourse::getSubject)
+                    .filter(java.util.Objects::nonNull)
+                    .filter(s -> !s.isBlank())
+                    .forEach(s -> subjectSet.add(s.trim()));
         }
 
-        if (filterSubject && subjects != null) {
-            subjects = subjects.stream()
-                    .filter(s -> s.equalsIgnoreCase(searchSub))
-                    .collect(java.util.stream.Collectors.toList());
-        }
+        List<String> subjects = new java.util.ArrayList<>(subjectSet);
 
         List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
         List<ClassAttendanceSummaryDTO.ClassSubjectAverageDTO> subjectAverages = new java.util.ArrayList<>();
