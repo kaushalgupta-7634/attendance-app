@@ -1992,7 +1992,7 @@
                 document.getElementById('uploadAssignmentForm').reset();
                 const assignDueEl = document.getElementById('assignDueDate');
                 if (assignDueEl) assignDueEl.value = getDefaultDueDate();
-                loadTeacherAssignments(className);
+                loadTeacherAssignments('all');
             } catch (err) {
                 const isFetchErr = err.message && err.message.includes('Failed to fetch');
                 const errMsg = isFetchErr ? "Session Expired / Connection Error. Please log in again." : err.message;
