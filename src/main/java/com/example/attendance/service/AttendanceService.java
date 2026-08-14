@@ -461,12 +461,23 @@ public class AttendanceService {
 
         List<User> distinctStudents = new java.util.ArrayList<>();
         if (!isAllClass) {
-            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, searchClass);
-            if (direct != null) distinctStudents.addAll(direct);
+            List<User> allStudents = userRepository.findByRole(Role.STUDENT);
+            for (User st : allStudents) {
+                if (st.getClassName() != null && !st.getClassName().isBlank()) {
+                    String sName = st.getClassName().trim();
+                    if (sName.equalsIgnoreCase(searchClass) ||
+                        searchClass.toLowerCase().contains(sName.toLowerCase()) ||
+                        sName.toLowerCase().contains(searchClass.toLowerCase())) {
+                        if (!distinctStudents.contains(st)) {
+                            distinctStudents.add(st);
+                        }
+                    }
+                }
+            }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
-                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
-                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)) ||
+                    .filter(c -> (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                                 (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 

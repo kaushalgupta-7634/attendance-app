@@ -526,12 +526,23 @@ public class ClassSessionService {
         List<User> students = new java.util.ArrayList<>();
         if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className.trim())) {
             String search = className.trim();
-            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, search);
-            if (direct != null) students.addAll(direct);
+            List<User> allStudents = userRepository.findByRole(Role.STUDENT);
+            for (User st : allStudents) {
+                if (st.getClassName() != null && !st.getClassName().isBlank()) {
+                    String sName = st.getClassName().trim();
+                    if (sName.equalsIgnoreCase(search) ||
+                        search.toLowerCase().contains(sName.toLowerCase()) ||
+                        sName.toLowerCase().contains(search.toLowerCase())) {
+                        if (!students.contains(st)) {
+                            students.add(st);
+                        }
+                    }
+                }
+            }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
-                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(search)) ||
-                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(search)) ||
+                    .filter(c -> (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
+                                 (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(search.toLowerCase()))) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
 
