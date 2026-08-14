@@ -2295,18 +2295,14 @@
         function syncClassInputFromSelect() {
             const val = document.getElementById('teacherClassSelect').value;
             const textInput = document.getElementById('teacherClassNameSearch');
-            if (val) {
-                textInput.value = val === 'all' ? '' : val;
+            if (textInput) {
+                textInput.value = (val === 'all' || !val) ? '' : val;
             }
             loadSelectedClassAnalytics();
         }
 
         function filterBySubjectCard(subjectName) {
-            const input = document.getElementById('teacherClassNameSearch');
-            if (input) {
-                input.value = subjectName;
-                loadSelectedClassAnalytics();
-            }
+            loadSelectedClassAnalytics(subjectName);
         }
 
         async function loadTeacherSessions() {
@@ -2314,8 +2310,8 @@
             if (!select) return;
 
             try {
-                let optionsHtml = '<option value="">-- Select a Class / Subject / Session --</option>';
-                optionsHtml += '<option value="all">🌐 All Classes & Enrolled Students (Overall)</option>';
+                let optionsHtml = '<option value="">-- Select Class --</option>';
+                optionsHtml += '<option value="all">🌐 All Classes & Courses (Overall)</option>';
 
                 let courses = [];
                 try {
@@ -2333,32 +2329,21 @@
                     if (sRes.ok) sessions = await sRes.json();
                 } catch (e) {}
 
+                const classNamesSet = new Set();
                 if (courses && courses.length > 0) {
-                    optionsHtml += '<optgroup label="📚 Created Class Courses">';
-                    courses.forEach(c => {
-                        optionsHtml += `<option value="${escapeHtml(c.className)}">${escapeHtml(c.className)} (${escapeHtml(c.subject)}) - Code: ${escapeHtml(c.classCode)}</option>`;
-                    });
-                    optionsHtml += '</optgroup>';
+                    courses.forEach(c => { if (c.className) classNamesSet.add(c.className); });
                 }
-
                 if (sessions && sessions.length > 0) {
-                    const uniqueSubjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))];
-                    if (uniqueSubjects.length > 0) {
-                        optionsHtml += '<optgroup label="📖 Subjects">';
-                        uniqueSubjects.forEach(sub => {
-                            optionsHtml += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)} (Subject)</option>`;
-                        });
-                        optionsHtml += '</optgroup>';
-                    }
-
-                    optionsHtml += '<optgroup label="⏱️ Specific Class Sessions">';
-                    sessions.forEach(s => {
-                        optionsHtml += `<option value="${s.id}">${escapeHtml(s.className)} - ${escapeHtml(s.subject)} (Session #${s.id})</option>`;
-                    });
-                    optionsHtml += '</optgroup>';
+                    sessions.forEach(s => { if (s.className) classNamesSet.add(s.className); });
                 }
 
-                if ((!courses || courses.length === 0) && (!sessions || sessions.length === 0)) {
+                if (classNamesSet.size > 0) {
+                    optionsHtml += '<optgroup label="🎓 Created Classes">';
+                    classNamesSet.forEach(cName => {
+                        optionsHtml += `<option value="${escapeHtml(cName)}">🎓 ${escapeHtml(cName)}</option>`;
+                    });
+                    optionsHtml += '</optgroup>';
+                } else {
                     optionsHtml += '<optgroup label="Sample Classes">';
                     optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
                     optionsHtml += '<option value="BBA">BBA (Business Admin)</option>';
@@ -2369,34 +2354,34 @@
                 select.innerHTML = optionsHtml;
 
             } catch (err) {
-                console.error("Error loading teacher sessions:", err);
+                console.error("Error loading teacher classes:", err);
             }
         }
 
         let currentSubjectFilter = 'all';
 
-        function filterBySubjectCard(subjectName) {
-            loadSelectedClassAnalytics(subjectName);
-        }
-
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
             currentSubjectFilter = selectedSubject || 'all';
 
-            const selectVal = document.getElementById('teacherClassSelect').value.trim();
-            const textVal = document.getElementById('teacherClassNameSearch').value.trim();
-            const targetVal = textVal || selectVal;
+            const selectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const textVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            let targetVal = textVal || selectVal;
+
+            if (!targetVal && selectVal) {
+                targetVal = selectVal;
+            }
 
             const panel = document.getElementById('classAnalyticsPanel');
             const placeholder = document.getElementById('classAnalyticsPlaceholder');
 
             if (!targetVal) {
-                panel.style.display = 'none';
-                placeholder.style.display = 'block';
+                if (panel) panel.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'block';
                 return;
             }
 
-            panel.style.display = 'block';
-            placeholder.style.display = 'none';
+            if (panel) panel.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
 
             const isNumericId = /^\d+$/.test(targetVal);
             const sumUrl = isNumericId 
