@@ -535,7 +535,19 @@ public class AttendanceService {
                 .distinct()
                 .collect(java.util.stream.Collectors.toList());
 
-        if (filterSubject) {
+        if (subjects.isEmpty()) {
+            subjects = classSessionRepository.findDistinctSubjects();
+            if (subjects == null || subjects.isEmpty()) {
+                subjects = classCourseRepository.findAll().stream()
+                        .map(ClassCourse::getSubject)
+                        .filter(java.util.Objects::nonNull)
+                        .filter(s -> !s.isBlank())
+                        .distinct()
+                        .collect(java.util.stream.Collectors.toList());
+            }
+        }
+
+        if (filterSubject && subjects != null) {
             subjects = subjects.stream()
                     .filter(s -> s.equalsIgnoreCase(searchSub))
                     .collect(java.util.stream.Collectors.toList());
@@ -546,28 +558,37 @@ public class AttendanceService {
         double totalAverageSum = 0.0;
         int activeSubjectCount = 0;
 
-        for (String subject : subjects) {
-            long totalSessionsHeld = classSessions.stream()
-                    .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
-                    .count();
-            if (totalSessionsHeld == 0) continue;
+        if (subjects != null) {
+            for (String subject : subjects) {
+                long totalSessionsHeld = classSessions.stream()
+                        .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
+                        .count();
 
-            double subjectTotalPercent = 0.0;
-            for (User student : distinctStudents) {
-                long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
-                        student, subject, attendedStatuses
-                );
-                double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
-                subjectTotalPercent += studentPercent;
+                if (totalSessionsHeld == 0) {
+                    subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
+                            subject, 0L, 0.0, distinctStudents.size()
+                    ));
+                    activeSubjectCount++;
+                    continue;
+                }
+
+                double subjectTotalPercent = 0.0;
+                for (User student : distinctStudents) {
+                    long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
+                            student, subject, attendedStatuses
+                    );
+                    double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
+                    subjectTotalPercent += studentPercent;
+                }
+
+                double avgPercent = distinctStudents.isEmpty() ? 0.0 : subjectTotalPercent / distinctStudents.size();
+                subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
+                        subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size()
+                ));
+
+                totalAverageSum += avgPercent;
+                activeSubjectCount++;
             }
-
-            double avgPercent = distinctStudents.isEmpty() ? 0.0 : subjectTotalPercent / distinctStudents.size();
-            subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
-                    subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size()
-            ));
-
-            totalAverageSum += avgPercent;
-            activeSubjectCount++;
         }
 
         double overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
