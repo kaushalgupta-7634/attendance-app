@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional(readOnly = true)
 public class AssignmentService {
 
     private static final Logger logger = LoggerFactory.getLogger(AssignmentService.class);
@@ -80,6 +83,7 @@ public class AssignmentService {
         }
     }
 
+    @Transactional
     public AssignmentResponseDTO uploadAssignment(MultipartFile file,
                                                   String className,
                                                   String subject,
@@ -292,10 +296,21 @@ public class AssignmentService {
         boolean isExpired = assignment.getDueDate() != null && assignment.getDueDate().isBefore(startOfToday) && (assignment.getUploadedAt() == null || assignment.getUploadedAt().isBefore(now.minusDays(30)));
         String status = isExpired ? "EXPIRED" : "ACTIVE";
 
+        Long teacherId = null;
+        String teacherName = "Faculty";
+        try {
+            if (assignment.getTeacher() != null) {
+                teacherId = assignment.getTeacher().getId();
+                teacherName = assignment.getTeacher().getName() != null ? assignment.getTeacher().getName() : assignment.getTeacher().getUsername();
+            }
+        } catch (Exception e) {
+            logger.warn("Could not lazily load teacher details for assignment #{}: {}", assignment.getId(), e.getMessage());
+        }
+
         return new AssignmentResponseDTO(
                 assignment.getId(),
-                assignment.getTeacher().getId(),
-                assignment.getTeacher().getName(),
+                teacherId,
+                teacherName,
                 assignment.getClassName(),
                 assignment.getSubject(),
                 assignment.getTitle(),
