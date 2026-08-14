@@ -2483,115 +2483,90 @@
 
         async function loadTeacherSessions() {
             const classSelect = document.getElementById('teacherClassSelect');
+            const courseSelect = document.getElementById('courseSelect');
             if (!classSelect) return;
 
             try {
-                let available = [];
+                classSubjectsMap.clear();
+
+                // 1. Fetch available classes
                 try {
                     const res = await fetch('/classes/available-classes', {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
-                    if (res.ok) available = await res.json();
+                    if (res.ok) {
+                        const available = await res.json();
+                        if (available && available.length > 0) {
+                            available.forEach(item => {
+                                if (item.className && item.className.trim()) {
+                                    const name = item.className.trim();
+                                    if (!classSubjectsMap.has(name)) {
+                                        classSubjectsMap.set(name, new Set());
+                                    }
+                                    if (item.subjects && item.subjects.length > 0) {
+                                        item.subjects.forEach(sub => {
+                                            if (sub && sub.trim()) classSubjectsMap.get(name).add(sub.trim());
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
                 } catch (e) { }
 
-                classSubjectsMap.clear();
+                // 2. Fetch my-courses
+                try {
+                    const cRes = await fetch('/classes/my-courses', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (cRes.ok) {
+                        const courses = await cRes.json();
+                        if (courses && courses.length > 0) {
+                            courses.forEach(c => {
+                                if (c.className && c.className.trim()) {
+                                    const name = c.className.trim();
+                                    if (!classSubjectsMap.has(name)) {
+                                        classSubjectsMap.set(name, new Set());
+                                    }
+                                    if (c.subject && c.subject.trim()) {
+                                        classSubjectsMap.get(name).add(c.subject.trim());
+                                    }
+                                }
+                            });
 
-                if (available && available.length > 0) {
-                    available.forEach(item => {
-                        if (item.className && item.className.trim()) {
-                            const name = item.className.trim();
-                            if (!classSubjectsMap.has(name)) {
-                                classSubjectsMap.set(name, new Set());
-                            }
-                            if (item.subjects && item.subjects.length > 0) {
-                                item.subjects.forEach(sub => {
-                                    if (sub && sub.trim()) classSubjectsMap.get(name).add(sub.trim());
+                            // Populate Tab 1 Session Course Dropdown
+                            if (courseSelect) {
+                                let courseOpts = '<option value="">-- Choose one of your Created Classes --</option>';
+                                courses.forEach(c => {
+                                    courseOpts += `<option value="${c.id}" data-classname="${escapeHtml(c.className)}" data-subject="${escapeHtml(c.subject)}">🎓 ${escapeHtml(c.className)} (${escapeHtml(c.subject)}) [Code: ${escapeHtml(c.classCode)}]</option>`;
                                 });
+                                courseSelect.innerHTML = courseOpts;
                             }
                         }
-                    });
-                }
+                    }
+                } catch (e) { }
 
+                // 3. Fallback to hardcoded defaults if DB has no classes yet
                 if (classSubjectsMap.size === 0) {
-                    let courses = [];
-                    try {
-                        const cRes = await fetch('/classes/my-courses', {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        });
-                        if (cRes.ok) courses = await cRes.json();
-                    } catch (e) { }
-
-                    let sessions = [];
-                    try {
-                        const sRes = await fetch('/sessions/my-sessions', {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        });
-                        if (sRes.ok) sessions = await sRes.json();
-                    } catch (e) { }
-
-                    if (courses && courses.length > 0) {
-                        courses.forEach(c => {
-                            if (c.className && c.className.trim()) {
-                                const name = c.className.trim();
-                                if (!classSubjectsMap.has(name)) {
-                                    classSubjectsMap.set(name, new Set());
-                                }
-                                if (c.subject && c.subject.trim()) {
-                                    classSubjectsMap.get(name).add(c.subject.trim());
-                                }
-                            }
-                        });
-                    }
-
-                    if (sessions && sessions.length > 0) {
-                        sessions.forEach(s => {
-                            if (s.className && s.className.trim()) {
-                                const name = s.className.trim();
-                                if (!classSubjectsMap.has(name)) {
-                                    classSubjectsMap.set(name, new Set());
-                                }
-                                if (s.subject && s.subject.trim()) {
-                                    classSubjectsMap.get(name).add(s.subject.trim());
-                                }
-                            }
-                        });
-                    }
-                }
-
-                let classOptionsHtml = '<option value="all">🌐 All Classes & Courses (Overall)</option>';
-
-                if (classSubjectsMap.size > 0) {
-                    classSubjectsMap.forEach((subs, className) => {
-                        classOptionsHtml += `<option value="${escapeHtml(className)}">🎓 ${escapeHtml(className)}</option>`;
-                    });
-                } else {
-                    classOptionsHtml += '<option value="BCA">🎓 BCA</option>';
-                    classOptionsHtml += '<option value="BBA">🎓 BBA</option>';
-                    classOptionsHtml += '<option value="CS101">🎓 CS101</option>';
                     classSubjectsMap.set('BCA', new Set(['ai', 'Math']));
+                    classSubjectsMap.set('BBA', new Set(['Business']));
+                    classSubjectsMap.set('CS101', new Set(['Computer Science']));
                 }
 
+                // Build Class Select Dropdown HTML
+                let classOptionsHtml = '<option value="all">🌐 All Classes & Courses (Overall)</option>';
+                classSubjectsMap.forEach((subs, className) => {
+                    classOptionsHtml += `<option value="${escapeHtml(className)}">🎓 ${escapeHtml(className)}</option>`;
+                });
                 classSelect.innerHTML = classOptionsHtml;
 
-                let defaultClass = 'all';
-                if (classSubjectsMap.size > 0) {
-                    defaultClass = Array.from(classSubjectsMap.keys())[0];
-                }
-
-                // Match exact option value in classSelect
-                let matchedVal = 'all';
-                for (const opt of classSelect.options) {
-                    if (opt.value && opt.value.toLowerCase() === defaultClass.toLowerCase()) {
-                        matchedVal = opt.value;
-                        break;
-                    }
-                }
-                classSelect.value = matchedVal;
-
                 const searchInput = document.getElementById('teacherClassNameSearch');
-                if (searchInput) searchInput.value = matchedVal === 'all' ? '' : matchedVal;
+                let activeVal = classSelect.value || 'all';
+                if (searchInput && searchInput.value.trim() !== '') {
+                    activeVal = searchInput.value.trim();
+                }
 
-                await updateSubjectDropdownOptions(matchedVal);
+                await updateSubjectDropdownOptions(activeVal);
                 await loadSelectedClassAnalytics('all');
 
             } catch (err) {
@@ -2866,13 +2841,11 @@
                 currentSubjectFilter = selectedSubject;
             }
 
-            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || 'all';
 
             let targetVal = 'all';
-            if (classSelectVal && classSelectVal !== '') {
-                targetVal = classSelectVal;
-            } else if (searchVal && searchVal !== '') {
+            if (searchVal && searchVal !== '') {
                 targetVal = searchVal;
                 for (const key of classSubjectsMap.keys()) {
                     if (key.toLowerCase() === searchVal.toLowerCase()) {
@@ -2880,6 +2853,8 @@
                         break;
                     }
                 }
+            } else if (classSelectVal && classSelectVal !== '') {
+                targetVal = classSelectVal;
             }
 
             const subSelect = document.getElementById('teacherSubjectSelect');
