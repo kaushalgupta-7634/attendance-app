@@ -2357,6 +2357,21 @@
                 if ((!courses || courses.length === 0) && (!sessions || sessions.length === 0)) {
                     optionsHtml += '<optgroup label="Sample Classes">';
                     optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
+                    optionsHtml += '<option value="BBA">BBA (Business Admin)</option>';
+                    optionsHtml += '<option value="CS101">CS101 (Intro to CS)</option>';
+                    optionsHtml += '</optgroup>';
+                }
+
+                select.innerHTML = optionsHtml;
+
+            } catch (err) {
+                console.error("Error loading teacher sessions:", err);
+            }
+        }
+
+        let currentSubjectFilter = 'all';
+
+        function filterBySubjectCard(subjectName) {
             loadSelectedClassAnalytics(subjectName);
         }
 
