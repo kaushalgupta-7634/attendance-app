@@ -97,10 +97,17 @@ public class AttendanceSummaryController {
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassAttendanceSummaryDTO> getClassAttendanceSummaryByName(
             @PathVariable("className") String className,
+            @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
             Principal principal) {
 
-        ClassAttendanceSummaryDTO summary = attendanceService.getClassAttendanceSummaryByName(className, principal.getName());
+        ClassAttendanceSummaryDTO summary = attendanceService.getClassAttendanceSummaryByName(className, subject, principal.getName());
         return ResponseEntity.ok(summary);
+    }
+
+    public ResponseEntity<ClassAttendanceSummaryDTO> getClassAttendanceSummaryByName(
+            String className,
+            Principal principal) {
+        return getClassAttendanceSummaryByName(className, null, principal);
     }
 
     @GetMapping("/classes/{classId}/attendance-summary/export")

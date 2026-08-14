@@ -586,20 +586,23 @@ public class ClassSessionService {
         return classSessionRepository.findByTeacher(teacher);
     }
 
-    public List<AttendanceRecordDTO> getClassDailyAttendanceRecords(String className, String teacherUsername) {
+    public List<AttendanceRecordDTO> getClassDailyAttendanceRecords(String className, String selectedSubject, String teacherUsername) {
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
-                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + teacherUsername));
 
-        if (requester.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view daily attendance records.");
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view daily attendance records.");
         }
 
-        List<AttendanceRecord> records;
-        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
-            records = attendanceRecordRepository.findBySession_ClassNameOrderByMarkedAtDesc(className);
-        } else {
-            records = attendanceRecordRepository.findAll();
-        }
+        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+        boolean isAllSubject = selectedSubject == null || selectedSubject.isBlank() || "all".equalsIgnoreCase(selectedSubject);
+
+        List<AttendanceRecord> records = attendanceRecordRepository.findAll().stream()
+                .filter(r -> r.getSession() != null)
+                .filter(r -> isAllClass || (r.getSession().getClassName() != null && r.getSession().getClassName().equalsIgnoreCase(className.trim())))
+                .filter(r -> isAllSubject || (r.getSession().getSubject() != null && r.getSession().getSubject().equalsIgnoreCase(selectedSubject.trim())))
+                .sorted((a, b) -> b.getMarkedAt().compareTo(a.getMarkedAt()))
+                .collect(Collectors.toList());
 
         return records.stream().map(r -> new AttendanceRecordDTO(
                 r.getId(),
@@ -612,6 +615,10 @@ public class ClassSessionService {
                 r.getStudentLng(),
                 r.getStatus()
         )).collect(Collectors.toList());
+    }
+
+    public List<AttendanceRecordDTO> getClassDailyAttendanceRecords(String className, String teacherUsername) {
+        return getClassDailyAttendanceRecords(className, null, teacherUsername);
     }
 
     @Transactional

@@ -446,7 +446,7 @@ public class AttendanceService {
         );
     }
 
-    public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String teacherUsername) {
+    public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String selectedSubject, String teacherUsername) {
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
 
@@ -454,18 +454,19 @@ public class AttendanceService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class attendance summary.");
         }
 
-        boolean isAll = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
-        String search = className != null ? className.trim() : "";
+        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+        String searchClass = className != null ? className.trim() : "";
+        boolean filterSubject = selectedSubject != null && !selectedSubject.isBlank() && !"all".equalsIgnoreCase(selectedSubject.trim());
+        String searchSub = filterSubject ? selectedSubject.trim() : "";
 
         List<User> distinctStudents = new java.util.ArrayList<>();
-        if (!isAll) {
-            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, search);
+        if (!isAllClass) {
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, searchClass);
             if (direct != null) distinctStudents.addAll(direct);
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
-                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(search)) ||
-                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(search)) ||
-                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassCourse course : matchingCourses) {
@@ -479,8 +480,7 @@ public class AttendanceService {
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
-                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
-                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                    .filter(s -> s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
@@ -497,11 +497,10 @@ public class AttendanceService {
 
         List<ClassSession> classSessions = classSessionRepository.findAll().stream()
                 .filter(s -> !s.isCancelled())
-                .filter(s -> isAll || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
-                             (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                .filter(s -> isAllClass || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)))
                 .collect(java.util.stream.Collectors.toList());
 
-        if (!isAll && classSessions.isEmpty() && distinctStudents.isEmpty()) {
+        if (!isAllClass && classSessions.isEmpty() && distinctStudents.isEmpty()) {
             return new ClassAttendanceSummaryDTO(
                     0L,
                     className,
@@ -518,6 +517,12 @@ public class AttendanceService {
                 .map(String::trim)
                 .distinct()
                 .collect(java.util.stream.Collectors.toList());
+
+        if (filterSubject) {
+            subjects = subjects.stream()
+                    .filter(s -> s.equalsIgnoreCase(searchSub))
+                    .collect(java.util.stream.Collectors.toList());
+        }
 
         List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
         List<ClassAttendanceSummaryDTO.ClassSubjectAverageDTO> subjectAverages = new java.util.ArrayList<>();
@@ -557,6 +562,10 @@ public class AttendanceService {
                 Math.round(overallClassAvg * 10.0) / 10.0,
                 subjectAverages
         );
+    }
+
+    public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String teacherUsername) {
+        return getClassAttendanceSummaryByName(className, null, teacherUsername);
     }
 
     public byte[] exportClassAttendanceSummaryCsv(Long classId, String teacherUsername) {
