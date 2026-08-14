@@ -33,5 +33,8 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
 
     List<ClassSession> findByActiveTrueAndEndTimeBefore(java.time.LocalDateTime now);
 
+    @Query("SELECT c FROM ClassSession c WHERE c.active = false AND c.cancelled = false AND c.startTime <= :now AND c.endTime > :now")
+    List<ClassSession> findScheduledSessionsToStart(@org.springframework.data.repository.query.Param("now") java.time.LocalDateTime now);
+
     long countByClassNameAndCancelledFalse(String className);
 }
