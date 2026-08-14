@@ -794,8 +794,16 @@
                     </div>
                 </div>
 
+                <!-- SUBJECT ATTENDANCE & PROGRESS CARDS GRID -->
+                <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📊</span> Subject Attendance Progress Cards (Present & Absent Records)
+                </h4>
+                <div id="subjectProgressCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class above to view subject progress cards.</p>
+                </div>
+
                 <!-- ENROLLED STUDENT ROSTER & INDIVIDUAL ATTENDANCE % TABLE -->
-                <h4 style="font-size: 0.95rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">🎓 Enrolled Student Roster & Performance Overview</h4>
+                <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">🎓 Enrolled Student Roster & Performance Overview</h4>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -2750,42 +2758,41 @@
                     if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal}`;
                     if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
-                    const avgGrid = document.getElementById('classSubjectAveragesGrid');
-                    if (avgGrid) {
+                    const progGrid = document.getElementById('subjectProgressCardsGrid');
+                    if (progGrid) {
                         if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
-                            avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
+                            progGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject records found for this class.</p>';
                         } else {
-                            let filterPillsHtml = `
-                                <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                    <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
-                                    <button onclick="filterBySubjectCard('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                        🌐 All Subjects
-                                    </button>
-                            `;
-
-                            summary.subjectAverages.forEach(sa => {
+                            progGrid.innerHTML = summary.subjectAverages.map(sa => {
                                 const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
-                                filterPillsHtml += `
-                                    <button onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                        📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
-                                    </button>
-                                `;
-                            });
+                                const isGood = sa.averagePercentage >= 75;
+                                const barColor = isGood ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #ef4444, #f87171)';
+                                const presentCount = sa.totalPresentCheckins || 0;
+                                const absentCount = sa.totalAbsences || 0;
 
-                            filterPillsHtml += `</div>`;
-
-                            const cardsHtml = summary.subjectAverages.map(sa => {
-                                const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
                                 return `
-                                    <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.7)'}; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(196, 181, 253, 0.25)'}; padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                                        <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
-                                        <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
-                                        <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">${isActive ? 'Active Subject Filter' : 'Click to Filter ➔'}</strong></span>
+                                    <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))' : 'rgba(15, 23, 42, 0.8)'}; border: 1.5px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 16px; padding: 1.25rem; box-shadow: ${isActive ? '0 10px 25px -5px rgba(139, 92, 246, 0.3)' : 'none'}; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='${isActive ? 'var(--accent-purple)' : 'rgba(255, 255, 255, 0.1)'}'; this.style.transform='none'">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                            <div>
+                                                <h4 style="font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0;">📖 ${escapeHtml(sa.subject)}</h4>
+                                                <span style="font-size: 0.75rem; color: var(--text-secondary);">${sa.totalSessionsHeld} sessions held • ${sa.studentCount || summary.totalStudents || 0} students</span>
+                                            </div>
+                                            <span style="font-size: 1.3rem; font-weight: 800; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${sa.averagePercentage}%</span>
+                                        </div>
+
+                                        <!-- PROGRESS BAR -->
+                                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-bottom: 1rem;">
+                                            <div style="width: ${Math.min(100, Math.max(0, sa.averagePercentage))}%; height: 100%; background: ${barColor}; border-radius: 10px; transition: width 0.6s ease;"></div>
+                                        </div>
+
+                                        <!-- METRIC BADGES: PRESENT & ABSENT COUNTS -->
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.65rem;">
+                                            <span style="color: #4ade80; font-weight: 600;">🟢 ${presentCount} Present Check-ins</span>
+                                            <span style="color: #f87171; font-weight: 600;">🔴 ${absentCount} Absences</span>
+                                        </div>
                                     </div>
                                 `;
                             }).join('');
-
-                            avgGrid.innerHTML = filterPillsHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; width: 100%;">${cardsHtml}</div>`;
                         }
                     }
                 }

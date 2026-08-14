@@ -592,6 +592,7 @@ public class AttendanceService {
 
                 List<Long> sessionIds = matchingSubSessions.stream().map(ClassSession::getId).collect(java.util.stream.Collectors.toList());
 
+                long totalPresentCheckins = 0;
                 double subjectTotalPercent = 0.0;
                 for (User student : distinctStudents) {
                     long presentCount = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(student).stream()
@@ -599,13 +600,18 @@ public class AttendanceService {
                             .filter(r -> attendedStatuses.contains(r.getStatus()))
                             .count();
 
+                    totalPresentCheckins += presentCount;
                     double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
                     subjectTotalPercent += studentPercent;
                 }
 
+                long totalPossibleCheckins = totalSessionsHeld * Math.max(1, distinctStudents.size());
+                long totalAbsences = Math.max(0, totalPossibleCheckins - totalPresentCheckins);
+
                 double avgPercent = distinctStudents.isEmpty() ? 0.0 : subjectTotalPercent / distinctStudents.size();
                 subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
-                        subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size()
+                        subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size(),
+                        totalPresentCheckins, totalAbsences
                 ));
 
                 totalAverageSum += avgPercent;
