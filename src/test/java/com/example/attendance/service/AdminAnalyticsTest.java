@@ -45,10 +45,14 @@ class AdminAnalyticsTest {
     private ClassSession sessionJan;
     private ClassSession sessionAug;
 
+    @Autowired
+    private com.example.attendance.repository.AssignmentRepository assignmentRepository;
+
     @BeforeEach
     void setUp() {
         attendanceRecordRepository.deleteAll();
         classSessionRepository.deleteAll();
+        assignmentRepository.deleteAll();
         userRepository.deleteAll();
 
         String encPass = passwordEncoder.encode("pass123");
