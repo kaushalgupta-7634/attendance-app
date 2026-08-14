@@ -41,10 +41,10 @@ public class ClassSessionService {
 
     public ClassSession startSession(CreateSessionRequest request, String teacherUsername) {
         User teacher = userRepository.findByUsername(teacherUsername)
-                .orElseThrow(() -> new RuntimeException("Teacher user not found with username: " + teacherUsername));
+                .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
         if (teacher.getRole() != Role.TEACHER) {
-            throw new RuntimeException("Only teachers can start a class session.");
+            throw new org.springframework.security.access.AccessDeniedException("Only teachers can start a class session.");
         }
 
         // Auto-end any previous active session for this teacher if they forgot to close it
@@ -118,7 +118,7 @@ public class ClassSessionService {
 
     public ClassSession endSession(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
 
         verifyTeacherAccess(session, teacherUsername);
 
@@ -182,12 +182,12 @@ public class ClassSessionService {
 
     public byte[] getSessionQrCodeImage(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
 
         verifyTeacherAccess(session, teacherUsername);
 
         if (!session.isActive()) {
-            throw new RuntimeException("ClassSession is no longer active.");
+            throw new IllegalStateException("ClassSession is no longer active.");
         }
 
         String qrToken = qrCodeService.generateQrToken(sessionId);
@@ -198,7 +198,7 @@ public class ClassSessionService {
 
     public List<AttendanceRecordDTO> getSessionAttendanceRecords(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
 
         verifyTeacherAccess(session, teacherUsername);
 
@@ -222,7 +222,7 @@ public class ClassSessionService {
 
     public List<AttendanceRecordDTO> getSessionFullAttendanceRecords(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
 
         verifyTeacherAccess(session, teacherUsername);
 
@@ -338,7 +338,7 @@ public class ClassSessionService {
 
     public byte[] exportSessionAttendanceCsv(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
 
         verifyTeacherAccess(session, teacherUsername);
 
@@ -385,14 +385,14 @@ public class ClassSessionService {
 
     public ClassSession getLatestActiveSession() {
         ClassSession session = classSessionRepository.findTopByActiveTrueOrderByIdDesc()
-                .orElseThrow(() -> new RuntimeException("No active class session found. Please ask your teacher to launch a class session."));
+                .orElseThrow(() -> new IllegalArgumentException("No active class session found. Please ask your teacher to launch a class session."));
         session.setPasscode(qrCodeService.generateCurrentPasscode(session.getId()));
         return session;
     }
 
     public String getSessionPasscode(Long sessionId, String teacherUsername) {
         ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("ClassSession not found with ID: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
         verifyTeacherAccess(session, teacherUsername);
         if (!session.isActive()) {
             return "------";
@@ -493,11 +493,7 @@ public class ClassSessionService {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
-        List<ClassSession> sessions = classSessionRepository.findByTeacher(teacher);
-        if (sessions.isEmpty()) {
-            sessions = classSessionRepository.findAll();
-        }
-        return sessions;
+        return classSessionRepository.findByTeacher(teacher);
     }
 
     public List<AttendanceRecordDTO> getClassDailyAttendanceRecords(String className, String teacherUsername) {
@@ -511,9 +507,6 @@ public class ClassSessionService {
         List<AttendanceRecord> records;
         if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
             records = attendanceRecordRepository.findBySession_ClassNameOrderByMarkedAtDesc(className);
-            if (records.isEmpty()) {
-                records = attendanceRecordRepository.findAll();
-            }
         } else {
             records = attendanceRecordRepository.findAll();
         }

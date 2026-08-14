@@ -2338,8 +2338,8 @@
                         return `
                             <tr>
                                 <td>${formattedTime}</td>
-                                <td><strong>${escapeHtml(r.subject || 'N/A')}</strong></td>
-                                <td>${escapeHtml(r.className || 'N/A')}</td>
+                                <td><strong>${escapeHtml(r.subject || 'General')}</strong></td>
+                                <td>${escapeHtml(r.className || r.subject || 'General')}</td>
                                 <td><span class="status-badge ${isPresent ? 'status-present' : 'status-absent'}">${r.status || 'ABSENT'}</span></td>
                             </tr>
                         `;

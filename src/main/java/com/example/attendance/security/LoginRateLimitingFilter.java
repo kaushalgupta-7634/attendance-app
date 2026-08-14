@@ -27,7 +27,8 @@ public class LoginRateLimitingFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        if ("/auth/login".equalsIgnoreCase(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+        String uri = request.getRequestURI() != null ? request.getRequestURI().replaceAll("^/api", "").replaceAll("/+$", "") : "";
+        if ("/auth/login".equalsIgnoreCase(uri) && "POST".equalsIgnoreCase(request.getMethod())) {
             String clientIp = getClientIP(request);
             long now = System.currentTimeMillis();
 
