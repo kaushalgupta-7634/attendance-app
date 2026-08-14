@@ -523,9 +523,41 @@ public class ClassSessionService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class rosters.");
         }
 
-        List<User> students;
-        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className)) {
-            students = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
+        List<User> students = new java.util.ArrayList<>();
+        if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className.trim())) {
+            String search = className.trim();
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, search);
+            if (direct != null) students.addAll(direct);
+
+            List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(search)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(search)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
+                    .collect(Collectors.toList());
+
+            for (ClassCourse course : matchingCourses) {
+                List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
+                for (Enrollment e : enrollments) {
+                    if (e.getStudent() != null && !students.contains(e.getStudent())) {
+                        students.add(e.getStudent());
+                    }
+                }
+            }
+
+            List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
+                    .filter(s -> !s.isCancelled())
+                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
+                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                    .collect(Collectors.toList());
+
+            for (ClassSession session : matchingSessions) {
+                List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+                for (AttendanceRecord r : records) {
+                    if (r.getStudent() != null && !students.contains(r.getStudent())) {
+                        students.add(r.getStudent());
+                    }
+                }
+            }
         } else {
             students = userRepository.findByRole(Role.STUDENT);
         }
