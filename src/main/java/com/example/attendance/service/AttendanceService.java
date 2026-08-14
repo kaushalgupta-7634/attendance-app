@@ -397,8 +397,8 @@ public class AttendanceService {
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
 
-        if (requester.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class attendance summary.");
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class attendance summary.");
         }
 
         List<User> distinctStudents = attendanceRecordRepository.findDistinctStudentsBySessionOrClassName(session, session.getClassName());
@@ -450,8 +450,8 @@ public class AttendanceService {
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
 
-        if (requester.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class attendance summary.");
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class attendance summary.");
         }
 
         boolean isAll = className == null || className.isBlank() || "all".equalsIgnoreCase(className);

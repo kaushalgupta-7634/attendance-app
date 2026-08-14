@@ -605,6 +605,15 @@
             if (type === 'analytics') loadAnalyticsReport();
         }
 
+        function filterAdminLogsBySubject(subjectName) {
+            switchSection('attendance');
+            const searchInput = document.getElementById('attendanceSearchInput');
+            if (searchInput) {
+                searchInput.value = subjectName;
+                loadAttendanceLogs();
+            }
+        }
+
         async function loadStats() {
             try {
                 const res = await fetch('/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -1064,9 +1073,9 @@
                         else if (pct < 75) barColor = 'linear-gradient(90deg, #eab308, #fde047)';
 
                         return `
-                            <div>
+                            <div onclick="filterAdminLogsBySubject('${escapeHtml(sb.subject)}')" style="cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(51, 65, 85, 0.5)'" onmouseout="this.style.background='transparent'">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #f8fafc; margin-bottom: 0.35rem;">
-                                    <span><strong>${escapeHtml(sb.subject)}</strong> (${sb.sessionsHeld} sessions)</span>
+                                    <span><strong>📖 ${escapeHtml(sb.subject)}</strong> (${sb.sessionsHeld} sessions) • <span style="color: var(--accent-cyan); font-weight: 600;">Filter Logs ➔</span></span>
                                     <span><strong>${pct.toFixed(1)}%</strong> (${sb.presentCount} present)</span>
                                 </div>
                                 <div style="width: 100%; background: #1e293b; height: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--card-border);">

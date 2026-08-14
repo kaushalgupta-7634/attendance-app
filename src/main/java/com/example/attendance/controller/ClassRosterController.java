@@ -28,7 +28,7 @@ public class ClassRosterController {
      * Returns total count and list of all students registered/enrolled in that class.
      */
     @GetMapping("/{classId}/roster")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassRosterResponseDTO> getClassRoster(
             @PathVariable("classId") Long classId,
             Principal principal) {
@@ -42,7 +42,7 @@ public class ClassRosterController {
      * Returns total count and list of all students in that class by name.
      */
     @GetMapping("/by-name/{className}/roster")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassRosterResponseDTO> getClassRosterByName(
             @PathVariable("className") String className,
             Principal principal) {
@@ -56,7 +56,7 @@ public class ClassRosterController {
      * Returns list of daily attendance records for that class.
      */
     @GetMapping("/by-name/{className}/daily-records")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<List<AttendanceRecordDTO>> getClassDailyRecords(
             @PathVariable("className") String className,
             Principal principal) {
