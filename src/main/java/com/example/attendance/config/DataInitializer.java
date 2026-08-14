@@ -60,53 +60,9 @@ public class DataInitializer implements CommandLineRunner {
                 syncAdminUser("KaushalGupta", targetPassword);
             }
 
-            // Seed demo assignments if table is empty
-            seedDemoAssignments();
-
+            // Admin sync completed
         } catch (Exception e) {
             logger.error("Error in DataInitializer admin setup: {}", e.getMessage(), e);
-        }
-    }
-
-    private void seedDemoAssignments() {
-        try {
-            if (assignmentRepository.count() == 0) {
-                User teacher = userRepository.findAll().stream()
-                        .filter(u -> u.getRole() == Role.TEACHER || u.getRole() == Role.ADMIN)
-                        .findFirst().orElse(null);
-
-                if (teacher != null) {
-                    java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
-
-                    com.example.attendance.model.Assignment a1 = new com.example.attendance.model.Assignment(
-                            teacher,
-                            "BCA",
-                            "Data Structures & Algorithms",
-                            "Assignment 1 - Binary Search Trees & Graphs",
-                            "Implement BST operations and Graph Traversal (DFS/BFS) in Java/C++.",
-                            "uploads/assignments/sample_assignment_1.pdf",
-                            now,
-                            now.plusDays(7)
-                    );
-
-                    com.example.attendance.model.Assignment a2 = new com.example.attendance.model.Assignment(
-                            teacher,
-                            "BBA",
-                            "Financial Accounting",
-                            "Assignment 2 - Balance Sheet & Cash Flow Analysis",
-                            "Prepare sample financial balance sheet statements and cash flow ratios.",
-                            "uploads/assignments/sample_assignment_2.pdf",
-                            now,
-                            now.plusDays(14)
-                    );
-
-                    assignmentRepository.save(a1);
-                    assignmentRepository.save(a2);
-                    logger.info("SEEDED 2 DEMO ASSIGNMENTS IN DATABASE -> BCA (Data Structures) & BBA (Financial Accounting)");
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Could not seed demo assignments: {}", e.getMessage());
         }
     }
 
