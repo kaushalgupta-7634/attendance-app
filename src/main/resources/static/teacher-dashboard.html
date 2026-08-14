@@ -2291,20 +2291,27 @@
                 return;
             }
 
+            const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
+            const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
+            const subjectFilterDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
+
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += `Class Name,${classVal}\n`;
-            csvContent += `Subject Filter,${subVal}\n`;
-            csvContent += `Export Date,${new Date().toLocaleString()}\n\n`;
+            csvContent += `Class Name,"${classVal.replace(/"/g, '""')}"\n`;
+            csvContent += `Subject Filter,"${subjectFilterDisplay.replace(/"/g, '""')}"\n`;
+            csvContent += `Overall Class Average,"${overallAvgText.replace(/"/g, '""')}"\n`;
+            csvContent += `Total Enrolled Students,"${totalStudentsText.replace(/"/g, '""')}"\n`;
+            csvContent += `Export Date,"${new Date().toLocaleString()}"\n\n`;
             csvContent += "Student Name,Username,Email,Attendance %,Status (<75% Warning)\n";
 
             const rows = tbody.querySelectorAll('tr');
             rows.forEach(tr => {
                 const tds = tr.querySelectorAll('td');
                 if (tds.length >= 4) {
-                    const name = tds[0]?.textContent.trim().replace(/,/g, ' ') || '';
-                    const username = tds[1]?.textContent.trim().replace(/,/g, ' ') || '';
-                    const email = tds[2]?.textContent.trim().replace(/,/g, ' ') || '';
-                    const percentText = tds[3]?.textContent.trim().replace(/,/g, ' ') || '0%';
+                    let name = tds[0]?.querySelector('div')?.childNodes[0]?.textContent?.trim() || tds[0]?.textContent?.trim() || '';
+                    name = name.replace(/,/g, ' ');
+                    const username = tds[1]?.textContent?.trim()?.replace(/,/g, ' ') || '';
+                    const email = tds[2]?.textContent?.trim()?.replace(/,/g, ' ') || '';
+                    const percentText = tds[3]?.querySelector('div')?.textContent?.trim() || tds[3]?.textContent?.trim() || '0%';
                     const percentVal = parseFloat(percentText) || 0;
                     const status = percentVal < 75 ? "LOW ATTENDANCE WARNING (<75%)" : "OK";
 

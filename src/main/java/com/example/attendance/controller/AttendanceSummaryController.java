@@ -127,4 +127,19 @@ public class AttendanceSummaryController {
         headers.setContentDispositionFormData("attachment", "Class_" + classId + "_Attendance_Summary.csv");
         return new ResponseEntity<>(csvData, headers, org.springframework.http.HttpStatus.OK);
     }
+
+    @GetMapping("/classes/by-name/{className}/attendance-summary/export")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<byte[]> exportClassAttendanceSummaryByName(
+            @PathVariable("className") String className,
+            @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
+            Principal principal) {
+
+        byte[] csvData = attendanceService.exportClassAttendanceSummaryByNameCsv(className, subject, principal.getName());
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.parseMediaType("text/csv"));
+        String subName = (subject != null && !subject.isBlank() && !"all".equalsIgnoreCase(subject)) ? subject.trim() : "All_Subjects";
+        headers.setContentDispositionFormData("attachment", "Class_" + className + "_" + subName + "_Attendance_Summary.csv");
+        return new ResponseEntity<>(csvData, headers, org.springframework.http.HttpStatus.OK);
+    }
 }
