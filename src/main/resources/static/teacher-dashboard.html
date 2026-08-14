@@ -2860,6 +2860,11 @@
             const rosterUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
             const logUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
 
+            const headerClassElem = document.getElementById('analyticsHeaderClassText');
+            const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
+            if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal === 'all' ? 'All Classes & Courses (Overall)' : targetVal}`;
+            if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
+
             try {
                 // 1. Fetch Class Summary Analytics
                 const sumRes = await fetch(sumUrl, {
@@ -2873,11 +2878,6 @@
                     const totalStudentsElem = document.getElementById('classTotalStudentsText');
                     if (overallAvgElem) overallAvgElem.textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
                     if (totalStudentsElem) totalStudentsElem.textContent = (summary.totalStudents || 0) + ' Students';
-
-                    const headerClassElem = document.getElementById('analyticsHeaderClassText');
-                    const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
-                    if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal}`;
-                    if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
                     const progGrid = document.getElementById('subjectProgressCardsGrid');
                     if (progGrid) {
@@ -2919,12 +2919,23 @@
                 }
 
                 // 2. Fetch Class Student Roster
+                let roster = null;
                 const rosterRes = await fetch(rosterUrl, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
                 if (rosterRes.ok) {
-                    const roster = await rosterRes.json();
+                    roster = await rosterRes.json();
+                }
+
+                if (!roster || !roster.students || roster.students.length === 0) {
+                    const fallbackRes = await fetch('/classes/by-name/all/roster', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (fallbackRes.ok) roster = await fallbackRes.json();
+                }
+
+                if (roster) {
                     const tbody = document.getElementById('classRosterTableBody');
 
                     if (!roster.students || roster.students.length === 0) {
