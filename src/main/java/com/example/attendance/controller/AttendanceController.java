@@ -69,7 +69,7 @@ public class AttendanceController {
     }
 
     @PostMapping("/trigger-low-attendance-alerts")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<String> triggerLowAttendanceAlerts() {
         attendanceScheduler.checkAndSendAttendanceAlerts();
         return ResponseEntity.ok("Low attendance alert calculation & email warnings triggered successfully.");
