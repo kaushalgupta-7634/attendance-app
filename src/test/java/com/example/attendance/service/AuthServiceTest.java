@@ -125,4 +125,150 @@ class AuthServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(request));
     }
+
+    @Test
+    void testResetPassword_PinSuccess_ResetsAttemptCountAndClearsLock() {
+        student.setSecurityPin("1234");
+        student.setPinGeneratedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        student.setPinAttemptCount(3);
+        student.setPinLockedUntil(null);
+
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setUsernameOrEmail("student1");
+        request.setSecurityPin("1234");
+        request.setNewPassword("newSecretPassword123");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+        when(passwordEncoder.encode("newSecretPassword123")).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String result = authService.resetPassword(request);
+
+        assertNotNull(result);
+        assertEquals(0, student.getPinAttemptCount());
+        assertNull(student.getPinLockedUntil());
+        assertEquals("encodedNewPassword", student.getPassword());
+    }
+
+    @Test
+    void testResetPassword_PinIncorrect_IncrementsAttemptCount() {
+        student.setSecurityPin("1234");
+        student.setPinGeneratedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        student.setPinAttemptCount(2);
+
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setUsernameOrEmail("student1");
+        request.setSecurityPin("9999");
+        request.setNewPassword("newSecretPassword123");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+
+        assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(request));
+        assertEquals(3, student.getPinAttemptCount());
+    }
+
+    @Test
+    void testResetPassword_Pin5thFailedAttempt_LocksAccountFor15Minutes() {
+        student.setSecurityPin("1234");
+        student.setPinGeneratedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        student.setPinAttemptCount(4);
+
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setUsernameOrEmail("student1");
+        request.setSecurityPin("9999");
+        request.setNewPassword("newSecretPassword123");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+
+        com.example.attendance.exception.TooManyRequestsException ex = assertThrows(
+                com.example.attendance.exception.TooManyRequestsException.class,
+                () -> authService.resetPassword(request)
+        );
+
+        assertTrue(ex.getMessage().contains("Too many attempts, try again after 15 minutes."));
+        assertEquals(0, student.getPinAttemptCount());
+        assertNotNull(student.getPinLockedUntil());
+        assertTrue(student.getPinLockedUntil().isAfter(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"))));
+    }
+
+    @Test
+    void testResetPassword_PinLockedOut_RejectsWith429AndRemainingMinutesMessage() {
+        student.setSecurityPin("1234");
+        student.setPinGeneratedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        student.setPinLockedUntil(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(12));
+
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setUsernameOrEmail("student1");
+        request.setSecurityPin("1234");
+        request.setNewPassword("newSecretPassword123");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+
+        com.example.attendance.exception.TooManyRequestsException ex = assertThrows(
+                com.example.attendance.exception.TooManyRequestsException.class,
+                () -> authService.resetPassword(request)
+        );
+
+        assertTrue(ex.getMessage().contains("Too many attempts, try again after"));
+        assertTrue(ex.getMessage().contains("minutes."));
+    }
+
+    @Test
+    void testResetPassword_PinExpired_RejectsWithExpiryMessage() {
+        student.setSecurityPin("1234");
+        // Set PIN generated at 15 minutes ago (> 10 minutes)
+        student.setPinGeneratedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).minusMinutes(15));
+
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setUsernameOrEmail("student1");
+        request.setSecurityPin("1234");
+        request.setNewPassword("newSecretPassword123");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.resetPassword(request)
+        );
+
+        assertTrue(ex.getMessage().contains("expired"));
+        assertTrue(ex.getMessage().contains("request a new PIN"));
+    }
+
+    @Test
+    void testRequestPin_RateLimiting_Max3PerHour() {
+        RequestPinRequest req = new RequestPinRequest("student1");
+
+        when(userRepository.findByEmailIgnoreCase("student1")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Request 1
+        String res1 = authService.requestPin(req);
+        assertNotNull(res1);
+        assertEquals(1, student.getPinRequestCount());
+
+        // Request 2
+        String res2 = authService.requestPin(req);
+        assertNotNull(res2);
+        assertEquals(2, student.getPinRequestCount());
+
+        // Request 3
+        String res3 = authService.requestPin(req);
+        assertNotNull(res3);
+        assertEquals(3, student.getPinRequestCount());
+
+        // Request 4 (Should fail with 429 TooManyRequestsException)
+        com.example.attendance.exception.TooManyRequestsException ex = assertThrows(
+                com.example.attendance.exception.TooManyRequestsException.class,
+                () -> authService.requestPin(req)
+        );
+
+        assertTrue(ex.getMessage().contains("Maximum 3 PIN requests per hour allowed"));
+    }
 }

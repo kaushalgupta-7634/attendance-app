@@ -154,4 +154,59 @@ public class User {
     public void setSecurityPin(String securityPin) {
         this.securityPin = securityPin;
     }
+
+    @Column(name = "pin_attempt_count", nullable = false)
+    private Integer pinAttemptCount = 0;
+
+    @Column(name = "pin_locked_until")
+    private java.time.LocalDateTime pinLockedUntil;
+
+    @Column(name = "pin_generated_at")
+    private java.time.LocalDateTime pinGeneratedAt;
+
+    @Column(name = "pin_request_count", nullable = false)
+    private Integer pinRequestCount = 0;
+
+    @Column(name = "pin_request_window_start")
+    private java.time.LocalDateTime pinRequestWindowStart;
+
+    public Integer getPinAttemptCount() {
+        return pinAttemptCount != null ? pinAttemptCount : 0;
+    }
+
+    public void setPinAttemptCount(Integer pinAttemptCount) {
+        this.pinAttemptCount = pinAttemptCount != null ? pinAttemptCount : 0;
+    }
+
+    public java.time.LocalDateTime getPinLockedUntil() {
+        return pinLockedUntil;
+    }
+
+    public void setPinLockedUntil(java.time.LocalDateTime pinLockedUntil) {
+        this.pinLockedUntil = pinLockedUntil;
+    }
+
+    public java.time.LocalDateTime getPinGeneratedAt() {
+        return pinGeneratedAt;
+    }
+
+    public void setPinGeneratedAt(java.time.LocalDateTime pinGeneratedAt) {
+        this.pinGeneratedAt = pinGeneratedAt;
+    }
+
+    public Integer getPinRequestCount() {
+        return pinRequestCount != null ? pinRequestCount : 0;
+    }
+
+    public void setPinRequestCount(Integer pinRequestCount) {
+        this.pinRequestCount = pinRequestCount != null ? pinRequestCount : 0;
+    }
+
+    public java.time.LocalDateTime getPinRequestWindowStart() {
+        return pinRequestWindowStart;
+    }
+
+    public void setPinRequestWindowStart(java.time.LocalDateTime pinRequestWindowStart) {
+        this.pinRequestWindowStart = pinRequestWindowStart;
+    }
 }
