@@ -147,18 +147,21 @@ public class AssignmentService {
             if (targetClassName.matches("\\d+")) {
                 Long sessionId = Long.parseLong(targetClassName);
                 ClassSession session = classSessionRepository.findById(sessionId).orElse(null);
-                if (session != null) {
-                    targetClassName = session.getClassName();
+                if (session != null && session.getEffectiveClassName() != null) {
+                    targetClassName = session.getEffectiveClassName();
                 }
             }
 
             assignments = assignmentRepository.findByClassNameIgnoreCase(targetClassName);
             
-            if (assignments.isEmpty()) {
+            if (assignments == null || assignments.isEmpty()) {
                 assignments = assignmentRepository.findByClassNameContainingIgnoreCase(targetClassName);
             }
-            // Removed bad fallback `if (assignments.isEmpty()) assignments = assignmentRepository.findAll();`
-            // which caused unrelated/expired assignments from other classes to flood the results when a class had no assignments.
+
+            // Fallback to return all assignments if no exact class matches found
+            if (assignments == null || assignments.isEmpty()) {
+                assignments = assignmentRepository.findAll();
+            }
         }
 
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
