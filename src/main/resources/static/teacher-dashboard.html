@@ -945,12 +945,20 @@
             return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
 
+        function getDefaultDueDate() {
+            const d = new Date();
+            d.setDate(d.getDate() + 7);
+            return formatDateForInput(d);
+        }
+
         const now = new Date();
         const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
         const startTimeInput = document.getElementById('startTime');
         const endTimeInput = document.getElementById('endTime');
         if (startTimeInput) startTimeInput.value = formatDateForInput(now);
         if (endTimeInput) endTimeInput.value = formatDateForInput(nextHour);
+        const assignDueInput = document.getElementById('assignDueDate');
+        if (assignDueInput) assignDueInput.value = getDefaultDueDate();
 
         function toggleTestingMode(cb) {
             const radiusInput = document.getElementById('radiusMeters');
