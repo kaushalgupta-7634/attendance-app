@@ -273,8 +273,8 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="regSecurityPin">4-Digit Private Security PIN (For Password Reset Security)</label>
-                <input type="password" id="regSecurityPin" class="form-input" placeholder="e.g. 1234 (Keep this PIN secret)" maxlength="6">
+                <label class="form-label" for="regSecurityPin">Create 4-Digit Security PIN (For Password Reset)</label>
+                <input type="password" id="regSecurityPin" name="user_custom_pin_field" class="form-input" placeholder="Enter your 4-digit PIN (e.g. 1234)" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="new-password" value="" required>
             </div>
 
             <button type="submit" id="regSubmitBtn" class="submit-btn">Create Account</button>
@@ -301,6 +301,8 @@
                 registerForm.classList.remove('hidden');
                 tabRegisterBtn.classList.add('active');
                 tabLoginBtn.classList.remove('active');
+                const pinInput = document.getElementById('regSecurityPin');
+                if (pinInput) pinInput.value = '';
             }
         }
 
