@@ -2302,27 +2302,56 @@
             if (!select) return;
 
             try {
-                const res = await fetch('/sessions/my-sessions', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
+                let optionsHtml = '<option value="">-- Select a Class / Subject / Session --</option>';
+                optionsHtml += '<option value="all">🌐 All Classes & Enrolled Students (Overall)</option>';
 
-                const sessions = await res.json();
-                let optionsHtml = '<option value="">Select a Session / Class...</option>';
-
-                if (sessions && sessions.length > 0) {
-                    const uniqueClasses = [...new Set(sessions.map(s => s.className).filter(Boolean))];
-                    optionsHtml += '<optgroup label="Classes">';
-                    uniqueClasses.forEach(c => {
-                        optionsHtml += `<option value="${escapeHtml(c)}">${escapeHtml(c)} (All Sessions)</option>`;
+                let courses = [];
+                try {
+                    const cRes = await fetch('/classes/my-courses', {
+                        headers: { 'Authorization': 'Bearer ' + token }
                     });
-                    optionsHtml += '</optgroup><optgroup label="Specific Sessions">';
-                    sessions.forEach(s => {
-                        optionsHtml += `<option value="${s.id}">${escapeHtml(s.className)} (Session #${s.id})</option>`;
+                    if (cRes.ok) courses = await cRes.json();
+                } catch (e) {}
+
+                let sessions = [];
+                try {
+                    const sRes = await fetch('/sessions/my-sessions', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (sRes.ok) sessions = await sRes.json();
+                } catch (e) {}
+
+                if (courses && courses.length > 0) {
+                    optionsHtml += '<optgroup label="📚 Created Class Courses">';
+                    courses.forEach(c => {
+                        optionsHtml += `<option value="${escapeHtml(c.className)}">${escapeHtml(c.className)} (${escapeHtml(c.subject)}) - Code: ${escapeHtml(c.classCode)}</option>`;
                     });
                     optionsHtml += '</optgroup>';
-                } else {
-                    optionsHtml += '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                }
+
+                if (sessions && sessions.length > 0) {
+                    const uniqueSubjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))];
+                    if (uniqueSubjects.length > 0) {
+                        optionsHtml += '<optgroup label="📖 Subjects">';
+                        uniqueSubjects.forEach(sub => {
+                            optionsHtml += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)} (Subject)</option>`;
+                        });
+                        optionsHtml += '</optgroup>';
+                    }
+
+                    optionsHtml += '<optgroup label="⏱️ Specific Class Sessions">';
+                    sessions.forEach(s => {
+                        optionsHtml += `<option value="${s.id}">${escapeHtml(s.className)} - ${escapeHtml(s.subject)} (Session #${s.id})</option>`;
+                    });
+                    optionsHtml += '</optgroup>';
+                }
+
+                if ((!courses || courses.length === 0) && (!sessions || sessions.length === 0)) {
+                    optionsHtml += '<optgroup label="Sample Classes">';
+                    optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
+                    optionsHtml += '<option value="BBA">BBA (Business Admin)</option>';
+                    optionsHtml += '<option value="CS101">CS101 (Intro to CS)</option>';
+                    optionsHtml += '</optgroup>';
                 }
 
                 select.innerHTML = optionsHtml;
