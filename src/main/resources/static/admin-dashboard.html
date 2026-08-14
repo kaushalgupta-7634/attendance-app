@@ -512,23 +512,27 @@
                     <!-- STATS SUMMARY & SUBJECT BREAKDOWN CARD -->
                     <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                         
-                        <!-- 4 METRIC TILES -->
+                        <!-- 4 METRIC TILES (CLICKABLE) -->
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
-                            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Sessions Held</div>
+                            <div onclick="showAnalyticsDetail('SESSIONS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Sessions Held</div>
                                 <div id="analyticsSessionsHeld" style="font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-top: 0.25rem;">0</div>
+                                <span style="font-size: 0.68rem; color: #38bdf8; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
                             </div>
-                            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Present Check-ins</div>
+                            <div onclick="showAnalyticsDetail('PRESENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-green)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Present Check-ins</div>
                                 <div id="analyticsPresentCount" style="font-size: 1.5rem; font-weight: 700; color: #4ade80; margin-top: 0.25rem;">0</div>
+                                <span style="font-size: 0.68rem; color: #4ade80; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
                             </div>
-                            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Absences</div>
+                            <div onclick="showAnalyticsDetail('ABSENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-red)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Absences</div>
                                 <div id="analyticsAbsentCount" style="font-size: 1.5rem; font-weight: 700; color: #f87171; margin-top: 0.25rem;">0</div>
+                                <span style="font-size: 0.68rem; color: #f87171; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
                             </div>
-                            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center;">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Students Enrolled</div>
+                            <div onclick="showAnalyticsDetail('STUDENTS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Students Enrolled</div>
                                 <div id="analyticsStudentCount" style="font-size: 1.5rem; font-weight: 700; color: #c084fc; margin-top: 0.25rem;">0</div>
+                                <span style="font-size: 0.68rem; color: #c084fc; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
                             </div>
                         </div>
 
@@ -539,6 +543,33 @@
                                 <p style="font-size: 0.85rem; color: var(--text-secondary);">Select date range to view subject breakdown.</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC METRIC DETAIL PANEL -->
+                <div id="analyticsDetailPanel" style="display: none; margin-top: 1.5rem; background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+                        <div>
+                            <h4 id="analyticsDetailTitle" style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0;">Detailed Report</h4>
+                            <span id="analyticsDetailSubtitle" style="font-size: 0.8rem; color: var(--text-secondary);">Filtered breakdown based on selected date range & class</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;" onclick="exportAnalyticsDetailCSV()">📥 Export CSV</button>
+                            <button class="btn-sm" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="exportAnalyticsDetailPDF()">📄 Export PDF</button>
+                            <button class="btn-sm" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerAdminLowAttendanceAlerts()">📧 Send Alerts (&lt;75%)</button>
+                            <button class="btn-sm" style="background: rgba(255,255,255,0.1); border: none; color: #ffffff;" onclick="closeAnalyticsDetail()">✖ Close</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="max-height: 450px; overflow-y: auto;">
+                        <table style="width: 100%;">
+                            <thead id="analyticsDetailTableHeader">
+                                <!-- Dynamic headers based on metric type -->
+                            </thead>
+                            <tbody id="analyticsDetailTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1116,8 +1147,290 @@
                     });
                 }
 
+                if (activeAnalyticsMetric) {
+                    showAnalyticsDetail(activeAnalyticsMetric);
+                }
+
             } catch (err) {
                 console.error("Analytics Error:", err);
+            }
+        }
+
+        let activeAnalyticsMetric = null;
+        let activeAnalyticsDetailData = [];
+
+        async function showAnalyticsDetail(metricType) {
+            activeAnalyticsMetric = metricType || 'PRESENT';
+
+            const panel = document.getElementById('analyticsDetailPanel');
+            const title = document.getElementById('analyticsDetailTitle');
+            const subtitle = document.getElementById('analyticsDetailSubtitle');
+            const thead = document.getElementById('analyticsDetailTableHeader');
+            const tbody = document.getElementById('analyticsDetailTableBody');
+
+            if (!panel) return;
+            panel.style.display = 'block';
+
+            const startMonth = document.getElementById('analyticsStartMonth')?.value || '';
+            const endMonth = document.getElementById('analyticsEndMonth')?.value || '';
+            const classFilter = document.getElementById('analyticsClassFilter')?.value || 'ALL';
+
+            subtitle.textContent = `Range: ${startMonth || 'All Time'} to ${endMonth || 'Now'} | Class Filter: ${classFilter}`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading detailed records...</td></tr>`;
+
+            try {
+                if (metricType === 'PRESENT' || metricType === 'ABSENT') {
+                    title.textContent = metricType === 'PRESENT' ? '✅ Detailed Report: Present Check-ins' : '❌ Detailed Report: Absences';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Record ID</th>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Class</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    `;
+
+                    const res = await fetch('/admin/attendance-records', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch attendance records.');
+                    const records = await res.json();
+
+                    activeAnalyticsDetailData = records.filter(r => {
+                        const matchesStatus = (metricType === 'PRESENT') ? (r.status === 'PRESENT' || r.status === 'LATE') : (r.status === 'ABSENT');
+                        const matchesClass = (!classFilter || classFilter === 'ALL') ? true : (r.className && r.className.toLowerCase() === classFilter.toLowerCase());
+                        return matchesStatus && matchesClass;
+                    });
+
+                    if (activeAnalyticsDetailData.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No ${metricType.toLowerCase()} records found for selected filter.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = activeAnalyticsDetailData.map(r => `
+                        <tr>
+                            <td>#${r.id}</td>
+                            <td><strong>${escapeHtml(r.studentName)}</strong></td>
+                            <td>${escapeHtml(r.studentUsername || r.username || '-')}</td>
+                            <td>${escapeHtml(r.email || '-')}</td>
+                            <td>${escapeHtml(r.className && r.className !== '-' ? r.className : 'General')}</td>
+                            <td><strong>${escapeHtml(r.subject || 'General')}</strong></td>
+                            <td><span class="badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'badge-active' : 'badge-teacher'}">${escapeHtml(r.status)}</span></td>
+                            <td>${escapeHtml(r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : '-')}</td>
+                        </tr>
+                    `).join('');
+
+                } else if (metricType === 'SESSIONS') {
+                    title.textContent = '📖 Detailed Report: Sessions Held';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Class Name</th>
+                            <th>Subject</th>
+                            <th>Passcode</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Status</th>
+                        </tr>
+                    `;
+
+                    const res = await fetch('/admin/sessions/active', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch sessions.');
+                    const sessions = await res.json();
+
+                    activeAnalyticsDetailData = sessions.filter(s => {
+                        return (!classFilter || classFilter === 'ALL') ? true : (s.className && s.className.toLowerCase() === classFilter.toLowerCase());
+                    });
+
+                    if (activeAnalyticsDetailData.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No sessions found for selected filter.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = activeAnalyticsDetailData.map(s => `
+                        <tr>
+                            <td>#${s.id}</td>
+                            <td><strong>${escapeHtml(s.className)}</strong></td>
+                            <td><strong>${escapeHtml(s.subject)}</strong></td>
+                            <td><code>${escapeHtml(s.passcode || '-')}</code></td>
+                            <td>${s.startTime ? new Date(s.startTime).toLocaleString() : '-'}</td>
+                            <td>${s.endTime ? new Date(s.endTime).toLocaleString() : '-'}</td>
+                            <td><span class="badge ${s.active ? 'badge-active' : 'badge-teacher'}">${s.active ? 'Active Live' : 'Closed'}</span></td>
+                        </tr>
+                    `).join('');
+
+                } else if (metricType === 'STUDENTS') {
+                    title.textContent = '🎓 Detailed Report: Enrolled Students & Performance';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>User ID</th>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Class</th>
+                            <th>Attendance %</th>
+                            <th>Warning Status (<75%)</th>
+                        </tr>
+                    `;
+
+                    const res = await fetch('/admin/users?role=STUDENT', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch enrolled students.');
+                    const students = await res.json();
+
+                    const filteredStudents = students.filter(s => {
+                        return (!classFilter || classFilter === 'ALL') ? true : (s.className && s.className.toLowerCase() === classFilter.toLowerCase());
+                    });
+
+                    if (filteredStudents.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No students enrolled for selected class.</td></tr>`;
+                        return;
+                    }
+
+                    activeAnalyticsDetailData = await Promise.all(filteredStudents.map(async s => {
+                        let percent = 0.0;
+                        try {
+                            const sumRes = await fetch(`/students/${s.id}/attendance-summary`, {
+                                headers: { 'Authorization': 'Bearer ' + token }
+                            });
+                            if (sumRes.ok) {
+                                const sumData = await sumRes.json();
+                                percent = sumData.overallPercentage || 0.0;
+                            }
+                        } catch (e) {}
+                        return { ...s, attendancePercentage: percent };
+                    }));
+
+                    tbody.innerHTML = activeAnalyticsDetailData.map(s => {
+                        const isLow = s.attendancePercentage < 75;
+                        const statusBadge = isLow 
+                            ? `<span class="badge badge-teacher" style="background: rgba(239,68,68,0.2); color: #fca5a5;">⚠️ &lt;75% Low Warning</span>`
+                            : `<span class="badge badge-active">OK (75%+)</span>`;
+                        return `
+                            <tr>
+                                <td>#${s.id}</td>
+                                <td><strong>${escapeHtml(s.name || s.username)}</strong></td>
+                                <td>${escapeHtml(s.username || '-')}</td>
+                                <td>${escapeHtml(s.email || '-')}</td>
+                                <td>${escapeHtml(s.className || 'General')}</td>
+                                <td><strong style="color: ${isLow ? '#fca5a5' : '#34d399'};">${s.attendancePercentage}%</strong></td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function closeAnalyticsDetail() {
+            activeAnalyticsMetric = null;
+            const panel = document.getElementById('analyticsDetailPanel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        function exportAnalyticsDetailPDF() {
+            const title = document.getElementById('analyticsDetailTitle')?.textContent || 'Attendance Detailed Report';
+            const subtitle = document.getElementById('analyticsDetailSubtitle')?.textContent || '';
+            const tbody = document.getElementById('analyticsDetailTableBody');
+            const thead = document.getElementById('analyticsDetailTableHeader');
+
+            if (!tbody || tbody.querySelectorAll('tr').length === 0) {
+                alert('No data available to export to PDF.');
+                return;
+            }
+
+            const printWin = window.open('', '_blank', 'width=900,height=700');
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${escapeHtml(title)}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #1e293b; }
+                        h2 { margin-bottom: 5px; color: #0f172a; }
+                        p { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 12px; text-align: left; }
+                        th { background-color: #f1f5f9; font-weight: 700; color: #334155; }
+                        tr:nth-child(even) { background-color: #f8fafc; }
+                        .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: right; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${escapeHtml(title)}</h2>
+                    <p>${escapeHtml(subtitle)} | Generated on: ${new Date().toLocaleString()}</p>
+                    <table>
+                        <thead>${thead.innerHTML}</thead>
+                        <tbody>${tbody.innerHTML}</tbody>
+                    </table>
+                    <div class="footer">Smart Attendance Management System • Official Admin PDF Report</div>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => {
+                printWin.print();
+            }, 300);
+        }
+
+        function exportAnalyticsDetailCSV() {
+            const title = document.getElementById('analyticsDetailTitle')?.textContent || 'Detailed Report';
+            const tbody = document.getElementById('analyticsDetailTableBody');
+            if (!tbody || tbody.children.length === 0) {
+                alert('No data available to export.');
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += `Report Title,"${title.replace(/"/g, '""')}"\n`;
+            csvContent += `Generated Date,"${new Date().toLocaleString()}"\n\n`;
+
+            const thead = document.getElementById('analyticsDetailTableHeader');
+            const headers = Array.from(thead.querySelectorAll('th')).map(th => `"${th.textContent.trim().replace(/"/g, '""')}"`);
+            csvContent += headers.join(',') + '\n';
+
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length > 0) {
+                    const rowData = Array.from(tds).map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`);
+                    csvContent += rowData.join(',') + '\n';
+                }
+            });
+
+            downloadCSV(csvContent, `${activeAnalyticsMetric || 'Analytics'}_Detailed_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+        }
+
+        async function triggerAdminLowAttendanceAlerts() {
+            if (!confirm("Do you want to calculate low attendance (<75%) and send warning email alerts to all affected students?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/attendance/trigger-low-attendance-alerts', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ message: 'Failed to send warning alerts' }));
+                    throw new Error(errData.message || 'Failed to send warning alerts');
+                }
+
+                const msg = await res.text();
+                alert("✅ Success: " + (msg || "Low attendance warning email alerts sent successfully to students."));
+            } catch (err) {
+                alert("❌ Error sending alerts: " + err.message);
             }
         }
 
