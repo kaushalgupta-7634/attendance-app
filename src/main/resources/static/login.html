@@ -314,8 +314,26 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('pendingQrToken')) {
-                showAlert('📲 QR Code Scanned! Sign in or Register below to mark your Attendance automatically.', true);
+            const pendingQr = sessionStorage.getItem('pendingQrToken') || getCookie('pendingQrToken');
+            if (pendingQr) {
+                const rememberedUser = localStorage.getItem('username') || getCookie('attendx_username');
+                if (!rememberedUser && !localStorage.getItem('jwtToken') && !getCookie('attendx_student_token')) {
+                    switchTab('register');
+                    showAlert('📲 QR Code Scanned! New Student? Register your account below to mark Attendance automatically! (Already registered? Switch to Sign In)', true);
+                } else {
+                    switchTab('login');
+                    if (rememberedUser) {
+                        const uInput = document.getElementById('loginUsername');
+                        if (uInput) uInput.value = rememberedUser;
+                    }
+                    showAlert('📲 QR Code Scanned! Sign in to mark your Attendance automatically.', true);
+                }
+            } else {
+                const rememberedUser = localStorage.getItem('username') || getCookie('attendx_username');
+                if (rememberedUser) {
+                    const uInput = document.getElementById('loginUsername');
+                    if (uInput && !uInput.value) uInput.value = rememberedUser;
+                }
             }
         });
 
@@ -425,6 +443,10 @@
                 localStorage.setItem('userName', name);
                 localStorage.setItem('username', payload.sub || username);
 
+                setCookie('attendx_student_token', data.accessToken, 365);
+                setCookie('attendx_user_role', role, 365);
+                setCookie('attendx_username', payload.sub || username, 365);
+
                 showAlert('Login successful! Redirecting...', true);
 
                 setTimeout(() => {
@@ -494,6 +516,10 @@
                         localStorage.setItem('userRole', userRole);
                         localStorage.setItem('userName', userFullName);
                         localStorage.setItem('username', payload.sub || username);
+
+                        setCookie('attendx_student_token', loginData.accessToken, 365);
+                        setCookie('attendx_user_role', userRole, 365);
+                        setCookie('attendx_username', payload.sub || username, 365);
 
                         setTimeout(() => {
                             if (userRole === 'ADMIN') {

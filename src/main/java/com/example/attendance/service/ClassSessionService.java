@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import com.example.attendance.repository.ClassCourseRepository;
 import com.example.attendance.repository.EnrollmentRepository;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class ClassSessionService {
@@ -24,6 +25,9 @@ public class ClassSessionService {
     private final QrCodeService qrCodeService;
     private final ClassCourseRepository classCourseRepository;
     private final EnrollmentRepository enrollmentRepository;
+
+    @Value("${app.base-url:https://attendance-app-production-b868.up.railway.app}")
+    private String baseUrl;
 
     public ClassSessionService(ClassSessionRepository classSessionRepository,
                                AttendanceRecordRepository attendanceRecordRepository,
@@ -192,7 +196,8 @@ public class ClassSessionService {
 
         String qrToken = qrCodeService.generateQrToken(sessionId);
         String tokenOnly = qrToken.contains(":") ? qrToken.substring(qrToken.indexOf(":") + 1) : qrToken;
-        String deepLinkUrl = "https://attendance-app-production-b868.up.railway.app/student-scan.html?session=" + sessionId + "&token=" + tokenOnly;
+        String cleanBaseUrl = (baseUrl != null && baseUrl.endsWith("/")) ? baseUrl.substring(0, baseUrl.length() - 1) : (baseUrl != null ? baseUrl : "https://attendance-app-production-b868.up.railway.app");
+        String deepLinkUrl = cleanBaseUrl + "/student-scan.html?session=" + sessionId + "&token=" + tokenOnly;
         return qrCodeService.generateQrCodeImageBytes(deepLinkUrl, 500, 500);
     }
 
