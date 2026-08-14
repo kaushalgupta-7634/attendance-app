@@ -957,8 +957,8 @@
         const endTimeInput = document.getElementById('endTime');
         if (startTimeInput) startTimeInput.value = formatDateForInput(now);
         if (endTimeInput) endTimeInput.value = formatDateForInput(nextHour);
-        const assignDueInput = document.getElementById('assignDueDate');
-        if (assignDueInput) assignDueInput.value = getDefaultDueDate();
+        const assignDueEl = document.getElementById('assignDueDate');
+        if (assignDueEl) assignDueEl.value = getDefaultDueDate();
 
         function toggleTestingMode(cb) {
             const radiusInput = document.getElementById('radiusMeters');
