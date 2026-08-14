@@ -598,14 +598,43 @@ public class ClassSessionService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view daily attendance records.");
         }
 
-        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
-        boolean isAllSubject = selectedSubject == null || selectedSubject.isBlank() || "all".equalsIgnoreCase(selectedSubject);
+        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className.trim());
+        boolean isAllSubject = selectedSubject == null || selectedSubject.isBlank() || "all".equalsIgnoreCase(selectedSubject.trim());
+
+        String searchClass = className != null ? className.trim() : "";
+        String searchSub = selectedSubject != null ? selectedSubject.trim() : "";
 
         List<AttendanceRecord> records = attendanceRecordRepository.findAll().stream()
                 .filter(r -> r.getSession() != null)
-                .filter(r -> isAllClass || (r.getSession().getClassName() != null && r.getSession().getClassName().equalsIgnoreCase(className.trim())))
-                .filter(r -> isAllSubject || (r.getSession().getSubject() != null && r.getSession().getSubject().equalsIgnoreCase(selectedSubject.trim())))
-                .sorted((a, b) -> b.getMarkedAt().compareTo(a.getMarkedAt()))
+                .filter(r -> {
+                    if (isAllClass) return true;
+                    ClassSession s = r.getSession();
+                    String effClass = s.getEffectiveClassName();
+                    if (effClass.equalsIgnoreCase(searchClass)) return true;
+                    if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getClassCourse() != null) {
+                        if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
+                    }
+                    return false;
+                })
+                .filter(r -> {
+                    if (isAllSubject) return true;
+                    ClassSession s = r.getSession();
+                    String effSub = s.getEffectiveSubject();
+                    if (effSub.equalsIgnoreCase(searchSub)) return true;
+                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchSub)) return true;
+                    if (s.getClassCourse() != null && s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchSub)) return true;
+                    return false;
+                })
+                .sorted((a, b) -> {
+                    if (a.getMarkedAt() != null && b.getMarkedAt() != null) {
+                        return b.getMarkedAt().compareTo(a.getMarkedAt());
+                    }
+                    return 0;
+                })
                 .collect(Collectors.toList());
 
         return records.stream().map(r -> new AttendanceRecordDTO(
