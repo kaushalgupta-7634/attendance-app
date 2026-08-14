@@ -735,15 +735,19 @@
                         Class & Enrolled Student Attendance Analytics
                     </h3>
 
-                    <!-- CLASS / SESSION SELECTOR DROPDOWN & SEARCH INPUT -->
+                    <!-- CLASS & SUBJECT SELECTOR DROPDOWNS & SEARCH INPUT -->
                     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 200px;"
-                            onchange="syncClassInputFromSelect()">
-                            <option value="">Select a Session / Class...</option>
+                        <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 180px;"
+                            onchange="onAnalyticsClassChange()">
+                            <option value="">Select a Class...</option>
+                        </select>
+                        <select id="teacherSubjectSelect" class="form-input" style="width: auto; min-width: 180px;"
+                            onchange="onAnalyticsSubjectChange()">
+                            <option value="all">🌐 All Subjects (Combined)</option>
                         </select>
                         <input type="text" id="teacherClassNameSearch" class="form-input"
-                            placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 220px;"
-                            oninput="loadSelectedClassAnalytics()">
+                            placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 200px;"
+                            oninput="onAnalyticsClassSearchInput()">
                         <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;"
                             onclick="loadSelectedClassAnalytics()">Search Stats</button>
                         <button class="btn-secondary"
@@ -2277,6 +2281,46 @@
             }
         }
 
+        function exportSelectedClassSummaryCsv() {
+            const classVal = document.getElementById('teacherClassSelect')?.value.trim() || document.getElementById('teacherClassNameSearch')?.value.trim() || 'all';
+            const subVal = document.getElementById('teacherSubjectSelect')?.value.trim() || currentSubjectFilter || 'all';
+
+            const tbody = document.getElementById('classRosterTableBody');
+            if (!tbody || tbody.children.length === 0) {
+                alert("No roster data available to export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += `Class Name,${classVal}\n`;
+            csvContent += `Subject Filter,${subVal}\n`;
+            csvContent += `Export Date,${new Date().toLocaleString()}\n\n`;
+            csvContent += "Student Name,Username,Email,Attendance %,Status (<75% Warning)\n";
+
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length >= 4) {
+                    const name = tds[0]?.textContent.trim().replace(/,/g, ' ') || '';
+                    const username = tds[1]?.textContent.trim().replace(/,/g, ' ') || '';
+                    const email = tds[2]?.textContent.trim().replace(/,/g, ' ') || '';
+                    const percentText = tds[3]?.textContent.trim().replace(/,/g, ' ') || '0%';
+                    const percentVal = parseFloat(percentText) || 0;
+                    const status = percentVal < 75 ? "LOW ATTENDANCE WARNING (<75%)" : "OK";
+
+                    csvContent += `"${name}","${username}","${email}","${percentText}","${status}"\n`;
+                }
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Attendance_Summary_${classVal}_${subVal}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function showAssignAlert(elem, isSuccess, message, isAuthErr = false) {
             elem.style.display = 'block';
             elem.style.background = isSuccess ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
@@ -2302,44 +2346,21 @@
             loadTeacherAssignments(e.target.value.trim() || 'all');
         });
 
-        // Auto load sessions for dropdown & restore active running session
-        loadTeacherSessions();
-        checkAndRestoreTeacherActiveSession();
-
-        function syncClassInputFromSelect() {
-            const rawVal = document.getElementById('teacherClassSelect').value;
-            const textInput = document.getElementById('teacherClassNameSearch');
-            
-            if (!rawVal || rawVal === 'all') {
-                if (textInput) textInput.value = '';
-                loadSelectedClassAnalytics('all');
-                return;
-            }
-
-            let className = rawVal;
-            let subject = 'all';
-            if (rawVal.includes('|')) {
-                const parts = rawVal.split('|');
-                className = parts[0];
-                subject = parts[1];
-            }
-
-            if (textInput) textInput.value = className;
-            loadSelectedClassAnalytics(subject);
-        }
+        let classSubjectsMap = new Map();
+        let currentSubjectFilter = 'all';
 
         function filterBySubjectCard(subjectName) {
-            loadSelectedClassAnalytics(subjectName);
+            currentSubjectFilter = subjectName || 'all';
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            if (subSelect) subSelect.value = currentSubjectFilter;
+            loadSelectedClassAnalytics(currentSubjectFilter);
         }
 
         async function loadTeacherSessions() {
-            const select = document.getElementById('teacherClassSelect');
-            if (!select) return;
+            const classSelect = document.getElementById('teacherClassSelect');
+            if (!classSelect) return;
 
             try {
-                let optionsHtml = '<option value="">-- Select Class / Subject --</option>';
-                optionsHtml += '<option value="all">🌐 All Classes & Courses (Overall)</option>';
-
                 let courses = [];
                 try {
                     const cRes = await fetch('/classes/my-courses', {
@@ -2356,53 +2377,61 @@
                     if (sRes.ok) sessions = await sRes.json();
                 } catch (e) {}
 
-                const classMap = new Map();
+                classSubjectsMap.clear();
 
                 if (courses && courses.length > 0) {
                     courses.forEach(c => {
-                        if (c.className) {
-                            const key = c.className.trim().toUpperCase();
-                            if (!classMap.has(key)) {
-                                classMap.set(key, { displayName: c.className.trim(), subjects: new Set() });
+                        if (c.className && c.className.trim()) {
+                            const name = c.className.trim();
+                            if (!classSubjectsMap.has(name)) {
+                                classSubjectsMap.set(name, new Set());
                             }
-                            if (c.subject) classMap.get(key).subjects.add(c.subject.trim());
+                            if (c.subject && c.subject.trim()) {
+                                classSubjectsMap.get(name).add(c.subject.trim());
+                            }
                         }
                     });
                 }
 
                 if (sessions && sessions.length > 0) {
                     sessions.forEach(s => {
-                        if (s.className) {
-                            const key = s.className.trim().toUpperCase();
-                            if (!classMap.has(key)) {
-                                classMap.set(key, { displayName: s.className.trim(), subjects: new Set() });
+                        if (s.className && s.className.trim()) {
+                            const name = s.className.trim();
+                            if (!classSubjectsMap.has(name)) {
+                                classSubjectsMap.set(name, new Set());
                             }
-                            if (s.subject) classMap.get(key).subjects.add(s.subject.trim());
+                            if (s.subject && s.subject.trim()) {
+                                classSubjectsMap.get(name).add(s.subject.trim());
+                            }
                         }
                     });
                 }
 
-                if (classMap.size > 0) {
-                    classMap.forEach((info, key) => {
-                        const subsArray = Array.from(info.subjects);
-                        const subsStr = subsArray.length > 0 ? ` (Subjects: ${subsArray.join(', ')})` : '';
-                        
-                        optionsHtml += `<optgroup label="🎓 ${escapeHtml(info.displayName)}${escapeHtml(subsStr)}">`;
-                        optionsHtml += `<option value="${escapeHtml(info.displayName)}">🎓 ${escapeHtml(info.displayName)} - All Subjects</option>`;
-                        subsArray.forEach(sub => {
-                            optionsHtml += `<option value="${escapeHtml(info.displayName)}|${escapeHtml(sub)}">&nbsp;&nbsp;&nbsp;&nbsp;📖 ${escapeHtml(info.displayName)} - ${escapeHtml(sub)}</option>`;
-                        });
-                        optionsHtml += '</optgroup>';
+                let classOptionsHtml = '<option value="">Select a Class...</option>';
+                classOptionsHtml += '<option value="all">🌐 All Classes & Courses (Overall)</option>';
+
+                if (classSubjectsMap.size > 0) {
+                    classSubjectsMap.forEach((subs, className) => {
+                        classOptionsHtml += `<option value="${escapeHtml(className)}">🎓 ${escapeHtml(className)}</option>`;
                     });
                 } else {
-                    optionsHtml += '<optgroup label="Sample Classes">';
-                    optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
-                    optionsHtml += '<option value="BBA">BBA (Business Admin)</option>';
-                    optionsHtml += '<option value="CS101">CS101 (Intro to CS)</option>';
-                    optionsHtml += '</optgroup>';
+                    classOptionsHtml += '<option value="BCA">🎓 BCA</option>';
+                    classOptionsHtml += '<option value="BBA">🎓 BBA</option>';
+                    classOptionsHtml += '<option value="CS101">🎓 CS101</option>';
+                    classSubjectsMap.set('BCA', new Set(['ai', 'Math']));
                 }
 
-                select.innerHTML = optionsHtml;
+                classSelect.innerHTML = classOptionsHtml;
+
+                let defaultClass = 'BCA';
+                if (classSubjectsMap.size > 0) {
+                    defaultClass = Array.from(classSubjectsMap.keys())[0];
+                }
+                classSelect.value = defaultClass;
+                const searchInput = document.getElementById('teacherClassNameSearch');
+                if (searchInput) searchInput.value = defaultClass;
+
+                updateSubjectDropdownOptions(defaultClass);
                 loadSelectedClassAnalytics('all');
 
             } catch (err) {
@@ -2410,25 +2439,73 @@
             }
         }
 
-        let currentSubjectFilter = 'all';
+        function updateSubjectDropdownOptions(className) {
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            if (!subSelect) return;
 
-        async function loadSelectedClassAnalytics(selectedSubject = 'all') {
-            currentSubjectFilter = selectedSubject || 'all';
+            let subOptionsHtml = '<option value="all">🌐 All Subjects (Combined)</option>';
 
-            const selectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
-            const textVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            let targetVal = textVal || selectVal;
+            if (className && className !== 'all') {
+                let subjectsSet = null;
+                for (const [key, subs] of classSubjectsMap.entries()) {
+                    if (key.toLowerCase() === className.toLowerCase()) {
+                        subjectsSet = subs;
+                        break;
+                    }
+                }
 
-            if (targetVal.includes('|')) {
-                const parts = targetVal.split('|');
-                targetVal = parts[0];
-                if (parts[1] && (selectedSubject === 'all' || !selectedSubject)) {
-                    currentSubjectFilter = parts[1];
+                if (subjectsSet && subjectsSet.size > 0) {
+                    subjectsSet.forEach(sub => {
+                        subOptionsHtml += `<option value="${escapeHtml(sub)}">📖 ${escapeHtml(sub)}</option>`;
+                    });
                 }
             }
 
-            if (!targetVal) {
-                targetVal = 'all';
+            subSelect.innerHTML = subOptionsHtml;
+            subSelect.value = currentSubjectFilter || 'all';
+        }
+
+        function onAnalyticsClassChange() {
+            const classSelect = document.getElementById('teacherClassSelect');
+            const searchInput = document.getElementById('teacherClassNameSearch');
+            const targetClass = classSelect ? classSelect.value.trim() : '';
+
+            if (searchInput) {
+                searchInput.value = (targetClass === 'all') ? '' : targetClass;
+            }
+
+            currentSubjectFilter = 'all';
+            updateSubjectDropdownOptions(targetClass);
+            loadSelectedClassAnalytics('all');
+        }
+
+        function onAnalyticsSubjectChange() {
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            currentSubjectFilter = subSelect ? subSelect.value.trim() : 'all';
+            loadSelectedClassAnalytics(currentSubjectFilter);
+        }
+
+        function onAnalyticsClassSearchInput() {
+            const searchInput = document.getElementById('teacherClassNameSearch');
+            const val = searchInput ? searchInput.value.trim() : '';
+            if (val) {
+                updateSubjectDropdownOptions(val);
+            }
+            loadSelectedClassAnalytics();
+        }
+
+        async function loadSelectedClassAnalytics(selectedSubject = 'all') {
+            if (selectedSubject !== undefined && selectedSubject !== null) {
+                currentSubjectFilter = selectedSubject;
+            }
+
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            let targetVal = searchVal || classSelectVal || 'all';
+
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            if (subSelect && subSelect.value !== currentSubjectFilter) {
+                subSelect.value = currentSubjectFilter;
             }
 
             const panel = document.getElementById('classAnalyticsPanel');
@@ -2437,18 +2514,9 @@
             if (panel) panel.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
 
-            const isNumericId = /^\d+$/.test(targetVal);
-            const sumUrl = isNumericId 
-                ? `/classes/${targetVal}/attendance-summary` 
-                : `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary?subject=${encodeURIComponent(currentSubjectFilter)}`;
-            
-            const rosterUrl = isNumericId 
-                ? `/classes/${targetVal}/roster` 
-                : `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
-
-            const logUrl = isNumericId 
-                ? `/sessions/${targetVal}/attendance-full` 
-                : `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
+            const sumUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary?subject=${encodeURIComponent(currentSubjectFilter)}`;
+            const rosterUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
+            const logUrl = `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
 
             try {
                 // 1. Fetch Class Summary Analytics
@@ -2459,16 +2527,7 @@
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
 
-                    if (summary.totalStudents === 0 && (!summary.subjectAverages || summary.subjectAverages.length === 0)) {
-                        document.getElementById('classOverallAvgText').textContent = '0%';
-                        document.getElementById('classTotalStudentsText').textContent = '0 Students';
-                        document.getElementById('classSubjectAveragesGrid').innerHTML = `<p style="font-size: 0.85rem; color: #fca5a5;">No class found named '<strong>${escapeHtml(targetVal)}</strong>'. Please select or search a valid Class Name (e.g. BCA, CS101) to view subject attendance.</p>`;
-                        document.getElementById('classRosterTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
-                        document.getElementById('classDailyLogTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">No attendance history records logged for this class.</td></tr>';
-                        return;
-                    }
-
-                    document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0) + '%';
+                    document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
                     document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
 
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
@@ -2478,7 +2537,7 @@
                         let filterPillsHtml = `
                             <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
-                                <button onclick="loadSelectedClassAnalytics('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                <button onclick="filterBySubjectCard('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
                                     🌐 All Subjects
                                 </button>
                         `;
@@ -2486,7 +2545,7 @@
                         summary.subjectAverages.forEach(sa => {
                             const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
                             filterPillsHtml += `
-                                <button onclick="loadSelectedClassAnalytics('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                <button onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
                                     📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
                                 </button>
                             `;
@@ -2599,13 +2658,13 @@
                             logTbody.innerHTML = records.map(r => {
                                 const formattedTime = r.markedAt ? new Date(r.markedAt).toLocaleString() : 'N/A';
                                 const isPresent = r.status === 'PRESENT' || r.status === 'LATE';
-                                const statusBadge = `<span class="status-badge ${isPresent ? 'status-present' : 'status-absent'}">${r.status || 'ABSENT'}</span>`;
+                                const statusBadge = `<span class="status-badge ${isPresent ? 'status-present' : 'status-absent'}">${escapeHtml(r.status || 'ABSENT')}</span>`;
                                 return `
                                     <tr>
                                         <td>${formattedTime}</td>
                                         <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
-                                        <td>${escapeHtml(r.username || '-')}</td>
-                                        <td>${escapeHtml(r.email || '-')}</td>
+                                        <td>${escapeHtml(r.studentUsername || '-')}</td>
+                                        <td>${escapeHtml(r.studentEmail || '-')}</td>
                                         <td>${statusBadge}</td>
                                     </tr>
                                 `;
