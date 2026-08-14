@@ -51,15 +51,16 @@ public class ClassSessionService {
             throw new org.springframework.security.access.AccessDeniedException("Only teachers can start a class session.");
         }
 
-        // Auto-end any previous active session for this teacher if they forgot to close it
-        List<ClassSession> existingActive = classSessionRepository.findByTeacher(teacher).stream()
-                .filter(ClassSession::isActive)
-                .collect(Collectors.toList());
+        // Auto-end any previous active session if in progress before launching a new one
+        List<ClassSession> existingActive = classSessionRepository.findByActiveTrue();
         for (ClassSession active : existingActive) {
-            try {
-                endSession(active.getId(), teacherUsername);
-            } catch (Exception e) {
-                // Log and continue
+            if (active.getTeacher() == null || active.getTeacher().getId().equals(teacher.getId())) {
+                try {
+                    endSession(active.getId(), teacherUsername);
+                } catch (Exception e) {
+                    active.setActive(false);
+                    classSessionRepository.save(active);
+                }
             }
         }
 

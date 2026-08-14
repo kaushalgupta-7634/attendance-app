@@ -411,32 +411,7 @@
         <button class="btn-secondary" onclick="logout()">Logout</button>
     </div>
 
-    <!-- LIVE ACTIVE SESSION BANNER (Auto-detects running sessions for Teacher) -->
-    <div id="teacherLiveActiveBanner"
-        style="display: none; max-width: 1200px; margin: 0 auto 1.5rem auto; background: rgba(239, 68, 68, 0.18); border: 1px solid var(--accent-red); padding: 1rem 1.25rem; border-radius: 14px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span
-                    style="width: 14px; height: 14px; background: #ef4444; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #ef4444;"></span>
-                <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; color: #fca5a5; margin: 0 0 0.2rem 0;">🔴 LIVE
-                        CLASS SESSION IN PROGRESS: <span id="bannerActiveClassName">Class</span> (<span
-                            id="bannerActiveSubject">Subject</span>)</h4>
-                    <span style="font-size: 0.8rem; color: #f8fafc;">6-Digit Passcode: <strong id="bannerActivePasscode"
-                            style="font-family: monospace; font-size: 0.95rem; color: #fde047; letter-spacing: 1px;">------</strong>
-                        | Students can mark attendance via QR scan or passcode.</span>
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button type="button" class="btn-primary"
-                    style="padding: 0.45rem 0.85rem; font-size: 0.8rem; width: auto;"
-                    onclick="openActiveSessionPanelFromBanner()">👁️ View Live QR Stream</button>
-                <button type="button" id="bannerEndSessionBtn" class="btn-secondary"
-                    style="background: #ef4444; border-color: #dc2626; color: #ffffff; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700;"
-                    onclick="handleEndSessionFromAnywhere()">🛑 End Live Session Now</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- SEPARATE TEACHER WORKSPACE NAVIGATION TABS -->
     <div class="portal-tabs">
