@@ -574,16 +574,10 @@
                             Rotating in <span id="countdown">15</span>s
                         </div>
 
-                        <!-- END SESSION, CANCEL SESSION & DELETE SESSION BUTTONS -->
-                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                            <button id="endSessionBtn" class="btn-danger" style="flex: 1;"
+                        <!-- END CLASS SESSION BUTTON -->
+                        <div style="display: flex; justify-content: center;">
+                            <button id="endSessionBtn" class="btn-danger" style="width: 100%; padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);"
                                 onclick="handleEndSession()">End Class Session</button>
-                            <button id="cancelActiveSessionBtn" class="btn-secondary"
-                                style="background: rgba(245, 158, 11, 0.25); border-color: #f59e0b; color: #fcd34d; padding: 0.75rem 1rem;"
-                                onclick="handleCancelActiveSession()">🚫 Cancel Session</button>
-                            <button id="deleteActiveSessionBtn" class="btn-secondary"
-                                style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.75rem 1rem;"
-                                onclick="handleDeleteActiveSession()">🗑️ Delete Session</button>
                         </div>
                     </div>
                 </div>
