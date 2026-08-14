@@ -54,6 +54,7 @@ public class AssignmentService {
      * Note: Files are stored locally in 'uploads/assignments/'. On ephemeral filesystems (e.g. Railway),
      * local files will be lost on container restart. For production deployment, integrate Cloudinary or AWS S3.
      */
+    @Transactional
     public AssignmentResponseDTO uploadAssignment(MultipartFile file,
                                                   String className,
                                                   String subject,
@@ -207,6 +208,7 @@ public class AssignmentService {
     /**
      * Deletes all expired assignments owned by teachers.
      */
+    @Transactional
     public int deleteAllExpiredAssignments(String teacherUsername) {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
@@ -263,6 +265,7 @@ public class AssignmentService {
     /**
      * Deletes an assignment by ID if owned by the requesting teacher.
      */
+    @Transactional
     public void deleteAssignment(Long id, String teacherUsername) {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
