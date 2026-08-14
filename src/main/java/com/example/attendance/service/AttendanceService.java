@@ -16,15 +16,21 @@ public class AttendanceService {
     private final ClassSessionRepository classSessionRepository;
     private final UserRepository userRepository;
     private final QrCodeService qrCodeService;
+    private final com.example.attendance.repository.ClassCourseRepository classCourseRepository;
+    private final com.example.attendance.repository.EnrollmentRepository enrollmentRepository;
 
     public AttendanceService(AttendanceRecordRepository attendanceRecordRepository,
                              ClassSessionRepository classSessionRepository,
                              UserRepository userRepository,
-                             QrCodeService qrCodeService) {
+                             QrCodeService qrCodeService,
+                             com.example.attendance.repository.ClassCourseRepository classCourseRepository,
+                             com.example.attendance.repository.EnrollmentRepository enrollmentRepository) {
         this.attendanceRecordRepository = attendanceRecordRepository;
         this.classSessionRepository = classSessionRepository;
         this.userRepository = userRepository;
         this.qrCodeService = qrCodeService;
+        this.classCourseRepository = classCourseRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     public AttendanceRecord markAttendance(MarkAttendanceRequest request, String studentUsername) {
@@ -449,34 +455,57 @@ public class AttendanceService {
         }
 
         boolean isAll = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+        String search = className != null ? className.trim() : "";
 
-        List<User> distinctStudents;
+        List<User> distinctStudents = new java.util.ArrayList<>();
         if (!isAll) {
-            distinctStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, className);
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, search);
+            if (direct != null) distinctStudents.addAll(direct);
+
+            List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(search)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(search)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassCourse course : matchingCourses) {
+                List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
+                for (Enrollment e : enrollments) {
+                    if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
+                        distinctStudents.add(e.getStudent());
+                    }
+                }
+            }
+
+            List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
+                    .filter(s -> !s.isCancelled())
+                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
+                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassSession session : matchingSessions) {
+                List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+                for (AttendanceRecord r : records) {
+                    if (r.getStudent() != null && !distinctStudents.contains(r.getStudent())) {
+                        distinctStudents.add(r.getStudent());
+                    }
+                }
+            }
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
         }
 
-        if (!isAll && (distinctStudents == null || distinctStudents.isEmpty())) {
+        List<ClassSession> classSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> isAll || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
+                             (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!isAll && classSessions.isEmpty() && distinctStudents.isEmpty()) {
             return new ClassAttendanceSummaryDTO(
                     0L,
                     className,
                     0,
-                    0.0,
-                    java.util.Collections.emptyList()
-            );
-        }
-
-        List<ClassSession> classSessions = classSessionRepository.findAll().stream()
-                .filter(s -> !s.isCancelled())
-                .filter(s -> isAll || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(className)))
-                .collect(java.util.stream.Collectors.toList());
-
-        if (!isAll && classSessions.isEmpty()) {
-            return new ClassAttendanceSummaryDTO(
-                    0L,
-                    className,
-                    distinctStudents.size(),
                     0.0,
                     java.util.Collections.emptyList()
             );
