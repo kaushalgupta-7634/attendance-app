@@ -209,19 +209,28 @@ public class AdminService {
         List<AdminDTOs.AttendanceRecordSummaryDTO> dtos = new java.util.ArrayList<>();
         for (AttendanceRecord rec : records) {
             String studentName = "Unknown";
-            String className = "-";
             if (rec.getStudent() != null) {
                 studentName = rec.getStudent().getName() != null && !rec.getStudent().getName().isBlank()
                         ? rec.getStudent().getName()
                         : rec.getStudent().getUsername();
-                if (rec.getStudent().getClassName() != null) {
-                    className = rec.getStudent().getClassName();
-                }
             }
+
+            String className = "-";
+            if (rec.getSession() != null && rec.getSession().getClassName() != null && !rec.getSession().getClassName().isBlank()) {
+                className = rec.getSession().getClassName().trim();
+            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null && rec.getSession().getClassCourse().getClassName() != null && !rec.getSession().getClassCourse().getClassName().isBlank()) {
+                className = rec.getSession().getClassCourse().getClassName().trim();
+            } else if (rec.getStudent() != null && rec.getStudent().getClassName() != null && !rec.getStudent().getClassName().isBlank()) {
+                className = rec.getStudent().getClassName().trim();
+            }
+
             String subject = "-";
-            if (rec.getSession() != null && rec.getSession().getSubject() != null) {
-                subject = rec.getSession().getSubject();
+            if (rec.getSession() != null && rec.getSession().getSubject() != null && !rec.getSession().getSubject().isBlank()) {
+                subject = rec.getSession().getSubject().trim();
+            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null && rec.getSession().getClassCourse().getSubject() != null) {
+                subject = rec.getSession().getClassCourse().getSubject().trim();
             }
+
             String status = rec.getStatus() != null ? rec.getStatus().name() : "PRESENT";
             String timestamp = rec.getMarkedAt() != null ? rec.getMarkedAt().toString() : "-";
 

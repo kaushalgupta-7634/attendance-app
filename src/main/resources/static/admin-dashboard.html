@@ -862,7 +862,7 @@
                     <tr>
                         <td>#${r.id}</td>
                         <td><strong>${escapeHtml(r.studentName)}</strong></td>
-                        <td>${escapeHtml(r.className)}</td>
+                        <td>${escapeHtml(r.className && r.className !== '-' ? r.className : 'General')}</td>
                         <td>${escapeHtml(r.subject)}</td>
                         <td><span class="badge ${r.status === 'PRESENT' ? 'badge-active' : 'badge-teacher'}">${escapeHtml(r.status)}</span></td>
                         <td>${escapeHtml(r.timestamp && r.timestamp !== '-' ? new Date(r.timestamp).toLocaleString() : '-')}</td>
