@@ -874,16 +874,6 @@
                 document.getElementById('teacherTabCourses')?.classList.add('active');
                 document.getElementById('teacherSectionCourses')?.classList.add('active');
                 if (typeof loadTeacherCourses === 'function') loadTeacherCourses();
-            } else if (tabId === 'analytics') {
-                document.getElementById('teacherTabAnalytics')?.classList.add('active');
-                document.getElementById('teacherSectionAnalytics')?.classList.add('active');
-                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
-                if (typeof loadSelectedClassAnalytics === 'function') loadSelectedClassAnalytics();
-            } else if (tabId === 'rosters') {
-                document.getElementById('teacherTabRosters')?.classList.add('active');
-                document.getElementById('teacherSectionRosters')?.classList.add('active');
-                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
-                if (typeof loadSelectedClassAnalytics === 'function') loadSelectedClassAnalytics();
             } else if (tabId === 'assignments') {
                 document.getElementById('teacherTabAssignments')?.classList.add('active');
                 document.getElementById('teacherSectionAssignments')?.classList.add('active');
