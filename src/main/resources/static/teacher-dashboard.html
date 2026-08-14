@@ -794,54 +794,101 @@
                     </div>
                 </div>
 
-                <!-- SUBJECT ATTENDANCE & PROGRESS CARDS GRID -->
-                <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>📊</span> Subject Attendance Progress Cards (Present & Absent Records)
-                </h4>
-                <div id="subjectProgressCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
-                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class above to view subject progress cards.</p>
+                <!-- SMART HUB SUB-TABS NAVIGATION BAR -->
+                <div style="display: flex; align-items: center; gap: 0.75rem; border-bottom: 2px solid rgba(255,255,255,0.08); padding-bottom: 0.85rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <button id="subTabRosterBtn" onclick="switchSmartSubTab('roster')" style="padding: 0.55rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; transition: all 0.2s ease;">
+                        🎓 Enrolled Student Roster
+                    </button>
+                    <button id="subTabHistoryBtn" onclick="switchSmartSubTab('history')" style="padding: 0.55rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(30, 41, 59, 0.6); color: #cbd5e1; transition: all 0.2s ease;">
+                        📖 Daily Attendance History
+                    </button>
+                    <button id="subTabDefaultersBtn" onclick="switchSmartSubTab('defaulters')" style="padding: 0.55rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.15); color: #fca5a5; transition: all 0.2s ease;">
+                        ⚠️ Low Attendance Defaulters (<75%)
+                    </button>
                 </div>
 
-                <!-- ENROLLED STUDENT ROSTER & INDIVIDUAL ATTENDANCE % TABLE -->
-                <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">🎓 Enrolled Student Roster & Performance Overview</h4>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Overall Attendance %</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="classRosterTableBody">
-                            <tr>
-                                <td colspan="5" class="empty-state">Select a class session above to load student roster.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- SUB-TAB 1: ENROLLED STUDENT ROSTER VIEW -->
+                <div id="smartSubTabRosterView">
+                    <!-- SUBJECT ATTENDANCE & PROGRESS CARDS GRID -->
+                    <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📊</span> Subject Attendance Progress Cards (Present & Absent Records)
+                    </h4>
+                    <div id="subjectProgressCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class above to view subject progress cards.</p>
+                    </div>
+
+                    <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">🎓 Enrolled Student Roster & Performance Overview</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Overall Attendance %</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classRosterTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">Select a class session above to load student roster.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- EVERYDAY STUDENT ATTENDANCE HISTORY LOG TABLE -->
-                <h4 style="font-size: 1rem; margin-top: 2rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">📖 Everyday Student Attendance Log (History Records)</h4>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>Student Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="classDailyLogTableBody">
-                            <tr>
-                                <td colspan="5" class="empty-state">Select a class session above to load daily attendance history records.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- SUB-TAB 2: DAILY ATTENDANCE HISTORY LOG VIEW -->
+                <div id="smartSubTabHistoryView" style="display: none;">
+                    <h4 style="font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;">📖 Everyday Student Attendance Log (History Records)</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Student Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classDailyLogTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">Select a class session above to load daily attendance history records.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 3: LOW ATTENDANCE DEFAULTERS (<75%) VIEW -->
+                <div id="smartSubTabDefaultersView" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 style="font-size: 1rem; margin: 0; color: #fca5a5; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>⚠️</span> Low Attendance Student Defaulters (&lt;75% Attendance)
+                        </h4>
+                        <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="triggerLowAttendanceAlerts()">
+                            📧 Send Warning Alerts To All Defaulters
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Attendance %</th>
+                                    <th>Alert Status & Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="defaultersTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">No defaulter students (&lt;75%) found for this class.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2703,7 +2750,81 @@
             }, 300);
         }
 
+        let lastFetchedDefaulters = [];
+
+        function switchSmartSubTab(tabName) {
+            const rosterBtn = document.getElementById('subTabRosterBtn');
+            const historyBtn = document.getElementById('subTabHistoryBtn');
+            const defaultersBtn = document.getElementById('subTabDefaultersBtn');
+
+            const rosterView = document.getElementById('smartSubTabRosterView');
+            const historyView = document.getElementById('smartSubTabHistoryView');
+            const defaultersView = document.getElementById('smartSubTabDefaultersView');
+
+            if (!rosterView || !historyView || !defaultersView) return;
+
+            [rosterBtn, historyBtn, defaultersBtn].forEach(b => {
+                if (b) {
+                    b.style.background = 'rgba(30, 41, 59, 0.6)';
+                    b.style.borderColor = 'rgba(255,255,255,0.15)';
+                    b.style.color = '#cbd5e1';
+                }
+            });
+
+            rosterView.style.display = 'none';
+            historyView.style.display = 'none';
+            defaultersView.style.display = 'none';
+
+            if (tabName === 'roster') {
+                if (rosterBtn) {
+                    rosterBtn.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+                    rosterBtn.style.borderColor = 'var(--accent-purple)';
+                    rosterBtn.style.color = 'white';
+                }
+                rosterView.style.display = 'block';
+            } else if (tabName === 'history') {
+                if (historyBtn) {
+                    historyBtn.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                    historyBtn.style.borderColor = 'var(--accent-cyan)';
+                    historyBtn.style.color = 'white';
+                }
+                historyView.style.display = 'block';
+            } else if (tabName === 'defaulters') {
+                if (defaultersBtn) {
+                    defaultersBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    defaultersBtn.style.borderColor = 'var(--accent-red)';
+                    defaultersBtn.style.color = 'white';
+                }
+                defaultersView.style.display = 'block';
+                populateDefaultersTable();
+            }
+        }
+
+        function populateDefaultersTable() {
+            const tbody = document.getElementById('defaultersTableBody');
+            if (!tbody) return;
+
+            if (!lastFetchedDefaulters || lastFetchedDefaulters.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">🎉 All students in this class have 75%+ attendance! No defaulters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = lastFetchedDefaulters.map(d => `
+                <tr>
+                    <td><strong>${escapeHtml(d.name)}</strong></td>
+                    <td>${escapeHtml(d.username)}</td>
+                    <td>${escapeHtml(d.email)}</td>
+                    <td><span style="font-weight: 800; color: #f87171; font-size: 1.05rem;">${d.percent}%</span></td>
+                    <td>
+                        <span class="status-badge status-absent" style="font-size: 0.75rem; margin-right: 0.5rem;">⚠️ Defaulter (&lt;75%)</span>
+                        <button class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="triggerLowAttendanceAlerts()">📧 Send Alert</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
+            lastFetchedDefaulters = [];
             if (selectedSubject !== undefined && selectedSubject !== null) {
                 currentSubjectFilter = selectedSubject;
             }
@@ -2852,6 +2973,16 @@
                             } catch (e) { }
 
                             const isGood = percent >= 75;
+                            if (!isGood) {
+                                lastFetchedDefaulters.push({
+                                    id: s.id,
+                                    name: s.name,
+                                    username: s.username,
+                                    email: s.email,
+                                    percent: percent
+                                });
+                            }
+
                             return `
                                 <tr>
                                     <td><strong>${escapeHtml(s.name)}</strong></td>
@@ -2869,6 +3000,7 @@
                         }));
 
                         tbody.innerHTML = studentRows.join('');
+                        populateDefaultersTable();
                     }
                 }
 
