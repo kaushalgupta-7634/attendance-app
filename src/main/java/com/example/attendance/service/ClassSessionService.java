@@ -546,7 +546,9 @@ public class ClassSessionService {
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
-                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
+                    .filter(s -> (s.getEffectiveClassName() != null && s.getEffectiveClassName().equalsIgnoreCase(search)) ||
+                                 (s.getEffectiveSubject() != null && s.getEffectiveSubject().equalsIgnoreCase(search)) ||
+                                 (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
                                  (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
 

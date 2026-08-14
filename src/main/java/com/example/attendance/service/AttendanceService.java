@@ -517,14 +517,10 @@ public class AttendanceService {
                 })
                 .collect(java.util.stream.Collectors.toList());
 
-        if (!isAllClass && classSessions.isEmpty() && distinctStudents.isEmpty()) {
-            return new ClassAttendanceSummaryDTO(
-                    0L,
-                    className,
-                    0,
-                    0.0,
-                    java.util.Collections.emptyList()
-            );
+        if (classSessions.isEmpty()) {
+            classSessions = classSessionRepository.findAll().stream()
+                    .filter(s -> !s.isCancelled())
+                    .collect(java.util.stream.Collectors.toList());
         }
 
         java.util.Set<String> subjectSet = new java.util.LinkedHashSet<>();
