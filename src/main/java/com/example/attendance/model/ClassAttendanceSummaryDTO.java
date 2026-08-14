@@ -68,6 +68,8 @@ public class ClassAttendanceSummaryDTO {
         private long totalSessionsHeld;
         private double averagePercentage;
         private int studentCount;
+        private long totalPresentCheckins;
+        private long totalAbsences;
 
         public ClassSubjectAverageDTO() {
         }
@@ -77,6 +79,15 @@ public class ClassAttendanceSummaryDTO {
             this.totalSessionsHeld = totalSessionsHeld;
             this.averagePercentage = averagePercentage;
             this.studentCount = studentCount;
+        }
+
+        public ClassSubjectAverageDTO(String subject, long totalSessionsHeld, double averagePercentage, int studentCount, long totalPresentCheckins, long totalAbsences) {
+            this.subject = subject;
+            this.totalSessionsHeld = totalSessionsHeld;
+            this.averagePercentage = averagePercentage;
+            this.studentCount = studentCount;
+            this.totalPresentCheckins = totalPresentCheckins;
+            this.totalAbsences = totalAbsences;
         }
 
         public String getSubject() {
@@ -109,6 +120,22 @@ public class ClassAttendanceSummaryDTO {
 
         public void setStudentCount(int studentCount) {
             this.studentCount = studentCount;
+        }
+
+        public long getTotalPresentCheckins() {
+            return totalPresentCheckins;
+        }
+
+        public void setTotalPresentCheckins(long totalPresentCheckins) {
+            this.totalPresentCheckins = totalPresentCheckins;
+        }
+
+        public long getTotalAbsences() {
+            return totalAbsences;
+        }
+
+        public void setTotalAbsences(long totalAbsences) {
+            this.totalAbsences = totalAbsences;
         }
     }
 }
