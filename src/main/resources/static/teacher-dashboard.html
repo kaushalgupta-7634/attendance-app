@@ -2512,45 +2512,52 @@
             if (!subSelect) return;
 
             let subOptionsHtml = '<option value="all">🌐 All Subjects (Combined)</option>';
+            const allSubjects = new Set();
 
+            // 1. Gather from local classSubjectsMap
             if (className && className !== 'all') {
-                let subjectsSet = null;
                 for (const [key, subs] of classSubjectsMap.entries()) {
-                    if (key.toLowerCase() === className.toLowerCase()) {
-                        subjectsSet = subs;
-                        break;
+                    if (key.toLowerCase() === className.toLowerCase() && subs) {
+                        subs.forEach(s => { if (s && s.trim()) allSubjects.add(s.trim()); });
                     }
                 }
-
-                if (subjectsSet && subjectsSet.size > 0) {
-                    subjectsSet.forEach(sub => {
-                        subOptionsHtml += `<option value="${escapeHtml(sub)}">📖 ${escapeHtml(sub)}</option>`;
-                    });
-                } else {
-                    // Fallback database query binding if search filter does not match local cache
-                    try {
-                        const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(className)}/attendance-summary`, {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        });
-                        if (sumRes.ok) {
-                            const summary = await sumRes.json();
-                            if (summary.subjectAverages && summary.subjectAverages.length > 0) {
-                                if (!classSubjectsMap.has(className)) {
-                                    classSubjectsMap.set(className, new Set());
-                                }
-                                summary.subjectAverages.forEach(sa => {
-                                    if (sa.subject) {
-                                        classSubjectsMap.get(className).add(sa.subject);
-                                        subOptionsHtml += `<option value="${escapeHtml(sa.subject)}">📖 ${escapeHtml(sa.subject)}</option>`;
-                                    }
-                                });
-                            }
-                        }
-                    } catch (e) { }
-                }
+            } else {
+                classSubjectsMap.forEach((subs) => {
+                    if (subs) subs.forEach(s => { if (s && s.trim()) allSubjects.add(s.trim()); });
+                });
             }
 
+            // 2. Fetch summary backend to extract registered subjects
+            try {
+                const targetCls = (className && className !== 'all') ? className : 'all';
+                const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(targetCls)}/attendance-summary`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (sumRes.ok) {
+                    const summary = await sumRes.json();
+                    if (summary.subjectAverages && summary.subjectAverages.length > 0) {
+                        summary.subjectAverages.forEach(sa => {
+                            if (sa.subject && sa.subject.trim()) {
+                                allSubjects.add(sa.subject.trim());
+                            }
+                        });
+                    }
+                }
+            } catch (e) { }
+
+            // 3. Fallback subjects if database has no subject entries yet
+            if (allSubjects.size === 0) {
+                allSubjects.add("Math");
+                allSubjects.add("ai");
+                allSubjects.add("Computer Science");
+            }
+
+            allSubjects.forEach(sub => {
+                subOptionsHtml += `<option value="${escapeHtml(sub)}">📖 ${escapeHtml(sub)}</option>`;
+            });
+
             subSelect.innerHTML = subOptionsHtml;
+
             const hasCurrentOpt = Array.from(subSelect.options).some(opt => opt.value.toLowerCase() === (currentSubjectFilter || 'all').toLowerCase());
             if (hasCurrentOpt) {
                 subSelect.value = currentSubjectFilter;
