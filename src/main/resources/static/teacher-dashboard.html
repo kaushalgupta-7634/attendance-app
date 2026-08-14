@@ -2029,9 +2029,13 @@
             const tbody = document.getElementById('teacherAssignmentsTableBody');
             if (!tbody) return;
             try {
-                const res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                let res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`, {
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
                 });
+                if (!res.ok) {
+                    // Fallback to fetch without auth header if token header caused 401 on permitAll route
+                    res = await fetch(`/assignments/class/${encodeURIComponent(targetClass)}?filter=${encodeURIComponent(currentAssignFilter)}`);
+                }
                 if (!res.ok) {
                     console.error("Failed to load assignments: HTTP " + res.status);
                     return;

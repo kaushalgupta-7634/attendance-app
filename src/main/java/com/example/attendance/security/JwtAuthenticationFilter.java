@@ -44,23 +44,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String jwtSessionId = tokenProvider.getSessionIdFromJwt(token);
 
                 User user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
-                if (user == null || (user.getCurrentSessionId() != null && !user.getCurrentSessionId().equals(jwtSessionId))) {
+                if (user != null && (user.getCurrentSessionId() == null || user.getCurrentSessionId().equals(jwtSessionId))) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                } else {
                     SecurityContextHolder.clearContext();
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Session invalidated: Logged in from another device.\"}");
-                    return;
                 }
-
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             } catch (Exception ex) {
                 logger.warn("Could not set user authentication in security context: " + ex.getMessage());
             }
