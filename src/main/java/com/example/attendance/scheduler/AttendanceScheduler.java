@@ -51,15 +51,17 @@ public class AttendanceScheduler {
     }
 
     /**
-     * Scheduled job running every 60 seconds (fixedRate = 60000) to automatically
-     * close active sessions whose end time has passed.
+     * Scheduled job running every 5 seconds (fixedRate = 5000) to automatically:
+     * 1. Start scheduled sessions when current time reaches startTime.
+     * 2. Close active sessions whose endTime has passed.
      */
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 5000)
+    public void runAutoSessionLifecycleJob() {
+        classSessionService.autoManageScheduledSessions();
+    }
+
     public void runAutoCloseExpiredSessionsJob() {
-        int closedCount = classSessionService.autoCloseExpiredSessions();
-        if (closedCount > 0) {
-            logger.info("Auto-closed {} expired active session(s).", closedCount);
-        }
+        runAutoSessionLifecycleJob();
     }
 
     /**

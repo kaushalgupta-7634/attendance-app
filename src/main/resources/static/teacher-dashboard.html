@@ -1305,6 +1305,22 @@
             }
         }
 
+        function setDefaultSessionTimes() {
+            const sInput = document.getElementById('startTime');
+            const eInput = document.getElementById('endTime');
+            if (!sInput || !eInput) return;
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            if (!sInput.value) {
+                const localNow = new Date(now.getTime() - tzOffset);
+                sInput.value = localNow.toISOString().slice(0, 16);
+            }
+            if (!eInput.value) {
+                const localEnd = new Date(now.getTime() + (60 * 60 * 1000) - tzOffset);
+                eInput.value = localEnd.toISOString().slice(0, 16);
+            }
+        }
+
         async function handleStartSession(e) {
             e.preventDefault();
             const btn = document.getElementById('startBtn');
@@ -1343,26 +1359,21 @@
                 const session = await res.json();
                 activeSessionId = session.id;
 
-                const banner = document.getElementById('teacherLiveActiveBanner');
-                if (banner) {
-                    const bClass = document.getElementById('bannerActiveClassName');
-                    const bSub = document.getElementById('bannerActiveSubject');
-                    const bPass = document.getElementById('bannerActivePasscode');
-                    if (bClass) bClass.textContent = session.className || 'Class';
-                    if (bSub) bSub.textContent = session.subject || 'Subject';
-                    if (bPass) bPass.textContent = session.passcode || '------';
-                    banner.style.display = 'block';
+                if (session.active) {
+                    document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
+                    document.getElementById('activePasscodeDisplay').textContent = session.passcode || '------';
+                    document.getElementById('activeSessionPanel').style.display = 'block';
+                    document.getElementById('exportExcelBtn').style.display = 'inline-flex';
+                    document.getElementById('endSessionBtn').style.display = 'block';
+                    document.getElementById('rotationTimerBadge').style.display = 'inline-flex';
+
+                    startLiveQrRotation();
+                    startLiveAttendancePolling();
+                } else {
+                    const startStr = session.startTime ? new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'scheduled time';
+                    const endStr = session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'end time';
+                    alert(`⏰ Session Scheduled!\n\nThis session is scheduled for ${startStr} to ${endStr}. It will automatically launch and activate when start time arrives.`);
                 }
-
-                document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
-                document.getElementById('activePasscodeDisplay').textContent = session.passcode || '------';
-                document.getElementById('activeSessionPanel').style.display = 'block';
-                document.getElementById('exportExcelBtn').style.display = 'inline-flex';
-                document.getElementById('endSessionBtn').style.display = 'block';
-                document.getElementById('rotationTimerBadge').style.display = 'inline-flex';
-
-                startLiveQrRotation();
-                startLiveAttendancePolling();
 
             } catch (err) {
                 alert(err.message || 'Error launching session');
