@@ -104,8 +104,8 @@ public class AssignmentService {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
-        if (teacher.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can upload assignments.");
+        if (teacher.getRole() != Role.TEACHER && teacher.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only faculty teachers and admins can upload assignments.");
         }
 
         // Save file locally with a unique UUID filename
@@ -163,9 +163,8 @@ public class AssignmentService {
                 assignments = assignmentRepository.findByClassNameContainingIgnoreCase(targetClassName);
             }
 
-            // Fallback to return all assignments if no exact class matches found
-            if (assignments == null || assignments.isEmpty()) {
-                assignments = assignmentRepository.findAll();
+            if (assignments == null) {
+                assignments = java.util.Collections.emptyList();
             }
         }
 
@@ -212,8 +211,8 @@ public class AssignmentService {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
-        if (teacher.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can delete assignments.");
+        if (teacher.getRole() != Role.TEACHER && teacher.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only faculty teachers and admins can delete assignments.");
         }
 
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
@@ -269,8 +268,8 @@ public class AssignmentService {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
-        if (teacher.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can delete assignments.");
+        if (teacher.getRole() != Role.TEACHER && teacher.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only faculty teachers and admins can delete assignments.");
         }
 
         Assignment assignment = assignmentRepository.findById(id)

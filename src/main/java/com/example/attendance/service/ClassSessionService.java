@@ -465,8 +465,8 @@ public class ClassSessionService {
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
 
-        if (requester.getRole() != Role.TEACHER) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers can view class rosters.");
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class rosters.");
         }
 
         ClassCourse classCourse = classCourseRepository.findById(classId).orElse(null);

@@ -30,11 +30,11 @@ public class AssignmentController {
     }
 
     /**
-     * POST /assignments/upload (TEACHER only)
+     * POST /assignments/upload (TEACHER and ADMIN)
      * Accepts multipart PDF file + metadata (className, subject, title, description, dueDate).
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<AssignmentResponseDTO> uploadAssignment(
             @RequestParam("file") MultipartFile file,
             @RequestParam("className") String className,
@@ -78,22 +78,22 @@ public class AssignmentController {
     }
 
     /**
-     * DELETE /assignments/expired (TEACHER only)
+     * DELETE /assignments/expired (TEACHER and ADMIN)
      * Deletes all expired assignments.
      */
     @DeleteMapping("/expired")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<String> deleteExpiredAssignments(Principal principal) {
         int deletedCount = assignmentService.deleteAllExpiredAssignments(principal.getName());
         return ResponseEntity.ok("Deleted " + deletedCount + " expired assignments.");
     }
 
     /**
-     * DELETE /assignments/{id} (TEACHER only)
+     * DELETE /assignments/{id} (TEACHER and ADMIN)
      * Deletes an assignment by ID.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Void> deleteAssignment(@PathVariable("id") Long id, Principal principal) {
         assignmentService.deleteAssignment(id, principal.getName());
         return ResponseEntity.noContent().build();

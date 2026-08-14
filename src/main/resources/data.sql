@@ -1,16 +1,16 @@
 -- Seed Test Data (1 Teacher + 5 Test Students + 1 Class Course + Enrollments + 1 Active Class Session)
 
 -- 1. Seed Teacher (username: teacher1, password: password123)
-MERGE INTO users (id, name, username, email, password, role) KEY(id) VALUES 
-(1, 'Prof. Alan Turing', 'teacher1', 'teacher1@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'TEACHER');
+MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled) KEY(id) VALUES 
+(1, 'Prof. Alan Turing', 'teacher1', 'teacher1@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'TEACHER', 0, 0, true);
 
 -- 2. Seed 5 Test Students (username: student1..student5, password: password123)
-MERGE INTO users (id, name, username, email, password, role) KEY(id) VALUES 
-(2, 'Alice Smith', 'student1', 'alice@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT'),
-(3, 'Bob Johnson', 'student2', 'bob@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT'),
-(4, 'Charlie Brown', 'student3', 'charlie@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT'),
-(5, 'Diana Prince', 'student4', 'diana@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT'),
-(6, 'Evan Wright', 'student5', 'evan@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT');
+MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled) KEY(id) VALUES 
+(2, 'Alice Smith', 'student1', 'alice@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
+(3, 'Bob Johnson', 'student2', 'bob@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
+(4, 'Charlie Brown', 'student3', 'charlie@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
+(5, 'Diana Prince', 'student4', 'diana@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
+(6, 'Evan Wright', 'student5', 'evan@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true);
 
 -- 3. Seed Class Course (classCode: CS101-A)
 MERGE INTO class_courses (id, teacher_id, class_name, subject, class_code) KEY(id) VALUES
