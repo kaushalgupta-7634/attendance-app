@@ -570,9 +570,17 @@ public class AttendanceService {
 
         if (subjects != null) {
             for (String subject : subjects) {
-                long totalSessionsHeld = classSessions.stream()
-                        .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
-                        .count();
+                List<ClassSession> matchingSubSessions = classSessions.stream()
+                        .filter(s -> {
+                            String effSub = s.getEffectiveSubject();
+                            if (effSub.equalsIgnoreCase(subject)) return true;
+                            if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(subject)) return true;
+                            if (s.getClassCourse() != null && s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(subject)) return true;
+                            return false;
+                        })
+                        .collect(java.util.stream.Collectors.toList());
+
+                long totalSessionsHeld = matchingSubSessions.size();
 
                 if (totalSessionsHeld == 0) {
                     subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
@@ -582,11 +590,15 @@ public class AttendanceService {
                     continue;
                 }
 
+                List<Long> sessionIds = matchingSubSessions.stream().map(ClassSession::getId).collect(java.util.stream.Collectors.toList());
+
                 double subjectTotalPercent = 0.0;
                 for (User student : distinctStudents) {
-                    long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
-                            student, subject, attendedStatuses
-                    );
+                    long presentCount = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(student).stream()
+                            .filter(r -> r.getSession() != null && sessionIds.contains(r.getSession().getId()))
+                            .filter(r -> attendedStatuses.contains(r.getStatus()))
+                            .count();
+
                     double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
                     subjectTotalPercent += studentPercent;
                 }

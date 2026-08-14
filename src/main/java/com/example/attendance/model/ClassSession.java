@@ -67,6 +67,26 @@ public class ClassSession {
         this.passcode = passcode;
     }
 
+    public String getEffectiveSubject() {
+        if (subject != null && !subject.isBlank() && !"UNSPECIFIED".equalsIgnoreCase(subject.trim())) {
+            return subject.trim();
+        }
+        if (classCourse != null && classCourse.getSubject() != null && !classCourse.getSubject().isBlank()) {
+            return classCourse.getSubject().trim();
+        }
+        return "General";
+    }
+
+    public String getEffectiveClassName() {
+        if (className != null && !className.isBlank()) {
+            return className.trim();
+        }
+        if (classCourse != null && classCourse.getClassName() != null && !classCourse.getClassName().isBlank()) {
+            return classCourse.getClassName().trim();
+        }
+        return "Unassigned";
+    }
+
     public ClassSession(User teacher, ClassCourse classCourse, String className, String subject, LocalDateTime startTime, LocalDateTime endTime,
                         Double classroomLat, Double classroomLng, Double radiusMeters, boolean active, String passcode) {
         this.teacher = teacher;
