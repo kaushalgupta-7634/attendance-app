@@ -405,6 +405,23 @@
         <button class="btn-secondary" onclick="logout()">Logout</button>
     </div>
 
+    <!-- LIVE ACTIVE SESSION BANNER (Auto-detects running sessions for Teacher) -->
+    <div id="teacherLiveActiveBanner" style="display: none; max-width: 1200px; margin: 0 auto 1.5rem auto; background: rgba(239, 68, 68, 0.18); border: 1px solid var(--accent-red); padding: 1rem 1.25rem; border-radius: 14px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="width: 14px; height: 14px; background: #ef4444; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #ef4444;"></span>
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 700; color: #fca5a5; margin: 0 0 0.2rem 0;">🔴 LIVE CLASS SESSION IN PROGRESS: <span id="bannerActiveClassName">Class</span> (<span id="bannerActiveSubject">Subject</span>)</h4>
+                    <span style="font-size: 0.8rem; color: #f8fafc;">6-Digit Passcode: <strong id="bannerActivePasscode" style="font-family: monospace; font-size: 0.95rem; color: #fde047; letter-spacing: 1px;">------</strong> | Students can mark attendance via QR scan or passcode.</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; width: auto;" onclick="openActiveSessionPanelFromBanner()">👁️ View Live QR Stream</button>
+                <button type="button" id="bannerEndSessionBtn" class="btn-secondary" style="background: #ef4444; border-color: #dc2626; color: #ffffff; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700;" onclick="handleEndSessionFromAnywhere()">🛑 End Live Session Now</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SEPARATE TEACHER WORKSPACE NAVIGATION TABS -->
     <div class="portal-tabs">
         <button id="teacherTabSession" class="portal-tab-btn active" onclick="switchTeacherTab('session')">
@@ -1204,16 +1221,25 @@
             }
         }
 
-        async function handleEndSession() {
-            if (!activeSessionId) return;
-            if (!confirm('Are you sure you want to END this class session? Students will no longer be able to mark attendance.')) return;
+        function openActiveSessionPanelFromBanner() {
+            switchTeacherTab('session');
+            const panel = document.getElementById('activeSessionPanel');
+            if (panel) {
+                panel.style.display = 'block';
+                panel.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
 
-            const btn = document.getElementById('endSessionBtn');
-            btn.disabled = true;
-            btn.textContent = 'Ending session...';
+        async function handleEndSessionFromAnywhere(targetSessionId = null) {
+            const sid = targetSessionId || activeSessionId;
+            if (!sid) {
+                alert("No active session found.");
+                return;
+            }
+            if (!confirm('Are you sure you want to END this class session? Students will no longer be able to mark attendance and missing students will be logged as ABSENT.')) return;
 
             try {
-                const res = await fetch(`/sessions/${activeSessionId}/end`, {
+                const res = await fetch(`/sessions/${sid}/end`, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1223,22 +1249,83 @@
                     throw new Error(errText || 'Failed to end session');
                 }
 
-                clearInterval(qrTimer);
-                clearInterval(countdownTimer);
+                if (qrTimer) clearInterval(qrTimer);
+                if (countdownTimer) clearInterval(countdownTimer);
+                if (attendancePollTimer) clearInterval(attendancePollTimer);
 
-                document.getElementById('activeClassName').textContent = document.getElementById('className').value.trim() + ' (ENDED)';
-                document.getElementById('rotationTimerBadge').style.display = 'none';
-                btn.style.display = 'none';
+                const banner = document.getElementById('teacherLiveActiveBanner');
+                if (banner) banner.style.display = 'none';
 
-                const img = document.getElementById('qrImageDisplay');
-                img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 24 24" fill="none" stroke="%23ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+                const activePanel = document.getElementById('activeSessionPanel');
+                if (activePanel) activePanel.style.display = 'none';
 
-                alert('Class session has been ended successfully! You can export attendance to Excel/CSV anytime.');
+                activeSessionId = null;
 
+                alert('Class session has been ended successfully! All un-submitted students were automatically recorded as ABSENT.');
+                location.reload();
             } catch (err) {
                 alert(err.message || 'Error ending session');
-            } finally {
-                btn.disabled = false;
+            }
+        }
+
+        async function handleEndSession() {
+            await handleEndSessionFromAnywhere(activeSessionId);
+        }
+
+        async function checkAndRestoreTeacherActiveSession() {
+            try {
+                const res = await fetch('/sessions/my-sessions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const sessions = await res.json();
+                if (!sessions || sessions.length === 0) return;
+
+                const activeSession = sessions.find(s => s.active === true);
+                if (activeSession) {
+                    activeSessionId = activeSession.id;
+
+                    const banner = document.getElementById('teacherLiveActiveBanner');
+                    if (banner) {
+                        const bClass = document.getElementById('bannerActiveClassName');
+                        const bSub = document.getElementById('bannerActiveSubject');
+                        const bPass = document.getElementById('bannerActivePasscode');
+                        if (bClass) bClass.textContent = activeSession.className || 'Class';
+                        if (bSub) bSub.textContent = activeSession.subject || 'Subject';
+                        if (bPass) bPass.textContent = activeSession.passcode || '------';
+                        banner.style.display = 'block';
+                    }
+
+                    if (document.getElementById('className')) document.getElementById('className').value = activeSession.className || '';
+                    if (document.getElementById('sessionSubject')) document.getElementById('sessionSubject').value = activeSession.subject || '';
+
+                    const activeName = document.getElementById('activeClassName');
+                    if (activeName) activeName.textContent = (activeSession.className || 'Class') + ' (ACTIVE)';
+
+                    const activePass = document.getElementById('activePasscodeDisplay');
+                    if (activePass) activePass.textContent = activeSession.passcode || '------';
+
+                    const panel = document.getElementById('activeSessionPanel');
+                    if (panel) panel.style.display = 'block';
+
+                    const expBtn = document.getElementById('exportExcelBtn');
+                    if (expBtn) expBtn.style.display = 'inline-flex';
+
+                    const endBtn = document.getElementById('endSessionBtn');
+                    if (endBtn) endBtn.style.display = 'block';
+
+                    const rotBadge = document.getElementById('rotationTimerBadge');
+                    if (rotBadge) rotBadge.style.display = 'inline-flex';
+
+                    startLiveQrRotation();
+                    startLiveAttendancePolling();
+                } else {
+                    const banner = document.getElementById('teacherLiveActiveBanner');
+                    if (banner) banner.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Error auto-detecting active session:", err);
             }
         }
 
@@ -1847,8 +1934,9 @@
             loadTeacherAssignments(e.target.value.trim() || 'all');
         });
 
-        // Auto load sessions for dropdown
+        // Auto load sessions for dropdown & restore active running session
         loadTeacherSessions();
+        checkAndRestoreTeacherActiveSession();
 
         function syncClassInputFromSelect() {
             const val = document.getElementById('teacherClassSelect').value;

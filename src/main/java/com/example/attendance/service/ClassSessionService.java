@@ -47,6 +47,18 @@ public class ClassSessionService {
             throw new RuntimeException("Only teachers can start a class session.");
         }
 
+        // Auto-end any previous active session for this teacher if they forgot to close it
+        List<ClassSession> existingActive = classSessionRepository.findByTeacher(teacher).stream()
+                .filter(ClassSession::isActive)
+                .collect(Collectors.toList());
+        for (ClassSession active : existingActive) {
+            try {
+                endSession(active.getId(), teacherUsername);
+            } catch (Exception e) {
+                // Log and continue
+            }
+        }
+
         ClassSession session = new ClassSession();
         session.setTeacher(teacher);
 
