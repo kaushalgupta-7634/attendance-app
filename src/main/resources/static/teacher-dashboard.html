@@ -489,14 +489,14 @@
                     <div class="form-group">
                         <label class="form-label" for="className">Course / Class Name</label>
                         <input type="text" id="className" class="form-input" placeholder="e.g. CS101 - Computer Science"
-                            required>
+                            required oninput="fetchDefaultLiveFeed()">
                         <input type="hidden" id="selectedClassCourseId" value="">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="sessionSubject">Subject Name</label>
                         <input type="text" id="sessionSubject" class="form-input"
-                            placeholder="e.g. Data Structures / Mathematics" required>
+                            placeholder="e.g. Data Structures / Mathematics" required oninput="fetchDefaultLiveFeed()">
                     </div>
 
                     <div class="form-grid">
@@ -1512,9 +1512,55 @@
                         const panel = document.getElementById('activeSessionPanel');
                         if (panel) panel.style.display = 'none';
                     }
+                    fetchDefaultLiveFeed();
                 }
             } catch (err) {
                 console.error("Error auto-detecting active session:", err);
+            }
+        }
+
+        async function fetchDefaultLiveFeed() {
+            if (activeSessionId) return;
+
+            const className = document.getElementById('className')?.value.trim() || 'BCA';
+            const subject = document.getElementById('sessionSubject')?.value.trim() || '';
+
+            try {
+                const url = subject ? `/classes/by-name/${encodeURIComponent(className)}/daily-records?subject=${encodeURIComponent(subject)}` : `/classes/by-name/${encodeURIComponent(className)}/daily-records`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.ok) {
+                    const records = await res.json();
+                    if (records && records.length > 0) {
+                        renderAttendanceTable(records);
+                        return;
+                    }
+                }
+
+                const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(className)}/roster`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (rosterRes.ok) {
+                    const roster = await rosterRes.json();
+                    if (roster.students && roster.students.length > 0) {
+                        const fallbackRecords = roster.students.map(s => ({
+                            id: null,
+                            studentId: s.id,
+                            studentName: s.name,
+                            studentUsername: s.username,
+                            studentEmail: s.email,
+                            markedAt: null,
+                            status: 'ABSENT'
+                        }));
+                        renderAttendanceTable(fallbackRecords);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching default live feed:", err);
             }
         }
 
