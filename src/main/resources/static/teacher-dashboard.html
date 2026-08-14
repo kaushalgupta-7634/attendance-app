@@ -632,16 +632,8 @@
                     </div>
                 </div>
 
-                <!-- LIVE ATTENDANCE DISTRIBUTION CHART -->
-                <div id="chartContainer" style="display: none; margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); padding: 1rem; border-radius: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Live Participation Distribution</span>
-                        <span id="chartRatioBadge" style="font-size: 0.75rem; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.25rem 0.55rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">0% Present</span>
-                    </div>
-                    <div style="height: 150px; position: relative;">
-                        <canvas id="liveAttendanceChart"></canvas>
-                    </div>
-                </div>
+                <!-- LIVE ATTENDANCE DISTRIBUTION CHART (REMOVED AS REQUESTED BY USER) -->
+                <div id="chartContainer" style="display: none !important;"></div>
 
                 <div class="table-container">
                     <table>
@@ -1897,7 +1889,7 @@
                 return;
             }
 
-            if (chartBox) chartBox.style.display = 'block';
+            if (chartBox) chartBox.style.display = 'none';
             if (pdfBtn) pdfBtn.style.display = 'inline-flex';
 
             const presentCount = records.filter(r => r.status === 'PRESENT').length;
