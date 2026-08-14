@@ -764,6 +764,18 @@
 
                 <!-- OVERALL CLASS AVERAGE & SUBJECT BREAKDOWN GRID -->
                 <div id="classAnalyticsPanel" style="display: block;">
+                    <!-- DASHBOARD CONTEXT HEADER BADGE -->
+                    <div id="analyticsContextHeader" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border: 1px solid var(--accent-purple); padding: 0.75rem 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                        <div style="font-size: 1rem; font-weight: 700; color: #ffffff;">
+                            🎓 <span id="analyticsHeaderClassText" style="color: var(--accent-cyan);">Class: Select a Class</span> 
+                            &nbsp;|&nbsp; 
+                            📖 <span id="analyticsHeaderSubjectText" style="color: #c4b5fd;">Subject: All Subjects (Combined)</span>
+                        </div>
+                        <span id="analyticsHeaderFilterBadge" class="status-badge status-present" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+                            Live Analytics Active
+                        </span>
+                    </div>
+
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
                         <div
@@ -2697,6 +2709,11 @@
 
                     document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
                     document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
+
+                    const headerClassElem = document.getElementById('analyticsHeaderClassText');
+                    const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
+                    if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal}`;
+                    if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
                     if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
