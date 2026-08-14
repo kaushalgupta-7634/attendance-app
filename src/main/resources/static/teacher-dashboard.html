@@ -2505,7 +2505,7 @@
                 const searchInput = document.getElementById('teacherClassNameSearch');
                 if (searchInput) searchInput.value = defaultClass;
 
-                updateSubjectDropdownOptions(defaultClass);
+                await updateSubjectDropdownOptions(defaultClass);
                 loadSelectedClassAnalytics('all');
 
             } catch (err) {
@@ -2557,7 +2557,13 @@
             }
 
             subSelect.innerHTML = subOptionsHtml;
-            subSelect.value = currentSubjectFilter || 'all';
+            const hasCurrentOpt = Array.from(subSelect.options).some(opt => opt.value.toLowerCase() === (currentSubjectFilter || 'all').toLowerCase());
+            if (hasCurrentOpt) {
+                subSelect.value = currentSubjectFilter;
+            } else {
+                currentSubjectFilter = 'all';
+                subSelect.value = 'all';
+            }
         }
 
         function exportSelectedClassSummaryPdf() {
@@ -2695,8 +2701,19 @@
 
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            let targetVal = searchVal || classSelectVal || 'all';
-            if (targetVal === '') targetVal = classSelectVal || 'all';
+
+            let targetVal = 'all';
+            if (classSelectVal && classSelectVal !== '') {
+                targetVal = classSelectVal;
+            } else if (searchVal && searchVal !== '') {
+                targetVal = searchVal;
+                for (const key of classSubjectsMap.keys()) {
+                    if (key.toLowerCase() === searchVal.toLowerCase()) {
+                        targetVal = key;
+                        break;
+                    }
+                }
+            }
 
             const subSelect = document.getElementById('teacherSubjectSelect');
             if (subSelect && subSelect.value !== currentSubjectFilter) {
