@@ -315,29 +315,74 @@ public class AdminService {
         final java.time.LocalDateTime finalStart = startDateTime;
         final java.time.LocalDateTime finalEnd = endDateTime;
 
+        java.util.function.BiPredicate<ClassSession, String> sessionClassMatcher = (s, filter) -> {
+            if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter)) return true;
+            if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(filter)) return true;
+            if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(filter)) return true;
+            if (s.getClassCourse() != null) {
+                if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(filter)) return true;
+                if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(filter)) return true;
+                if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(filter)) return true;
+            }
+            return false;
+        };
+
         List<ClassSession> allSessions = classSessionRepository.findAll().stream()
                 .filter(s -> !s.isCancelled())
-                .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart) && !s.getStartTime().isAfter(finalEnd))
-                .filter(s -> finalClassFilter == null || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(finalClassFilter)))
+                .filter(s -> sessionClassMatcher.test(s, finalClassFilter))
                 .filter(s -> finalSubjectFilter == null || (s.getSubject() != null && s.getSubject().equalsIgnoreCase(finalSubjectFilter)))
                 .collect(Collectors.toList());
 
+        // Filter by date range if sessions exist in date range, otherwise fallback to all-time sessions
+        List<ClassSession> dateFilteredSessions = allSessions.stream()
+                .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart) && !s.getStartTime().isAfter(finalEnd))
+                .collect(Collectors.toList());
+
+        if (!dateFilteredSessions.isEmpty()) {
+            allSessions = dateFilteredSessions;
+        }
+
         long totalSessions = allSessions.size();
 
+        final List<ClassSession> finalMatchedSessions = allSessions;
         List<AttendanceRecord> allRecords = attendanceRecordRepository.findAll().stream()
-                .filter(r -> r.getMarkedAt() != null && !r.getMarkedAt().isBefore(finalStart) && !r.getMarkedAt().isAfter(finalEnd))
                 .filter(r -> r.getStatus() == AttendanceStatus.PRESENT || r.getStatus() == AttendanceStatus.LATE)
                 .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
-                .filter(r -> finalClassFilter == null || (r.getSession() != null && r.getSession().getClassName() != null && r.getSession().getClassName().equalsIgnoreCase(finalClassFilter)))
-                .filter(r -> finalSubjectFilter == null || (r.getSession() != null && r.getSession().getSubject() != null && r.getSession().getSubject().equalsIgnoreCase(finalSubjectFilter)))
+                .filter(r -> finalMatchedSessions.contains(r.getSession()))
                 .collect(Collectors.toList());
 
         long totalPresentRecords = allRecords.size();
 
-        long totalStudents = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.STUDENT)
-                .filter(u -> finalClassFilter == null || (u.getClassName() != null && u.getClassName().equalsIgnoreCase(finalClassFilter)))
-                .count();
+        // Enrolled Student Count calculation
+        java.util.Set<User> matchedStudents = new java.util.HashSet<>();
+        if (finalClassFilter == null) {
+            matchedStudents.addAll(userRepository.findByRole(Role.STUDENT));
+        } else {
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, finalClassFilter);
+            if (direct != null) matchedStudents.addAll(direct);
+
+            classCourseRepository.findAll().stream()
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(finalClassFilter)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(finalClassFilter)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(finalClassFilter)))
+                    .forEach(c -> {
+                        enrollmentRepository.findByClassCourse(c).forEach(e -> {
+                            if (e.getStudent() != null) matchedStudents.add(e.getStudent());
+                        });
+                    });
+
+            allSessions.forEach(s -> {
+                attendanceRecordRepository.findBySession(s).forEach(r -> {
+                    if (r.getStudent() != null) matchedStudents.add(r.getStudent());
+                });
+            });
+
+            if (matchedStudents.isEmpty()) {
+                matchedStudents.addAll(userRepository.findByRole(Role.STUDENT));
+            }
+        }
+
+        long totalStudents = matchedStudents.size();
 
         long possibleAttendanceCount = totalSessions * Math.max(1, totalStudents);
         long totalAbsentRecords = Math.max(0, possibleAttendanceCount - totalPresentRecords);
@@ -361,23 +406,6 @@ public class AdminService {
                     .count();
 
             long subStudentsCount = totalStudents;
-            if (finalClassFilter == null) {
-                java.util.Set<String> classNamesForSubject = entry.getValue().stream()
-                        .map(ClassSession::getClassName)
-                        .filter(c -> c != null && !c.isBlank())
-                        .map(String::trim)
-                        .collect(Collectors.toSet());
-                if (!classNamesForSubject.isEmpty()) {
-                    long countInSubjectClasses = userRepository.findAll().stream()
-                            .filter(u -> u.getRole() == Role.STUDENT)
-                            .filter(u -> u.getClassName() != null && classNamesForSubject.stream().anyMatch(c -> c.equalsIgnoreCase(u.getClassName().trim())))
-                            .count();
-                    if (countInSubjectClasses > 0) {
-                        subStudentsCount = countInSubjectClasses;
-                    }
-                }
-            }
-
             long subPossible = subSessionsHeld * Math.max(1, subStudentsCount);
             double subPercent = subPossible > 0 ? ((double) subPresent / subPossible) * 100.0 : 0.0;
             subjectBreakdown.add(new AdminDTOs.SubjectAnalyticsDTO(subject, subSessionsHeld, subPresent, Math.round(subPercent * 10.0) / 10.0));
@@ -393,6 +421,7 @@ public class AdminService {
             String clsName = entry.getKey();
             long clsSessions = entry.getValue().size();
             long clsStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, clsName).size();
+            if (clsStudents == 0) clsStudents = totalStudents;
             long clsPresent = allRecords.stream()
                     .filter(r -> r.getSession() != null && clsName.equalsIgnoreCase(r.getSession().getClassName()))
                     .count();
