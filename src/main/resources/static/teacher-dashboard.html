@@ -2293,12 +2293,25 @@
         checkAndRestoreTeacherActiveSession();
 
         function syncClassInputFromSelect() {
-            const val = document.getElementById('teacherClassSelect').value;
+            const rawVal = document.getElementById('teacherClassSelect').value;
             const textInput = document.getElementById('teacherClassNameSearch');
-            if (textInput) {
-                textInput.value = (val === 'all' || !val) ? '' : val;
+            
+            if (!rawVal || rawVal === 'all') {
+                if (textInput) textInput.value = '';
+                loadSelectedClassAnalytics('all');
+                return;
             }
-            loadSelectedClassAnalytics();
+
+            let className = rawVal;
+            let subject = 'all';
+            if (rawVal.includes('|')) {
+                const parts = rawVal.split('|');
+                className = parts[0];
+                subject = parts[1];
+            }
+
+            if (textInput) textInput.value = className;
+            loadSelectedClassAnalytics(subject);
         }
 
         function filterBySubjectCard(subjectName) {
@@ -2310,7 +2323,7 @@
             if (!select) return;
 
             try {
-                let optionsHtml = '<option value="">-- Select Class --</option>';
+                let optionsHtml = '<option value="">-- Select Class / Subject --</option>';
                 optionsHtml += '<option value="all">🌐 All Classes & Courses (Overall)</option>';
 
                 let courses = [];
@@ -2329,20 +2342,44 @@
                     if (sRes.ok) sessions = await sRes.json();
                 } catch (e) {}
 
-                const classNamesSet = new Set();
+                const classMap = new Map();
+
                 if (courses && courses.length > 0) {
-                    courses.forEach(c => { if (c.className) classNamesSet.add(c.className); });
-                }
-                if (sessions && sessions.length > 0) {
-                    sessions.forEach(s => { if (s.className) classNamesSet.add(s.className); });
+                    courses.forEach(c => {
+                        if (c.className) {
+                            const key = c.className.trim().toUpperCase();
+                            if (!classMap.has(key)) {
+                                classMap.set(key, { displayName: c.className.trim(), subjects: new Set() });
+                            }
+                            if (c.subject) classMap.get(key).subjects.add(c.subject.trim());
+                        }
+                    });
                 }
 
-                if (classNamesSet.size > 0) {
-                    optionsHtml += '<optgroup label="🎓 Created Classes">';
-                    classNamesSet.forEach(cName => {
-                        optionsHtml += `<option value="${escapeHtml(cName)}">🎓 ${escapeHtml(cName)}</option>`;
+                if (sessions && sessions.length > 0) {
+                    sessions.forEach(s => {
+                        if (s.className) {
+                            const key = s.className.trim().toUpperCase();
+                            if (!classMap.has(key)) {
+                                classMap.set(key, { displayName: s.className.trim(), subjects: new Set() });
+                            }
+                            if (s.subject) classMap.get(key).subjects.add(s.subject.trim());
+                        }
                     });
-                    optionsHtml += '</optgroup>';
+                }
+
+                if (classMap.size > 0) {
+                    classMap.forEach((info, key) => {
+                        const subsArray = Array.from(info.subjects);
+                        const subsStr = subsArray.length > 0 ? ` (Subjects: ${subsArray.join(', ')})` : '';
+                        
+                        optionsHtml += `<optgroup label="🎓 ${escapeHtml(info.displayName)}${escapeHtml(subsStr)}">`;
+                        optionsHtml += `<option value="${escapeHtml(info.displayName)}">🎓 ${escapeHtml(info.displayName)} - All Subjects</option>`;
+                        subsArray.forEach(sub => {
+                            optionsHtml += `<option value="${escapeHtml(info.displayName)}|${escapeHtml(sub)}">&nbsp;&nbsp;&nbsp;&nbsp;📖 ${escapeHtml(info.displayName)} - ${escapeHtml(sub)}</option>`;
+                        });
+                        optionsHtml += '</optgroup>';
+                    });
                 } else {
                     optionsHtml += '<optgroup label="Sample Classes">';
                     optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
@@ -2354,7 +2391,7 @@
                 select.innerHTML = optionsHtml;
 
             } catch (err) {
-                console.error("Error loading teacher classes:", err);
+                console.error("Error loading teacher classes & subjects:", err);
             }
         }
 

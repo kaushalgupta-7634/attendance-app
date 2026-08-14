@@ -466,6 +466,7 @@ public class AttendanceService {
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
                     .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
@@ -480,7 +481,9 @@ public class AttendanceService {
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
-                    .filter(s -> s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass))
+                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
@@ -491,13 +494,27 @@ public class AttendanceService {
                     }
                 }
             }
+
+            if (distinctStudents.isEmpty()) {
+                distinctStudents = userRepository.findByRole(Role.STUDENT);
+            }
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
         }
 
         List<ClassSession> classSessions = classSessionRepository.findAll().stream()
                 .filter(s -> !s.isCancelled())
-                .filter(s -> isAllClass || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)))
+                .filter(s -> {
+                    if (isAllClass) return true;
+                    if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getClassCourse() != null) {
+                        if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
+                    }
+                    return false;
+                })
                 .collect(java.util.stream.Collectors.toList());
 
         if (!isAllClass && classSessions.isEmpty() && distinctStudents.isEmpty()) {
