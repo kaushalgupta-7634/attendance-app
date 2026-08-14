@@ -2007,9 +2007,19 @@
             const activeId = filter === 'active' ? 'btnFilterActive' : filter === 'expired' ? 'btnFilterExpired' : 'btnFilterAll';
             const activeBtn = document.getElementById(activeId);
             if (activeBtn) {
-                activeBtn.style.background = 'var(--accent-purple)';
-                activeBtn.style.color = '#fff';
-                activeBtn.style.borderColor = 'var(--accent-purple)';
+                if (filter === 'active') {
+                    activeBtn.style.background = 'rgba(34, 197, 94, 0.2)';
+                    activeBtn.style.borderColor = 'var(--accent-green)';
+                    activeBtn.style.color = '#86efac';
+                } else if (filter === 'expired') {
+                    activeBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+                    activeBtn.style.borderColor = 'var(--accent-red)';
+                    activeBtn.style.color = '#fca5a5';
+                } else {
+                    activeBtn.style.background = 'var(--accent-purple)';
+                    activeBtn.style.borderColor = 'var(--accent-purple)';
+                    activeBtn.style.color = '#fff';
+                }
             }
             loadTeacherAssignments('all');
         }
