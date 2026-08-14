@@ -1151,10 +1151,11 @@
             );
         }
 
-        // Auto detect GPS, active session, and load courses on page load
+        // Auto detect GPS, active session, courses, and class analytics on page load
         detectGPSLocation();
         autoFetchLatestActiveSession();
         loadTeacherCourses();
+        loadTeacherSessions();
 
         function logout() {
             if (qrTimer) clearInterval(qrTimer);
@@ -2671,8 +2672,18 @@
             searchDebounceTimer = setTimeout(async () => {
                 const searchInput = document.getElementById('teacherClassNameSearch');
                 const val = searchInput ? searchInput.value.trim() : '';
+                const classSelect = document.getElementById('teacherClassSelect');
+                if (val && classSelect) {
+                    for (const option of classSelect.options) {
+                        if (option.value && option.value.toLowerCase() === val.toLowerCase()) {
+                            classSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
                 currentSubjectFilter = 'all';
-                await updateSubjectDropdownOptions(val || 'all');
+                const effectiveClass = val || classSelect?.value || 'all';
+                await updateSubjectDropdownOptions(effectiveClass);
                 loadSelectedClassAnalytics('all');
             }, 300);
         }
@@ -2685,6 +2696,7 @@
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
             let targetVal = searchVal || classSelectVal || 'all';
+            if (targetVal === '') targetVal = classSelectVal || 'all';
 
             const subSelect = document.getElementById('teacherSubjectSelect');
             if (subSelect && subSelect.value !== currentSubjectFilter) {
