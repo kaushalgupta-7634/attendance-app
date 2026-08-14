@@ -22,5 +22,11 @@ MERGE INTO enrollments (id, student_id, class_course_id, enrolled_at) KEY(id) VA
 (2, 3, 1, '2026-08-01 00:00:00');
 
 -- 5. Seed 1 Active Class Session
-MERGE INTO class_sessions (id, teacher_id, class_course_id, class_name, start_time, end_time, classroom_lat, classroom_lng, radius_meters, active) KEY(id) VALUES 
-(1, 1, 1, 'CS101 - Algorithms & Data Structures', '2026-08-01 00:00:00', '2026-12-31 23:59:59', 12.9716, 77.5946, 0.0, true);
+MERGE INTO class_sessions (id, teacher_id, class_course_id, class_name, subject, start_time, end_time, classroom_lat, classroom_lng, radius_meters, active) KEY(id) VALUES 
+(1, 1, 1, 'CS101 - Algorithms & Data Structures', 'Computer Science', '2026-08-01 00:00:00', '2026-12-31 23:59:59', 12.9716, 77.5946, 0.0, true);
+
+-- 6. Seed Sample Attendance Check-in Records
+MERGE INTO attendance_records (id, session_id, student_id, marked_at, status, manually_overridden) KEY(id) VALUES
+(1, 1, 2, '2026-08-14 10:00:00', 'PRESENT', false),
+(2, 1, 3, '2026-08-14 10:05:00', 'PRESENT', false);
+
