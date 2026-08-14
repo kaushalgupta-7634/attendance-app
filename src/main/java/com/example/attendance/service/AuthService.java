@@ -90,8 +90,14 @@ public class AuthService {
             user.setClassName(registerRequest.getClassName().trim());
         }
         if (registerRequest.getSecurityPin() != null && !registerRequest.getSecurityPin().isBlank()) {
-            user.setSecurityPin(registerRequest.getSecurityPin().trim());
+            String cleanPin = registerRequest.getSecurityPin().trim();
+            if (!cleanPin.matches("\\d{4}")) {
+                throw new IllegalArgumentException("Security PIN must be exactly 4 digits (e.g. 1234).");
+            }
+            user.setSecurityPin(cleanPin);
             user.setPinGeneratedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        } else {
+            throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
         userRepository.save(user);
