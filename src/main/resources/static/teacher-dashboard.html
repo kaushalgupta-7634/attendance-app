@@ -2361,50 +2361,76 @@
             if (!classSelect) return;
 
             try {
-                let courses = [];
+                let available = [];
                 try {
-                    const cRes = await fetch('/classes/my-courses', {
+                    const res = await fetch('/classes/available-classes', {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
-                    if (cRes.ok) courses = await cRes.json();
-                } catch (e) {}
-
-                let sessions = [];
-                try {
-                    const sRes = await fetch('/sessions/my-sessions', {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (sRes.ok) sessions = await sRes.json();
+                    if (res.ok) available = await res.json();
                 } catch (e) {}
 
                 classSubjectsMap.clear();
 
-                if (courses && courses.length > 0) {
-                    courses.forEach(c => {
-                        if (c.className && c.className.trim()) {
-                            const name = c.className.trim();
+                if (available && available.length > 0) {
+                    available.forEach(item => {
+                        if (item.className && item.className.trim()) {
+                            const name = item.className.trim();
                             if (!classSubjectsMap.has(name)) {
                                 classSubjectsMap.set(name, new Set());
                             }
-                            if (c.subject && c.subject.trim()) {
-                                classSubjectsMap.get(name).add(c.subject.trim());
+                            if (item.subjects && item.subjects.length > 0) {
+                                item.subjects.forEach(sub => {
+                                    if (sub && sub.trim()) classSubjectsMap.get(name).add(sub.trim());
+                                });
                             }
                         }
                     });
                 }
 
-                if (sessions && sessions.length > 0) {
-                    sessions.forEach(s => {
-                        if (s.className && s.className.trim()) {
-                            const name = s.className.trim();
-                            if (!classSubjectsMap.has(name)) {
-                                classSubjectsMap.set(name, new Set());
+                if (classSubjectsMap.size === 0) {
+                    let courses = [];
+                    try {
+                        const cRes = await fetch('/classes/my-courses', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (cRes.ok) courses = await cRes.json();
+                    } catch (e) {}
+
+                    let sessions = [];
+                    try {
+                        const sRes = await fetch('/sessions/my-sessions', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (sRes.ok) sessions = await sRes.json();
+                    } catch (e) {}
+
+                    if (courses && courses.length > 0) {
+                        courses.forEach(c => {
+                            if (c.className && c.className.trim()) {
+                                const name = c.className.trim();
+                                if (!classSubjectsMap.has(name)) {
+                                    classSubjectsMap.set(name, new Set());
+                                }
+                                if (c.subject && c.subject.trim()) {
+                                    classSubjectsMap.get(name).add(c.subject.trim());
+                                }
                             }
-                            if (s.subject && s.subject.trim()) {
-                                classSubjectsMap.get(name).add(s.subject.trim());
+                        });
+                    }
+
+                    if (sessions && sessions.length > 0) {
+                        sessions.forEach(s => {
+                            if (s.className && s.className.trim()) {
+                                const name = s.className.trim();
+                                if (!classSubjectsMap.has(name)) {
+                                    classSubjectsMap.set(name, new Set());
+                                }
+                                if (s.subject && s.subject.trim()) {
+                                    classSubjectsMap.get(name).add(s.subject.trim());
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
 
                 let classOptionsHtml = '<option value="">Select a Class...</option>';
