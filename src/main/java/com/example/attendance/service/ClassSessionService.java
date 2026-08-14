@@ -173,11 +173,7 @@ public class ClassSessionService {
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
 
         // 1. Auto-Start: Find sessions where active = false, cancelled = false, startTime <= now, and endTime > now
-        List<ClassSession> scheduledToStart = classSessionRepository.findAll().stream()
-                .filter(s -> !s.isActive() && !s.isCancelled())
-                .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
-                .filter(s -> !now.isBefore(s.getStartTime()) && now.isBefore(s.getEndTime()))
-                .collect(Collectors.toList());
+        List<ClassSession> scheduledToStart = classSessionRepository.findScheduledSessionsToStart(now);
 
         for (ClassSession session : scheduledToStart) {
             if (session.getTeacher() != null) {

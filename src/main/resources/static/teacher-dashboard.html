@@ -1442,25 +1442,12 @@
                 if (!res.ok) return;
 
                 const sessions = await res.json();
-                if (!sessions || sessions.length === 0) return;
+                if (!sessions) return;
 
                 const activeSession = sessions.find(s => s.active === true);
                 if (activeSession) {
+                    const isNew = (activeSessionId !== activeSession.id);
                     activeSessionId = activeSession.id;
-
-                    const banner = document.getElementById('teacherLiveActiveBanner');
-                    if (banner) {
-                        const bClass = document.getElementById('bannerActiveClassName');
-                        const bSub = document.getElementById('bannerActiveSubject');
-                        const bPass = document.getElementById('bannerActivePasscode');
-                        if (bClass) bClass.textContent = activeSession.className || 'Class';
-                        if (bSub) bSub.textContent = activeSession.subject || 'Subject';
-                        if (bPass) bPass.textContent = activeSession.passcode || '------';
-                        banner.style.display = 'block';
-                    }
-
-                    if (document.getElementById('className')) document.getElementById('className').value = activeSession.className || '';
-                    if (document.getElementById('sessionSubject')) document.getElementById('sessionSubject').value = activeSession.subject || '';
 
                     const activeName = document.getElementById('activeClassName');
                     if (activeName) activeName.textContent = (activeSession.className || 'Class') + ' (ACTIVE)';
@@ -1469,7 +1456,9 @@
                     if (activePass) activePass.textContent = activeSession.passcode || '------';
 
                     const panel = document.getElementById('activeSessionPanel');
-                    if (panel) panel.style.display = 'block';
+                    if (panel && panel.style.display !== 'block') {
+                        panel.style.display = 'block';
+                    }
 
                     const expBtn = document.getElementById('exportExcelBtn');
                     if (expBtn) expBtn.style.display = 'inline-flex';
@@ -1480,16 +1469,32 @@
                     const rotBadge = document.getElementById('rotationTimerBadge');
                     if (rotBadge) rotBadge.style.display = 'inline-flex';
 
-                    startLiveQrRotation();
-                    startLiveAttendancePolling();
+                    if (isNew || !qrTimer) {
+                        startLiveQrRotation();
+                        startLiveAttendancePolling();
+                    }
                 } else {
-                    const banner = document.getElementById('teacherLiveActiveBanner');
-                    if (banner) banner.style.display = 'none';
+                    if (activeSessionId) {
+                        if (qrTimer) clearInterval(qrTimer);
+                        if (countdownTimer) clearInterval(countdownTimer);
+                        if (attendancePollTimer) clearInterval(attendancePollTimer);
+                        qrTimer = null;
+                        countdownTimer = null;
+                        attendancePollTimer = null;
+                        activeSessionId = null;
+
+                        const panel = document.getElementById('activeSessionPanel');
+                        if (panel) panel.style.display = 'none';
+                    }
                 }
             } catch (err) {
                 console.error("Error auto-detecting active session:", err);
             }
         }
+
+        // Auto check active session state every 5 seconds
+        checkAndRestoreTeacherActiveSession();
+        setInterval(checkAndRestoreTeacherActiveSession, 5000);
 
         async function handleDeleteActiveSession() {
             if (!activeSessionId) return;
