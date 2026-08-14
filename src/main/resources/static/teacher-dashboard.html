@@ -1515,11 +1515,10 @@
             if (activeSessionId) return;
 
             const classNameInput = document.getElementById('className')?.value.trim();
-            const subjectInput = document.getElementById('sessionSubject')?.value.trim();
             const searchName = classNameInput || 'all';
 
             try {
-                // 1. Fetch registered student roster
+                // Fetch registered student roster for the class/system
                 let studentsList = [];
                 const rosterRes = await fetch(`/classes/by-name/${encodeURIComponent(searchName)}/roster`, {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1543,73 +1542,18 @@
                     }
                 }
 
-                // 2. Fetch daily/recent attendance records for class
-                let url = `/classes/by-name/${encodeURIComponent(searchName)}/daily-records`;
-                if (subjectInput) {
-                    url += `?subject=${encodeURIComponent(subjectInput)}`;
-                }
+                // Build clean student rows for the upcoming session (ABSENT / N/A until active session starts)
+                const cleanStudentRows = studentsList.map(s => ({
+                    id: null,
+                    studentId: s.id,
+                    studentName: s.name || s.username,
+                    studentUsername: s.username,
+                    studentEmail: s.email,
+                    markedAt: null,
+                    status: 'ABSENT'
+                }));
 
-                let rawRecords = [];
-                const recRes = await fetch(url, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (recRes.ok) {
-                    rawRecords = await recRes.json();
-                }
-
-                // Map latest attendance record for each student
-                const latestRecordByStudent = new Map();
-                if (rawRecords && rawRecords.length > 0) {
-                    for (const r of rawRecords) {
-                        const sKey = r.studentId || (r.studentUsername ? r.studentUsername.toLowerCase() : null) || (r.studentEmail ? r.studentEmail.toLowerCase() : null);
-                        if (!sKey) continue;
-                        if (!latestRecordByStudent.has(sKey)) {
-                            latestRecordByStudent.set(sKey, r);
-                        } else {
-                            const existing = latestRecordByStudent.get(sKey);
-                            if (existing.status !== 'PRESENT' && r.status === 'PRESENT') {
-                                latestRecordByStudent.set(sKey, r);
-                            }
-                        }
-                    }
-                }
-
-                // 3. Build unique student rows (1 row per registered student)
-                const uniqueStudentRows = studentsList.map(s => {
-                    const sKeyId = s.id;
-                    const sKeyUser = s.username ? s.username.toLowerCase() : '';
-                    const sKeyEmail = s.email ? s.email.toLowerCase() : '';
-                    const latestRec = latestRecordByStudent.get(sKeyId) || latestRecordByStudent.get(sKeyUser) || latestRecordByStudent.get(sKeyEmail);
-
-                    if (latestRec) {
-                        return {
-                            id: latestRec.id,
-                            studentId: s.id,
-                            studentName: s.name || s.username,
-                            studentUsername: s.username,
-                            studentEmail: s.email,
-                            markedAt: latestRec.markedAt,
-                            status: latestRec.status || 'ABSENT',
-                            manuallyOverridden: latestRec.manuallyOverridden,
-                            overrideReason: latestRec.overrideReason,
-                            overriddenByName: latestRec.overriddenByName,
-                            wifiMismatchWarning: latestRec.wifiMismatchWarning,
-                            studentWifiSsid: latestRec.studentWifiSsid
-                        };
-                    } else {
-                        return {
-                            id: null,
-                            studentId: s.id,
-                            studentName: s.name || s.username,
-                            studentUsername: s.username,
-                            studentEmail: s.email,
-                            markedAt: null,
-                            status: 'ABSENT'
-                        };
-                    }
-                });
-
-                renderAttendanceTable(uniqueStudentRows);
+                renderAttendanceTable(cleanStudentRows);
             } catch (err) {
                 console.error("Error fetching default live feed:", err);
             }
