@@ -1084,6 +1084,9 @@
         var countdownTimer = null;
         var attendancePollTimer = null;
         var secondsLeft = 15;
+        var currentAssignFilter = 'all';
+        var currentSubjectFilter = 'all';
+        var lastFetchedDefaulters = [];
 
         const token = localStorage.getItem('jwtToken');
         const role = localStorage.getItem('userRole');
@@ -2182,8 +2185,6 @@
             }
         }
 
-        let currentAssignFilter = 'all';
-
         let assignSearchDebounce = null;
         function onAssignmentClassFilterInput() {
             if (assignSearchDebounce) clearTimeout(assignSearchDebounce);
@@ -2780,7 +2781,7 @@
             }, 300);
         }
 
-        let lastFetchedDefaulters = [];
+        lastFetchedDefaulters = [];
 
         function switchSmartSubTab(tabName) {
             const rosterBtn = document.getElementById('subTabRosterBtn');
