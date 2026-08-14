@@ -2357,19 +2357,12 @@
                 if ((!courses || courses.length === 0) && (!sessions || sessions.length === 0)) {
                     optionsHtml += '<optgroup label="Sample Classes">';
                     optionsHtml += '<option value="BCA">BCA (Computer Applications)</option>';
-                    optionsHtml += '<option value="BBA">BBA (Business Admin)</option>';
-                    optionsHtml += '<option value="CS101">CS101 (Intro to CS)</option>';
-                    optionsHtml += '</optgroup>';
-                }
-
-                select.innerHTML = optionsHtml;
-
-            } catch (err) {
-                console.error("Error loading teacher sessions:", err);
-            }
+            loadSelectedClassAnalytics(subjectName);
         }
 
-        async function loadSelectedClassAnalytics() {
+        async function loadSelectedClassAnalytics(selectedSubject = 'all') {
+            currentSubjectFilter = selectedSubject || 'all';
+
             const selectVal = document.getElementById('teacherClassSelect').value.trim();
             const textVal = document.getElementById('teacherClassNameSearch').value.trim();
             const targetVal = textVal || selectVal;
@@ -2387,8 +2380,17 @@
             placeholder.style.display = 'none';
 
             const isNumericId = /^\d+$/.test(targetVal);
-            const sumUrl = isNumericId ? `/classes/${targetVal}/attendance-summary` : `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary`;
-            const rosterUrl = isNumericId ? `/classes/${targetVal}/roster` : `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
+            const sumUrl = isNumericId 
+                ? `/classes/${targetVal}/attendance-summary` 
+                : `/classes/by-name/${encodeURIComponent(targetVal)}/attendance-summary?subject=${encodeURIComponent(currentSubjectFilter)}`;
+            
+            const rosterUrl = isNumericId 
+                ? `/classes/${targetVal}/roster` 
+                : `/classes/by-name/${encodeURIComponent(targetVal)}/roster`;
+
+            const logUrl = isNumericId 
+                ? `/sessions/${targetVal}/attendance-full` 
+                : `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
 
             try {
                 // 1. Fetch Class Summary Analytics
@@ -2398,6 +2400,16 @@
 
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
+
+                    if (summary.totalStudents === 0 && (!summary.subjectAverages || summary.subjectAverages.length === 0)) {
+                        document.getElementById('classOverallAvgText').textContent = '0%';
+                        document.getElementById('classTotalStudentsText').textContent = '0 Students';
+                        document.getElementById('classSubjectAveragesGrid').innerHTML = `<p style="font-size: 0.85rem; color: #fca5a5;">No class found named '<strong>${escapeHtml(targetVal)}</strong>'. Please select or search a valid Class Name (e.g. BCA, CS101) to view subject attendance.</p>`;
+                        document.getElementById('classRosterTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
+                        document.getElementById('classDailyLogTableBody').innerHTML = '<tr><td colspan="5" class="empty-state">No attendance history records logged for this class.</td></tr>';
+                        return;
+                    }
+
                     document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0) + '%';
                     document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
 
@@ -2405,13 +2417,37 @@
                     if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
                         avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject session data recorded yet.</p>';
                     } else {
-                        avgGrid.innerHTML = summary.subjectAverages.map(sa => `
-                            <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(196, 181, 253, 0.25); padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease, border-color 0.15s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(196, 181, 253, 0.25)'; this.style.transform='none'">
-                                <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
-                                <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
-                                <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">Click to View Attendance ➔</strong></span>
-                            </div>
-                        `).join('');
+                        let filterPillsHtml = `
+                            <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
+                                <button onclick="loadSelectedClassAnalytics('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                    🌐 All Subjects
+                                </button>
+                        `;
+
+                        summary.subjectAverages.forEach(sa => {
+                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
+                            filterPillsHtml += `
+                                <button onclick="loadSelectedClassAnalytics('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
+                                    📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
+                                </button>
+                            `;
+                        });
+
+                        filterPillsHtml += `</div>`;
+
+                        const cardsHtml = summary.subjectAverages.map(sa => {
+                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
+                            return `
+                                <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.7)'}; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(196, 181, 253, 0.25)'}; padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                                    <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
+                                    <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
+                                    <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">${isActive ? 'Active Subject Filter' : 'Click to Filter ➔'}</strong></span>
+                                </div>
+                            `;
+                        }).join('');
+
+                        avgGrid.innerHTML = filterPillsHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; width: 100%;">${cardsHtml}</div>`;
                     }
                 }
 
@@ -2426,57 +2462,71 @@
 
                     if (!roster.students || roster.students.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
-                        return;
-                    }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
 
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
+                        // Fetch individual attendance summary for each student
+                        const studentRows = await Promise.all(roster.students.map(async s => {
+                            let percent = 0.0;
+                            let subjectBadges = '';
+                            try {
+                                const sRes = await fetch(`/students/${s.id}/attendance-summary`, {
+                                    headers: { 'Authorization': 'Bearer ' + token }
+                                });
+                                if (sRes.ok) {
+                                    const sSum = await sRes.json();
+                                    
+                                    if (currentSubjectFilter && currentSubjectFilter !== 'all' && sSum.subjectBreakdown) {
+                                        const subMatch = sSum.subjectBreakdown.find(sb => sb.subject && sb.subject.toLowerCase() === currentSubjectFilter.toLowerCase());
+                                        if (subMatch) {
+                                            percent = subMatch.percentage || 0.0;
+                                        } else {
+                                            percent = 0.0;
+                                        }
+                                    } else {
+                                        percent = sSum.overallPercentage || 0.0;
+                                    }
 
-                    // Fetch individual attendance summary for each student
-                    const studentRows = await Promise.all(roster.students.map(async s => {
-                        let percent = 0.0;
-                        let subjectBadges = '';
-                        try {
-                            const sRes = await fetch(`/students/${s.id}/attendance-summary`, {
-                                headers: { 'Authorization': 'Bearer ' + token }
-                            });
-                            if (sRes.ok) {
-                                const sSum = await sRes.json();
-                                percent = sSum.overallPercentage || 0.0;
-                                if (sSum.subjectBreakdown && sSum.subjectBreakdown.length > 0) {
-                                    subjectBadges = sSum.subjectBreakdown.map(sb => {
-                                        const isOk = sb.percentage >= 75;
-                                        const badgeColor = isOk ? '#86efac' : '#fca5a5';
-                                        const badgeBg = isOk ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-                                        return `<span style="display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; margin-right: 0.3rem; margin-top: 0.2rem; font-weight: 600; border: 1px solid ${isOk ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};">
-                                            ${escapeHtml(sb.subject)}: ${sb.percentage}% (${sb.totalAttended}/${sb.totalSessions})
-                                        </span>`;
-                                    }).join('');
+                                    if (sSum.subjectBreakdown && sSum.subjectBreakdown.length > 0) {
+                                        let displayBreakdown = sSum.subjectBreakdown;
+                                        if (currentSubjectFilter && currentSubjectFilter !== 'all') {
+                                            displayBreakdown = displayBreakdown.filter(sb => sb.subject && sb.subject.toLowerCase() === currentSubjectFilter.toLowerCase());
+                                        }
+
+                                        subjectBadges = displayBreakdown.map(sb => {
+                                            const isOk = sb.percentage >= 75;
+                                            const badgeColor = isOk ? '#86efac' : '#fca5a5';
+                                            const badgeBg = isOk ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                                            return `<span style="display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; margin-right: 0.3rem; margin-top: 0.2rem; font-weight: 600; border: 1px solid ${isOk ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};">
+                                                ${escapeHtml(sb.subject)}: ${sb.percentage}% (${sb.totalAttended}/${sb.totalSessions})
+                                            </span>`;
+                                        }).join('');
+                                    }
                                 }
-                            }
-                        } catch (e) { }
+                            } catch (e) { }
 
-                        const isGood = percent >= 75;
-                        return `
-                            <tr>
-                                <td><strong>${escapeHtml(s.name)}</strong></td>
-                                <td>${escapeHtml(s.username)}</td>
-                                <td>${escapeHtml(s.email)}</td>
-                                <td>
-                                    <div style="font-weight: 700; font-size: 1.05rem; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</div>
-                                    <div style="margin-top: 0.25rem;">${subjectBadges || '<span style="font-size: 0.72rem; color: var(--text-secondary);">No subject records</span>'}</div>
-                                </td>
-                                <td>
-                                    <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${s.id}, '${escapeHtml(s.name)}')">📊 Full Report</button>
-                                </td>
-                            </tr>
-                        `;
-                    }));
+                            const isGood = percent >= 75;
+                            return `
+                                <tr>
+                                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                                    <td>${escapeHtml(s.username)}</td>
+                                    <td>${escapeHtml(s.email)}</td>
+                                    <td>
+                                        <div style="font-weight: 700; font-size: 1.05rem; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</div>
+                                        <div style="margin-top: 0.25rem;">${subjectBadges || '<span style="font-size: 0.72rem; color: var(--text-secondary);">No subject records</span>'}</div>
+                                    </td>
+                                    <td>
+                                        <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${s.id}, '${escapeHtml(s.name)}')">📊 Full Report</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }));
 
-                    tbody.innerHTML = studentRows.join('');
+                        tbody.innerHTML = studentRows.join('');
+                    }
                 }
 
                 // 3. Fetch Everyday Class Attendance Records Log
-                const logUrl = isNumericId ? `/sessions/${targetVal}/attendance-full` : `/classes/by-name/${encodeURIComponent(targetVal)}/daily-records`;
                 try {
                     const logRes = await fetch(logUrl, {
                         headers: { 'Authorization': 'Bearer ' + token }
@@ -2486,7 +2536,7 @@
                         const logTbody = document.getElementById('classDailyLogTableBody');
 
                         if (!records || records.length === 0) {
-                            logTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No daily attendance entries logged for this class session yet.</td></tr>';
+                            logTbody.innerHTML = `<tr><td colspan="5" class="empty-state">No daily attendance entries logged for class ${escapeHtml(targetVal)}${currentSubjectFilter !== 'all' ? ' (' + escapeHtml(currentSubjectFilter) + ')' : ''} yet.</td></tr>`;
                         } else {
                             logTbody.innerHTML = records.map(r => {
                                 const formattedTime = r.markedAt ? new Date(r.markedAt).toLocaleString() : 'N/A';

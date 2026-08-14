@@ -59,9 +59,16 @@ public class ClassRosterController {
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<List<AttendanceRecordDTO>> getClassDailyRecords(
             @PathVariable("className") String className,
+            @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
             Principal principal) {
 
-        List<AttendanceRecordDTO> records = classSessionService.getClassDailyAttendanceRecords(className, principal.getName());
+        List<AttendanceRecordDTO> records = classSessionService.getClassDailyAttendanceRecords(className, subject, principal.getName());
         return ResponseEntity.ok(records);
+    }
+
+    public ResponseEntity<List<AttendanceRecordDTO>> getClassDailyRecords(
+            String className,
+            Principal principal) {
+        return getClassDailyRecords(className, null, principal);
     }
 }
