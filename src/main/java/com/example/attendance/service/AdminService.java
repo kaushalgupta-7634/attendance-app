@@ -200,7 +200,38 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("Session not found with ID: " + sessionId));
 
         session.setActive(false);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        session.setEndTime(now);
         classSessionRepository.save(session);
+
+        if (session.getTeacher() != null) {
+            User teacher = session.getTeacher();
+            if (teacher.getCurrentSessionId() != null && teacher.getCurrentSessionId().equals(sessionId)) {
+                teacher.setCurrentSessionId(null);
+                userRepository.save(teacher);
+            }
+        }
+        userRepository.findAll().stream()
+                .filter(u -> u.getCurrentSessionId() != null && u.getCurrentSessionId().equals(sessionId))
+                .forEach(u -> {
+                    u.setCurrentSessionId(null);
+                    userRepository.save(u);
+                });
+
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+        for (User student : students) {
+            if (!attendanceRecordRepository.existsBySessionAndStudent(session, student)) {
+                AttendanceRecord absentRecord = new AttendanceRecord();
+                absentRecord.setSession(session);
+                absentRecord.setStudent(student);
+                absentRecord.setMarkedAt(now);
+                absentRecord.setStudentLat(session.getClassroomLat() != null ? session.getClassroomLat() : 0.0);
+                absentRecord.setStudentLng(session.getClassroomLng() != null ? session.getClassroomLng() : 0.0);
+                absentRecord.setStatus(AttendanceStatus.ABSENT);
+                attendanceRecordRepository.save(absentRecord);
+            }
+        }
+
         logger.info("Admin terminated active QR session ID {}", sessionId);
     }
 
