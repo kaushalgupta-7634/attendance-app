@@ -722,47 +722,40 @@
     <div id="teacherSectionAnalytics" class="tab-content-teacher">
         <div class="container" style="display: block;">
             <div class="card full-width">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
                     <h3 class="card-title" style="margin-bottom: 0;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                             <circle cx="9" cy="7" r="4" />
                             <path d="M23 21v-2a4 4 0 00-3-3.87" />
                             <path d="M16 3.13a4 4 0 010 7.75" />
                         </svg>
-                        Class & Enrolled Student Attendance Analytics
+                        Analytics & Rosters
                     </h3>
 
-                    <!-- CLASS & SUBJECT SELECTOR DROPDOWNS & SEARCH INPUT -->
+                    <!-- TOP FILTER BAR WITH MONTHS, CLASS & SUBJECT DROPDOWNS -->
                     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 180px;"
-                            onchange="onAnalyticsClassChange()">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Start Month:</label>
+                        <input type="month" id="teacherStartMonth" class="form-input" style="width: auto; color-scheme: dark;">
+                        
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-left: 0.3rem;">End Month:</label>
+                        <input type="month" id="teacherEndMonth" class="form-input" style="width: auto; color-scheme: dark;">
+
+                        <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 160px;" onchange="onAnalyticsClassChange()">
                             <option value="">Select a Class...</option>
                         </select>
-                        <select id="teacherSubjectSelect" class="form-input" style="width: auto; min-width: 180px;"
-                            onchange="onAnalyticsSubjectChange()">
+                        <select id="teacherSubjectSelect" class="form-input" style="width: auto; min-width: 160px;" onchange="onAnalyticsSubjectChange()">
                             <option value="all">🌐 All Subjects (Combined)</option>
                         </select>
-                        <input type="text" id="teacherClassNameSearch" class="form-input"
-                            placeholder="Or enter Class Name (e.g. BCA, BBA)" style="width: auto; min-width: 200px;"
-                            oninput="onAnalyticsClassSearchInput()">
-                        <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;"
-                            onclick="loadSelectedClassAnalytics()">Search Stats</button>
-                        <button class="btn-secondary"
-                            style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;"
-                            onclick="exportSelectedClassSummaryCsv()">📥 Export Summary (CSV)</button>
-                        <button class="btn-secondary"
-                            style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;"
-                            onclick="exportSelectedClassSummaryPdf()">📄 Export PDF</button>
-                        <button class="btn-secondary"
-                            style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;"
-                            onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts (&lt;75%)</button>
+                        <input type="text" id="teacherClassNameSearch" class="form-input" placeholder="Or enter Class Name" style="width: auto; min-width: 150px;" oninput="onAnalyticsClassSearchInput()">
+                        <button class="btn-primary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem;" onclick="loadSelectedClassAnalytics()">🔍 Filter Analytics</button>
+                        <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;" onclick="exportSelectedClassSummaryCsv()">📥 Export Summary (CSV)</button>
+                        <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="exportSelectedClassSummaryPdf()">📄 Export PDF</button>
+                        <button class="btn-secondary" style="width: auto; white-space: nowrap; padding: 0.65rem 1rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts (&lt;75%)</button>
                     </div>
                 </div>
 
-                <!-- OVERALL CLASS AVERAGE & SUBJECT BREAKDOWN GRID -->
+                <!-- ANALYTICS PANEL & DASHBOARD GRID -->
                 <div id="classAnalyticsPanel" style="display: block;">
                     <!-- DASHBOARD CONTEXT HEADER BADGE -->
                     <div id="analyticsContextHeader" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border: 1px solid var(--accent-purple); padding: 0.75rem 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
@@ -776,36 +769,97 @@
                         </span>
                     </div>
 
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
-                        <div
-                            style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; border: 1px solid var(--card-border);">
-                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Overall Class
-                                Average %</span>
-                            <span id="classOverallAvgText"
-                                style="font-size: 1.8rem; font-weight: 700; color: var(--accent-cyan);">0.0%</span>
+                    <!-- ANALYTICS DASHBOARD GRID: DONUT CIRCLE & 4 CLICKABLE METRIC TILES + SUBJECT BREAKDOWN -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                        
+                        <!-- CIRCULAR GAUGE DONUT CARD -->
+                        <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 16px; padding: 1.75rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 1rem;">Overall Attendance Rate</h3>
+                            
+                            <div style="position: relative; width: 210px; height: 210px;">
+                                <svg width="210" height="210" viewBox="0 0 210 210">
+                                    <circle cx="105" cy="105" r="80" fill="none" stroke="#334155" stroke-width="14" />
+                                    <circle id="teacherCircleProgressPath" cx="105" cy="105" r="80" fill="none" stroke="#10b981" stroke-width="14" 
+                                            stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65" 
+                                            style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
+                                </svg>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div id="classOverallAvgText" style="font-size: 2.3rem; font-weight: 800; color: #ffffff;">0.0%</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Attendance Rate</div>
+                                </div>
+                            </div>
+
+                            <div id="teacherCircleStatusBadge" style="margin-top: 1.25rem; font-size: 0.8rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
+                                Calculating...
+                            </div>
                         </div>
-                        <div
-                            style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 12px; border: 1px solid var(--card-border);">
-                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">Total
-                                Enrolled Students</span>
-                            <span id="classTotalStudentsText"
-                                style="font-size: 1.8rem; font-weight: 700; color: #c4b5fd;">0 Students</span>
+
+                        <!-- 4 METRIC TILES & SUBJECT BREAKDOWN COLUMN -->
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            
+                            <!-- 4 CLICKABLE METRIC TILES -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
+                                <div onclick="showTeacherAnalyticsDetail('SESSIONS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Sessions Held</div>
+                                    <div id="teacherSessionsHeld" style="font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-top: 0.25rem;">0</div>
+                                    <span style="font-size: 0.68rem; color: #38bdf8; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                                </div>
+                                <div onclick="showTeacherAnalyticsDetail('PRESENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-green)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Present Check-ins</div>
+                                    <div id="teacherPresentCount" style="font-size: 1.5rem; font-weight: 700; color: #4ade80; margin-top: 0.25rem;">0</div>
+                                    <span style="font-size: 0.68rem; color: #4ade80; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                                </div>
+                                <div onclick="showTeacherAnalyticsDetail('ABSENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-red)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Absences</div>
+                                    <div id="teacherAbsentCount" style="font-size: 1.5rem; font-weight: 700; color: #f87171; margin-top: 0.25rem;">0</div>
+                                    <span style="font-size: 0.68rem; color: #f87171; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                                </div>
+                                <div onclick="showTeacherAnalyticsDetail('STUDENTS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Students Enrolled</div>
+                                    <div id="classTotalStudentsText" style="font-size: 1.5rem; font-weight: 700; color: #c084fc; margin-top: 0.25rem;">0</div>
+                                    <span style="font-size: 0.68rem; color: #c084fc; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                                </div>
+                            </div>
+
+                            <!-- SUBJECT BREAKDOWN CARD -->
+                            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; flex: 1;">
+                                <h4 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem;">Subject-wise Attendance Breakdown</h4>
+                                <div id="classSubjectAveragesGrid" style="display: flex; flex-direction: column; gap: 0.85rem;">
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class to view subject averages.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <h4
-                        style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">
-                        Subject Averages Across Class</h4>
-                    <div id="classSubjectAveragesGrid"
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
-                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Select a class to view subject
-                            averages.</p>
+                    <!-- DYNAMIC METRIC & SUBJECT DETAIL PANEL -->
+                    <div id="teacherAnalyticsDetailPanel" style="display: none; margin-top: 1.5rem; background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+                            <div>
+                                <h4 id="teacherAnalyticsDetailTitle" style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0;">Detailed Report</h4>
+                                <span id="teacherAnalyticsDetailSubtitle" style="font-size: 0.8rem; color: var(--text-secondary);">Filtered breakdown based on selected class & subject</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;" onclick="exportTeacherAnalyticsDetailCSV()">📥 Export CSV</button>
+                                <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="exportTeacherAnalyticsDetailPDF()">📄 Export PDF</button>
+                                <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerLowAttendanceAlerts()">📧 Send Alerts (&lt;75%)</button>
+                                <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(255,255,255,0.1); border: none; color: #ffffff;" onclick="closeTeacherAnalyticsDetail()">✖ Close</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container" style="max-height: 450px; overflow-y: auto;">
+                            <table style="width: 100%;">
+                                <thead id="teacherAnalyticsDetailTableHeader">
+                                    <!-- Dynamic headers -->
+                                </thead>
+                                <tbody id="teacherAnalyticsDetailTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- ENROLLED STUDENT ROSTER & INDIVIDUAL ATTENDANCE % TABLE -->
-                    <h4
-                        style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">
+                    <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">
                         Enrolled Student Roster & Individual Performance</h4>
                     <div class="table-container">
                         <table>
@@ -820,16 +874,14 @@
                             </thead>
                             <tbody id="classRosterTableBody">
                                 <tr>
-                                    <td colspan="5" class="empty-state">Select a class session above to load student
-                                        roster.</td>
+                                    <td colspan="5" class="empty-state">Select a class session above to load student roster.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- EVERYDAY STUDENT ATTENDANCE HISTORY LOG TABLE -->
-                    <h4
-                        style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">
+                    <h4 style="font-size: 0.95rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 600;">
                         Everyday Student Attendance Log (History Records)</h4>
                     <div class="table-container">
                         <table>
@@ -844,16 +896,11 @@
                             </thead>
                             <tbody id="classDailyLogTableBody">
                                 <tr>
-                                    <td colspan="5" class="empty-state">Select a class session above to load daily
-                                        attendance history records.</td>
+                                    <td colspan="5" class="empty-state">Select a class session above to load daily attendance history records.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
-                <div id="classAnalyticsPlaceholder" class="empty-state" style="display: none;">
-                    Please select one of your launched class sessions above to view overall class averages, subject
-                    breakdowns, and enrolled student rosters.
                 </div>
             </div>
         </div>
@@ -2739,49 +2786,88 @@
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
 
-                    document.getElementById('classOverallAvgText').textContent = (summary.overallClassAveragePercentage || 0.0) + '%';
-                    document.getElementById('classTotalStudentsText').textContent = (summary.totalStudents || 0) + ' Students';
+                    const overallPct = summary.overallClassAveragePercentage || 0.0;
+                    document.getElementById('classOverallAvgText').textContent = overallPct + '%';
+                    document.getElementById('classTotalStudentsText').textContent = summary.totalStudents || 0;
+
+                    // Update Circle Donut Gauge Path & Status Badge
+                    const circlePath = document.getElementById('teacherCircleProgressPath');
+                    const circleBadge = document.getElementById('teacherCircleStatusBadge');
+                    if (circlePath) {
+                        const circumference = 502.65;
+                        const offset = circumference - (overallPct / 100 * circumference);
+                        circlePath.style.strokeDashoffset = offset;
+                        circlePath.style.stroke = overallPct >= 75 ? '#10b981' : (overallPct >= 50 ? '#f59e0b' : '#ef4444');
+                    }
+                    if (circleBadge) {
+                        if (overallPct >= 75) {
+                            circleBadge.textContent = '🟢 75%+ Good Attendance';
+                            circleBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                            circleBadge.style.color = '#6ee7b7';
+                        } else {
+                            circleBadge.textContent = '🔴 Low Attendance Warning (<75%)';
+                            circleBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                            circleBadge.style.color = '#fca5a5';
+                        }
+                    }
+
+                    // Calculate Metric Tiles: Sessions Held, Present Check-ins, Absences
+                    let totalSessions = 0;
+                    let totalPresent = 0;
+                    let totalAbsent = 0;
+
+                    if (summary.subjectAverages && summary.subjectAverages.length > 0) {
+                        summary.subjectAverages.forEach(sa => {
+                            totalSessions += (sa.totalSessionsHeld || 0);
+                            const totalPoss = (sa.totalSessionsHeld || 0) * (sa.studentCount || summary.totalStudents || 1);
+                            const pres = Math.round(totalPoss * (sa.averagePercentage || 0) / 100);
+                            totalPresent += pres;
+                            totalAbsent += Math.max(0, totalPoss - pres);
+                        });
+                    }
+
+                    const sessElem = document.getElementById('teacherSessionsHeld');
+                    const presElem = document.getElementById('teacherPresentCount');
+                    const absElem = document.getElementById('teacherAbsentCount');
+                    if (sessElem) sessElem.textContent = totalSessions;
+                    if (presElem) presElem.textContent = totalPresent;
+                    if (absElem) absElem.textContent = totalAbsent;
 
                     const headerClassElem = document.getElementById('analyticsHeaderClassText');
                     const headerSubElem = document.getElementById('analyticsHeaderSubjectText');
                     if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal}`;
                     if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
+                    // Subject Breakdown Progress Bars with Clickable Present & Absent Badges
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
                     if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
                         avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
                     } else {
-                        let filterPillsHtml = `
-                            <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1;">Filter Subject:</span>
-                                <button onclick="filterBySubjectCard('all')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${currentSubjectFilter === 'all' ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${currentSubjectFilter === 'all' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                    🌐 All Subjects
-                                </button>
-                        `;
+                        avgGrid.innerHTML = summary.subjectAverages.map(sa => {
+                            const pct = sa.averagePercentage || 0.0;
+                            const totalPoss = (sa.totalSessionsHeld || 0) * (sa.studentCount || summary.totalStudents || 1);
+                            const pres = Math.round(totalPoss * pct / 100);
+                            const abs = Math.max(0, totalPoss - pres);
+                            const barColor = pct >= 75 ? 'linear-gradient(90deg, #10b981, #34d399)' : (pct >= 50 ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : 'linear-gradient(90deg, #ef4444, #f87171)');
 
-                        summary.subjectAverages.forEach(sa => {
-                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
-                            filterPillsHtml += `
-                                <button onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(255,255,255,0.15)'}; background: ${isActive ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'rgba(15, 23, 42, 0.6)'}; color: white;">
-                                    📖 ${escapeHtml(sa.subject)} (${sa.averagePercentage}%)
-                                </button>
-                            `;
-                        });
-
-                        filterPillsHtml += `</div>`;
-
-                        const cardsHtml = summary.subjectAverages.map(sa => {
-                            const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
                             return `
-                                <div onclick="filterBySubjectCard('${escapeHtml(sa.subject)}')" style="cursor: pointer; background: ${isActive ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.7)'}; border: 1px solid ${isActive ? 'var(--accent-purple)' : 'rgba(196, 181, 253, 0.25)'}; padding: 0.75rem 0.85rem; border-radius: 10px; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                                    <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📖 ${escapeHtml(sa.subject)}</span>
-                                    <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${sa.averagePercentage}%</span>
-                                    <span style="font-size: 0.72rem; color: #94a3b8; display: block; margin-top: 0.2rem;">${sa.totalSessionsHeld} sessions held • <strong style="color: var(--accent-purple);">${isActive ? 'Active Subject Filter' : 'Click to Filter ➔'}</strong></span>
+                                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem; transition: all 0.2s ease;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.3rem;">
+                                        <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'ALL')" style="font-size: 0.88rem; font-weight: 700; color: #ffffff; cursor: pointer;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='#ffffff'">
+                                            📖 ${escapeHtml(sa.subject)} (${sa.totalSessionsHeld} sessions) • <span style="font-size: 0.75rem; color: var(--accent-cyan); text-decoration: underline;">Click for Details ➔</span>
+                                        </span>
+                                        <div style="font-size: 0.8rem; font-weight: 600;">
+                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'PRESENT')" style="color: #4ade80; cursor: pointer; text-decoration: underline; margin-right: 0.3rem;">Present: ${pres}</span> | 
+                                            <span onclick="showTeacherSubjectDetail('${escapeHtml(sa.subject)}', 'ABSENT')" style="color: #f87171; cursor: pointer; text-decoration: underline; margin-left: 0.3rem; margin-right: 0.3rem;">Absent: ${abs}</span> | 
+                                            <span style="color: #ffffff; font-weight: 700;">${pct}%</span>
+                                        </div>
+                                    </div>
+                                    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: ${pct}%; height: 100%; background: ${barColor}; border-radius: 4px; transition: width 0.8s ease;"></div>
+                                    </div>
                                 </div>
                             `;
                         }).join('');
-
-                        avgGrid.innerHTML = filterPillsHtml + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; width: 100%;">${cardsHtml}</div>`;
                     }
                 }
 
@@ -2962,6 +3048,322 @@
 
         function closeStudentModal() {
             document.getElementById('studentDetailModal').style.display = 'none';
+        }
+
+        let teacherAnalyticsDetailData = [];
+        let activeTeacherMetricType = null;
+        let activeTeacherSubjectName = null;
+        let activeTeacherSubjectStatusFilter = 'ALL';
+
+        async function showTeacherAnalyticsDetail(metricType) {
+            activeTeacherMetricType = metricType;
+            activeTeacherSubjectName = null;
+            activeTeacherSubjectStatusFilter = 'ALL';
+
+            const panel = document.getElementById('teacherAnalyticsDetailPanel');
+            const title = document.getElementById('teacherAnalyticsDetailTitle');
+            const subtitle = document.getElementById('teacherAnalyticsDetailSubtitle');
+            const thead = document.getElementById('teacherAnalyticsDetailTableHeader');
+            const tbody = document.getElementById('teacherAnalyticsDetailTableBody');
+
+            if (!panel) return;
+            panel.style.display = 'block';
+
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            let targetClass = classSelectVal || searchVal || 'all';
+
+            subtitle.textContent = `Class: ${targetClass} | Subject: ${currentSubjectFilter === 'all' ? 'All Subjects' : currentSubjectFilter}`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading detailed records...</td></tr>`;
+
+            try {
+                if (metricType === 'PRESENT' || metricType === 'ABSENT') {
+                    title.textContent = metricType === 'PRESENT' ? '✅ Detailed Report: Present Check-ins' : '❌ Detailed Report: Absences';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Record ID</th>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Class</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    `;
+
+                    const logUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/daily-records?subject=${encodeURIComponent(currentSubjectFilter)}`;
+                    const res = await fetch(logUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!res.ok) throw new Error('Failed to fetch attendance records.');
+                    const records = await res.json();
+
+                    teacherAnalyticsDetailData = records.filter(r => {
+                        const matchesStatus = (metricType === 'PRESENT') ? (r.status === 'PRESENT' || r.status === 'LATE') : (r.status === 'ABSENT');
+                        return matchesStatus;
+                    });
+
+                    if (teacherAnalyticsDetailData.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No ${metricType.toLowerCase()} records found for ${targetClass}.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = teacherAnalyticsDetailData.map((r, idx) => `
+                        <tr>
+                            <td>#${r.id || (idx + 1)}</td>
+                            <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
+                            <td>${escapeHtml(r.studentUsername || '-')}</td>
+                            <td>${escapeHtml(r.studentEmail || '-')}</td>
+                            <td>${escapeHtml(targetClass)}</td>
+                            <td><strong>${escapeHtml(currentSubjectFilter === 'all' ? 'General' : currentSubjectFilter)}</strong></td>
+                            <td><span class="status-badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'status-present' : 'status-absent'}">${escapeHtml(r.status || 'ABSENT')}</span></td>
+                            <td>${r.markedAt ? new Date(r.markedAt).toLocaleString() : '-'}</td>
+                        </tr>
+                    `).join('');
+
+                } else if (metricType === 'SESSIONS') {
+                    title.textContent = '📖 Detailed Report: Sessions Held';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Class Name</th>
+                            <th>Subject</th>
+                            <th>Passcode</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Status</th>
+                        </tr>
+                    `;
+
+                    const res = await fetch('/sessions/my-sessions', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!res.ok) throw new Error('Failed to fetch sessions.');
+                    const sessions = await res.json();
+
+                    teacherAnalyticsDetailData = sessions.filter(s => {
+                        return (targetClass === 'all') ? true : (s.className && s.className.toLowerCase() === targetClass.toLowerCase());
+                    });
+
+                    if (teacherAnalyticsDetailData.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No sessions found for ${targetClass}.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = teacherAnalyticsDetailData.map(s => `
+                        <tr>
+                            <td>#${s.id}</td>
+                            <td><strong>${escapeHtml(s.className)}</strong></td>
+                            <td><strong>${escapeHtml(s.subject)}</strong></td>
+                            <td><code>${escapeHtml(s.passcode || '-')}</code></td>
+                            <td>${s.startTime ? new Date(s.startTime).toLocaleString() : '-'}</td>
+                            <td>${s.endTime ? new Date(s.endTime).toLocaleString() : '-'}</td>
+                            <td><span class="status-badge ${s.active ? 'status-present' : 'status-absent'}">${s.active ? 'Active Live' : 'Closed'}</span></td>
+                        </tr>
+                    `).join('');
+
+                } else if (metricType === 'STUDENTS') {
+                    title.textContent = '🎓 Detailed Report: Enrolled Students & Performance';
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Class</th>
+                            <th>Attendance %</th>
+                            <th>Warning Status (<75%)</th>
+                        </tr>
+                    `;
+
+                    const rosterUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/roster`;
+                    const res = await fetch(rosterUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!res.ok) throw new Error('Failed to fetch enrolled students.');
+                    const roster = await res.json();
+
+                    if (!roster.students || roster.students.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No students enrolled for ${targetClass}.</td></tr>`;
+                        return;
+                    }
+
+                    teacherAnalyticsDetailData = await Promise.all(roster.students.map(async s => {
+                        let percent = 0.0;
+                        try {
+                            const sRes = await fetch(`/students/${s.id}/attendance-summary`, { headers: { 'Authorization': 'Bearer ' + token } });
+                            if (sRes.ok) {
+                                const sSum = await sRes.json();
+                                percent = sSum.overallPercentage || 0.0;
+                            }
+                        } catch (e) {}
+                        return { ...s, attendancePercentage: percent };
+                    }));
+
+                    tbody.innerHTML = teacherAnalyticsDetailData.map(s => {
+                        const isLow = s.attendancePercentage < 75;
+                        const statusBadge = isLow 
+                            ? `<span class="status-badge status-absent">⚠️ &lt;75% Low Warning</span>`
+                            : `<span class="status-badge status-present">OK (75%+)</span>`;
+                        return `
+                            <tr>
+                                <td>#${s.id}</td>
+                                <td><strong>${escapeHtml(s.name)}</strong></td>
+                                <td>${escapeHtml(s.username || '-')}</td>
+                                <td>${escapeHtml(s.email || '-')}</td>
+                                <td>${escapeHtml(targetClass)}</td>
+                                <td><strong style="color: ${isLow ? '#fca5a5' : '#86efac'};">${s.attendancePercentage}%</strong></td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function showTeacherSubjectDetail(subjectName, statusFilter = 'ALL') {
+            activeTeacherMetricType = 'SUBJECT_DETAIL';
+            activeTeacherSubjectName = subjectName;
+            activeTeacherSubjectStatusFilter = statusFilter;
+
+            const panel = document.getElementById('teacherAnalyticsDetailPanel');
+            const title = document.getElementById('teacherAnalyticsDetailTitle');
+            const subtitle = document.getElementById('teacherAnalyticsDetailSubtitle');
+            const thead = document.getElementById('teacherAnalyticsDetailTableHeader');
+            const tbody = document.getElementById('teacherAnalyticsDetailTableBody');
+
+            if (!panel) return;
+            panel.style.display = 'block';
+
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            let targetClass = classSelectVal || searchVal || 'all';
+
+            title.textContent = `📖 Subject Report: ${subjectName} (${statusFilter} Status)`;
+            subtitle.textContent = `Class: ${targetClass} | Filtered by Subject: ${subjectName}`;
+            thead.innerHTML = `
+                <tr>
+                    <th>Record ID</th>
+                    <th>Student Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Date & Time</th>
+                </tr>
+            `;
+
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading records for subject '${escapeHtml(subjectName)}'...</td></tr>`;
+
+            try {
+                const logUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/daily-records?subject=${encodeURIComponent(subjectName)}`;
+                const res = await fetch(logUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to fetch attendance records for subject.');
+                const records = await res.json();
+
+                teacherAnalyticsDetailData = records.filter(r => {
+                    if (statusFilter === 'PRESENT') return r.status === 'PRESENT' || r.status === 'LATE';
+                    if (statusFilter === 'ABSENT') return r.status === 'ABSENT';
+                    return true;
+                });
+
+                if (teacherAnalyticsDetailData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No ${statusFilter !== 'ALL' ? statusFilter.toLowerCase() : ''} records found for subject '${escapeHtml(subjectName)}'.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = teacherAnalyticsDetailData.map((r, idx) => `
+                    <tr>
+                        <td>#${r.id || (idx + 1)}</td>
+                        <td><strong>${escapeHtml(r.studentName || 'Student')}</strong></td>
+                        <td>${escapeHtml(r.studentUsername || '-')}</td>
+                        <td>${escapeHtml(r.studentEmail || '-')}</td>
+                        <td>${escapeHtml(targetClass)}</td>
+                        <td><strong>${escapeHtml(subjectName)}</strong></td>
+                        <td><span class="status-badge ${r.status === 'PRESENT' || r.status === 'LATE' ? 'status-present' : 'status-absent'}">${escapeHtml(r.status || 'ABSENT')}</span></td>
+                        <td>${r.markedAt ? new Date(r.markedAt).toLocaleString() : '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #fca5a5;">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function closeTeacherAnalyticsDetail() {
+            activeTeacherMetricType = null;
+            activeTeacherSubjectName = null;
+            const panel = document.getElementById('teacherAnalyticsDetailPanel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        function exportTeacherAnalyticsDetailCSV() {
+            if (!teacherAnalyticsDetailData || teacherAnalyticsDetailData.length === 0) {
+                alert('No data available to export.');
+                return;
+            }
+
+            let csvContent = 'data:text/csv;charset=utf-8,';
+            const headers = Object.keys(teacherAnalyticsDetailData[0]);
+            csvContent += headers.join(',') + '\r\n';
+
+            teacherAnalyticsDetailData.forEach(row => {
+                const values = headers.map(header => {
+                    const val = row[header] !== undefined && row[header] !== null ? row[header] : '';
+                    return `"${String(val).replace(/"/g, '""')}"`;
+                });
+                csvContent += values.join(',') + '\r\n';
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Teacher_Analytics_Detail_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportTeacherAnalyticsDetailPDF() {
+            const title = document.getElementById('teacherAnalyticsDetailTitle')?.textContent || 'Attendance Detailed Report';
+            const subtitle = document.getElementById('teacherAnalyticsDetailSubtitle')?.textContent || '';
+            const tbody = document.getElementById('teacherAnalyticsDetailTableBody');
+            const thead = document.getElementById('teacherAnalyticsDetailTableHeader');
+
+            if (!tbody || tbody.querySelectorAll('tr').length === 0) {
+                alert('No data available to export to PDF.');
+                return;
+            }
+
+            const printWin = window.open('', '_blank', 'width=900,height=700');
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${escapeHtml(title)}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; color: #1e293b; }
+                        h2 { color: #0f172a; margin-bottom: 5px; }
+                        p { color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-size: 12px; }
+                        th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
+                        tr:nth-child(even) { background-color: #f8fafc; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${escapeHtml(title)}</h2>
+                    <p>${escapeHtml(subtitle)} | Generated on: ${new Date().toLocaleString()}</p>
+                    <table>
+                        <thead>${thead.innerHTML}</thead>
+                        <tbody>${tbody.innerHTML}</tbody>
+                    </table>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
         }
     </script>
 
