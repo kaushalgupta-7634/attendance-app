@@ -61,7 +61,7 @@ public class AttendanceScheduler {
     }
 
     public void runAutoCloseExpiredSessionsJob() {
-        runAutoSessionLifecycleJob();
+        classSessionService.autoCloseExpiredSessions();
     }
 
     /**
