@@ -2665,13 +2665,16 @@
             loadSelectedClassAnalytics(currentSubjectFilter);
         }
 
+        let searchDebounceTimer = null;
         function onAnalyticsClassSearchInput() {
-            const searchInput = document.getElementById('teacherClassNameSearch');
-            const val = searchInput ? searchInput.value.trim() : '';
-            if (val) {
-                updateSubjectDropdownOptions(val);
-            }
-            loadSelectedClassAnalytics();
+            if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(async () => {
+                const searchInput = document.getElementById('teacherClassNameSearch');
+                const val = searchInput ? searchInput.value.trim() : '';
+                currentSubjectFilter = 'all';
+                await updateSubjectDropdownOptions(val || 'all');
+                loadSelectedClassAnalytics('all');
+            }, 300);
         }
 
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
@@ -2717,7 +2720,7 @@
 
                     const avgGrid = document.getElementById('classSubjectAveragesGrid');
                     if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
-                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject session data recorded yet.</p>';
+                        avgGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records found for subject averages in this class.</p>';
                     } else {
                         let filterPillsHtml = `
                             <div style="width: 100%; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
