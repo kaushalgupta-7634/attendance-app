@@ -888,8 +888,7 @@
                 document.getElementById('teacherTabAssignments')?.classList.add('active');
                 document.getElementById('teacherSectionAssignments')?.classList.add('active');
                 if (typeof loadTeacherAssignments === 'function') {
-                    const className = document.getElementById('assignClassName')?.value.trim() || 'all';
-                    loadTeacherAssignments(className);
+                    loadTeacherAssignments('all');
                 } else if (typeof fetchUploadedAssignments === 'function') {
                     fetchUploadedAssignments();
                 }
@@ -2022,8 +2021,7 @@
                 activeBtn.style.color = '#fff';
                 activeBtn.style.borderColor = 'var(--accent-purple)';
             }
-            const className = document.getElementById('assignClassName')?.value.trim() || 'all';
-            loadTeacherAssignments(className);
+            loadTeacherAssignments('all');
         }
 
         async function loadTeacherAssignments(className) {
@@ -2245,17 +2243,8 @@
             }
         }
 
-        // Auto load assignments on page load
-        const initialAssignClass = document.getElementById('assignClassName')?.value.trim() || 'all';
-        loadTeacherAssignments(initialAssignClass);
-
-        // Auto load assignments if course name input is updated
-        document.getElementById('assignClassName')?.addEventListener('input', (e) => {
-            loadTeacherAssignments(e.target.value.trim() || 'all');
-        });
-        document.getElementById('assignClassName')?.addEventListener('change', (e) => {
-            loadTeacherAssignments(e.target.value.trim() || 'all');
-        });
+        // Auto load all assignments on page load
+        loadTeacherAssignments('all');
 
         let classSubjectsMap = new Map();
         let currentSubjectFilter = 'all';
