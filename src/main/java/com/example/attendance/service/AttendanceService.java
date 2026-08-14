@@ -601,7 +601,19 @@ public class AttendanceService {
             }
         }
 
-        double overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
+        double overallClassAvg = 0.0;
+        if (filterSubject) {
+            ClassAttendanceSummaryDTO.ClassSubjectAverageDTO match = subjectAverages.stream()
+                    .filter(sa -> sa.getSubject() != null && sa.getSubject().equalsIgnoreCase(searchSub))
+                    .findFirst().orElse(null);
+            if (match != null) {
+                overallClassAvg = match.getAveragePercentage();
+            } else {
+                overallClassAvg = 0.0;
+            }
+        } else {
+            overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
+        }
 
         return new ClassAttendanceSummaryDTO(
                 0L,
@@ -614,6 +626,34 @@ public class AttendanceService {
 
     public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String teacherUsername) {
         return getClassAttendanceSummaryByName(className, null, teacherUsername);
+    }
+
+    public byte[] exportClassAttendanceSummaryByNameCsv(String className, String selectedSubject, String teacherUsername) {
+        ClassAttendanceSummaryDTO summary = getClassAttendanceSummaryByName(className, selectedSubject, teacherUsername);
+
+        String subHeader = (selectedSubject != null && !selectedSubject.isBlank() && !"all".equalsIgnoreCase(selectedSubject))
+                ? selectedSubject.trim()
+                : "All Subjects (Combined)";
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Class Name,\"").append(className != null ? className : "General").append("\"\n");
+        csv.append("Subject Filter,\"").append(subHeader).append("\"\n");
+        csv.append("Overall Class Average,").append(summary.getOverallClassAveragePercentage()).append("%\n");
+        csv.append("Total Enrolled Students,").append(summary.getTotalStudents()).append("\n\n");
+
+        csv.append("Subject,Total Sessions Held,Average Attendance Percentage,Total Enrolled Students\n");
+
+        if (summary.getSubjectAverages() != null) {
+            for (ClassAttendanceSummaryDTO.ClassSubjectAverageDTO sa : summary.getSubjectAverages()) {
+                String sub = sa.getSubject() != null ? sa.getSubject() : "UNSPECIFIED";
+                csv.append("\"").append(sub.replace("\"", "\"\"")).append("\",")
+                   .append(sa.getTotalSessionsHeld()).append(",")
+                   .append(sa.getAveragePercentage()).append("%,")
+                   .append(sa.getStudentCount()).append("\n");
+            }
+        }
+
+        return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public byte[] exportClassAttendanceSummaryCsv(Long classId, String teacherUsername) {
