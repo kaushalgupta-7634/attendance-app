@@ -1368,6 +1368,17 @@
                 const session = await res.json();
                 activeSessionId = session.id;
 
+                const banner = document.getElementById('teacherLiveActiveBanner');
+                if (banner) {
+                    const bClass = document.getElementById('bannerActiveClassName');
+                    const bSub = document.getElementById('bannerActiveSubject');
+                    const bPass = document.getElementById('bannerActivePasscode');
+                    if (bClass) bClass.textContent = session.className || 'Class';
+                    if (bSub) bSub.textContent = session.subject || 'Subject';
+                    if (bPass) bPass.textContent = session.passcode || '------';
+                    banner.style.display = 'block';
+                }
+
                 document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
                 document.getElementById('activePasscodeDisplay').textContent = session.passcode || '------';
                 document.getElementById('activeSessionPanel').style.display = 'block';
