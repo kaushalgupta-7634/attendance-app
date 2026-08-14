@@ -962,6 +962,24 @@
             document.body.removeChild(link);
         }
 
+        function filterAdminLogsBySubject(subjectName) {
+            switchTab('logs');
+            const tbody = document.getElementById('attendanceTableBody');
+            if (!tbody) return;
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length >= 4) {
+                    const subText = tds[3].textContent.trim();
+                    if (!subjectName || subjectName === 'ALL' || subText.toLowerCase() === subjectName.toLowerCase()) {
+                        tr.style.display = '';
+                    } else {
+                        tr.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         function initAnalyticsDateControls() {
             const startInput = document.getElementById('analyticsStartMonth');
             const endInput = document.getElementById('analyticsEndMonth');
