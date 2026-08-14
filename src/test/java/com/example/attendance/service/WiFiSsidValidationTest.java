@@ -64,10 +64,12 @@ class WiFiSsidValidationTest {
 
     @Test
     void testMarkAttendance_MatchingWifi_NoMismatchWarning() {
-        MarkAttendanceRequest request = new MarkAttendanceRequest(null, 12.9716, 77.5946, 10L);
+        MarkAttendanceRequest request = new MarkAttendanceRequest("123456", 12.9716, 77.5946, 10L);
         request.setStudentWifiSsid("Campus_Student_WiFi");
+        request.setDeviceId("device-wifi-test");
 
         when(classSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(qrCodeService.validatePasscode(eq(10L), eq("123456"))).thenReturn(true);
         when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
         when(attendanceRecordRepository.existsBySessionAndStudent(session, student)).thenReturn(false);
         when(attendanceRecordRepository.save(any(AttendanceRecord.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -81,10 +83,12 @@ class WiFiSsidValidationTest {
 
     @Test
     void testMarkAttendance_MismatchedWifi_SetsWarningFlagWithoutHardReject() {
-        MarkAttendanceRequest request = new MarkAttendanceRequest(null, 12.9716, 77.5946, 10L);
+        MarkAttendanceRequest request = new MarkAttendanceRequest("123456", 12.9716, 77.5946, 10L);
         request.setStudentWifiSsid("Home_Guest_WiFi");
+        request.setDeviceId("device-wifi-test");
 
         when(classSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(qrCodeService.validatePasscode(eq(10L), eq("123456"))).thenReturn(true);
         when(userRepository.findByUsernameIgnoreCase("student1")).thenReturn(Optional.of(student));
         when(attendanceRecordRepository.existsBySessionAndStudent(session, student)).thenReturn(false);
         when(attendanceRecordRepository.save(any(AttendanceRecord.class))).thenAnswer(inv -> inv.getArgument(0));
