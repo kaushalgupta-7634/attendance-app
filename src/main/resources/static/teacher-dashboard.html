@@ -2745,19 +2745,17 @@
             const startInput = document.getElementById('teacherStartMonth');
             const endInput = document.getElementById('teacherEndMonth');
             const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const endYm = `${year}-${month}`;
 
-            if (endInput && !endInput.value) {
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                endInput.value = `${year}-${month}`;
-            }
-            if (startInput && !startInput.value) {
-                const pastDate = new Date();
-                pastDate.setMonth(pastDate.getMonth() - 5);
-                const pastYear = pastDate.getFullYear();
-                const pastMonth = String(pastDate.getMonth() + 1).padStart(2, '0');
-                startInput.value = `${pastYear}-${pastMonth}`;
-            }
+            const pastDate = new Date(year, now.getMonth() - 5, 1);
+            const pastYear = pastDate.getFullYear();
+            const pastMonth = String(pastDate.getMonth() + 1).padStart(2, '0');
+            const startYm = `${pastYear}-${pastMonth}`;
+
+            if (startInput && !startInput.value) startInput.value = startYm;
+            if (endInput && !endInput.value) endInput.value = endYm;
         }
 
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
