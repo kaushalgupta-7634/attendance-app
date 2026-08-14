@@ -511,6 +511,19 @@
                 autoLoadActiveAssignments();
             }
         }
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function setCookie(name, value, days = 365) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
+        }
+
         function parseJwtPayload(token) {
             try {
                 const base64Url = token.split('.')[1];
@@ -522,20 +535,35 @@
             }
         }
 
+        function isTokenExpired(t) {
+            if (!t) return true;
+            const payload = parseJwtPayload(t);
+            if (!payload || !payload.exp) return false;
+            return (payload.exp * 1000) < (Date.now() + 5000);
+        }
+
         // Check for QR Deep-Link parameters from Google Lens / Phone Camera app
         const urlParams = new URLSearchParams(window.location.search);
         const sessionParam = urlParams.get('session');
         const tokenParam = urlParams.get('token');
 
         if (sessionParam && tokenParam) {
-            sessionStorage.setItem('pendingQrToken', sessionParam + ':' + tokenParam);
+            const fullToken = sessionParam + ':' + tokenParam;
+            sessionStorage.setItem('pendingQrToken', fullToken);
+            setCookie('pendingQrToken', fullToken, 1);
         }
 
-        const token = localStorage.getItem('jwtToken');
-        const role = localStorage.getItem('userRole');
+        let token = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
+        let role = localStorage.getItem('userRole') || getCookie('attendx_user_role');
 
-        if (!token || role !== 'STUDENT') {
+        if (!token || role !== 'STUDENT' || isTokenExpired(token)) {
+            localStorage.removeItem('jwtToken');
+            setCookie('attendx_student_token', '', -1);
             window.location.href = '/login.html';
+        } else {
+            // Keep localStorage and cookies synchronized
+            localStorage.setItem('jwtToken', token);
+            setCookie('attendx_student_token', token, 365);
         }
 
         const payload = parseJwtPayload(token);
@@ -569,16 +597,17 @@
 
         // Check if there is an incoming QR token from Google Lens / Phone Camera deep link scan
         window.addEventListener('DOMContentLoaded', () => {
-            const pendingToken = sessionStorage.getItem('pendingQrToken');
+            const pendingToken = sessionStorage.getItem('pendingQrToken') || getCookie('pendingQrToken');
             if (pendingToken) {
                 sessionStorage.removeItem('pendingQrToken');
+                setCookie('pendingQrToken', '', -1);
                 if (window.history.replaceState) {
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
                 showResult(true, "Processing Direct QR Scan...", "Submitting attendance from Google Lens / Camera QR link...");
                 setTimeout(() => {
                     sendAttendanceSubmission(pendingToken);
-                }, 800);
+                }, 600);
             }
         });
 
@@ -954,7 +983,16 @@
 
                 if (!res.ok) {
                     if (res.status === 401 || res.status === 403) {
-                        showResult(false, "Session Expired / Access Denied", "Your login session has expired or the server was restarted. Please log in again.", false, true);
+                        if (qrToken) {
+                            sessionStorage.setItem('pendingQrToken', qrToken);
+                            setCookie('pendingQrToken', qrToken, 1);
+                        }
+                        localStorage.removeItem('jwtToken');
+                        setCookie('attendx_student_token', '', -1);
+                        showResult(false, "Session Expired", "Your login session expired. Redirecting to login to complete attendance...", false, false);
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1200);
                         return;
                     }
                     const errMsg = data.message || data.error || (typeof data === 'string' ? data : 'Attendance marking failed.');
