@@ -2281,10 +2281,34 @@
             }
         }
 
-        function exportSelectedClassSummaryCsv() {
-            const classVal = document.getElementById('teacherClassSelect')?.value.trim() || document.getElementById('teacherClassNameSearch')?.value.trim() || 'all';
+        async function exportSelectedClassSummaryCsv() {
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            let targetClass = searchVal || classSelectVal || 'all';
             const subVal = document.getElementById('teacherSubjectSelect')?.value.trim() || currentSubjectFilter || 'all';
 
+            try {
+                const res = await fetch(`/classes/by-name/${encodeURIComponent(targetClass)}/attendance-summary/export?subject=${encodeURIComponent(subVal)}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Attendance_Summary_${targetClass}_${subVal}_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    return;
+                }
+            } catch (e) {
+                console.error("Backend CSV export error, fallback to client parsing:", e);
+            }
+
+            // Fallback client-side CSV generator if backend endpoint fails
             const tbody = document.getElementById('classRosterTableBody');
             if (!tbody || tbody.children.length === 0) {
                 alert("No roster data available to export.");
@@ -2295,8 +2319,8 @@
             const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
             const subjectFilterDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += `Class Name,"${classVal.replace(/"/g, '""')}"\n`;
+            let csvContent = "\uFEFF";
+            csvContent += `Class Name,"${targetClass.replace(/"/g, '""')}"\n`;
             csvContent += `Subject Filter,"${subjectFilterDisplay.replace(/"/g, '""')}"\n`;
             csvContent += `Overall Class Average,"${overallAvgText.replace(/"/g, '""')}"\n`;
             csvContent += `Total Enrolled Students,"${totalStudentsText.replace(/"/g, '""')}"\n`;
@@ -2319,10 +2343,11 @@
                 }
             });
 
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Attendance_Summary_${classVal}_${subVal}_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Attendance_Summary_${targetClass}_${subVal}_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

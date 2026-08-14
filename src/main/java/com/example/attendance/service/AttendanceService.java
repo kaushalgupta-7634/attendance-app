@@ -635,12 +635,92 @@ public class AttendanceService {
                 ? selectedSubject.trim()
                 : "All Subjects (Combined)";
 
-        StringBuilder csv = new StringBuilder();
+        // UTF-8 BOM for Microsoft Excel compatibility
+        StringBuilder csv = new StringBuilder("\uFEFF");
         csv.append("Class Name,\"").append(className != null ? className : "General").append("\"\n");
         csv.append("Subject Filter,\"").append(subHeader).append("\"\n");
         csv.append("Overall Class Average,").append(summary.getOverallClassAveragePercentage()).append("%\n");
-        csv.append("Total Enrolled Students,").append(summary.getTotalStudents()).append("\n\n");
+        csv.append("Total Enrolled Students,").append(summary.getTotalStudents()).append("\n");
+        csv.append("Export Date,\"").append(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy, hh:mm:ss a"))).append("\"\n\n");
 
+        // Section 1: Enrolled Student Roster & Individual Performance
+        csv.append("Student Name,Username,Email,Attendance %,Status (<75% Warning)\n");
+
+        boolean filterSubject = selectedSubject != null && !selectedSubject.isBlank() && !"all".equalsIgnoreCase(selectedSubject.trim());
+        String searchSub = filterSubject ? selectedSubject.trim() : "";
+
+        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+        String searchClass = className != null ? className.trim() : "";
+
+        List<User> distinctStudents = new java.util.ArrayList<>();
+        if (!isAllClass) {
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, searchClass);
+            if (direct != null) distinctStudents.addAll(direct);
+
+            List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassCourse course : matchingCourses) {
+                List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
+                for (Enrollment e : enrollments) {
+                    if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
+                        distinctStudents.add(e.getStudent());
+                    }
+                }
+            }
+
+            List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
+                    .filter(s -> !s.isCancelled())
+                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassSession session : matchingSessions) {
+                List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+                for (AttendanceRecord r : records) {
+                    if (r.getStudent() != null && !distinctStudents.contains(r.getStudent())) {
+                        distinctStudents.add(r.getStudent());
+                    }
+                }
+            }
+
+            if (distinctStudents.isEmpty()) {
+                distinctStudents = userRepository.findByRole(Role.STUDENT);
+            }
+        } else {
+            distinctStudents = userRepository.findByRole(Role.STUDENT);
+        }
+
+        for (User student : distinctStudents) {
+            StudentAttendanceSummaryDTO studentSummary = getStudentAttendanceSummary(student.getId(), teacherUsername);
+            double percent = 0.0;
+            if (filterSubject && studentSummary.getSubjectBreakdown() != null) {
+                StudentAttendanceSummaryDTO.SubjectSummaryDTO subMatch = studentSummary.getSubjectBreakdown().stream()
+                        .filter(sb -> sb.getSubject() != null && sb.getSubject().equalsIgnoreCase(searchSub))
+                        .findFirst().orElse(null);
+                percent = subMatch != null ? subMatch.getPercentage() : 0.0;
+            } else {
+                percent = studentSummary.getOverallPercentage();
+            }
+
+            String name = student.getName() != null ? student.getName() : student.getUsername();
+            String username = student.getUsername() != null ? student.getUsername() : "-";
+            String email = student.getEmail() != null ? student.getEmail() : "-";
+            String statusStr = percent < 75.0 ? "LOW ATTENDANCE WARNING (<75%)" : "OK";
+
+            csv.append("\"").append(name.replace("\"", "\"\"")).append("\",")
+               .append("\"").append(username.replace("\"", "\"\"")).append("\",")
+               .append("\"").append(email.replace("\"", "\"\"")).append("\",")
+               .append(percent).append("%,")
+               .append("\"").append(statusStr).append("\"\n");
+        }
+
+        // Section 2: Subject Averages Across Class
+        csv.append("\nSubject Averages Across Class\n");
         csv.append("Subject,Total Sessions Held,Average Attendance Percentage,Total Enrolled Students\n");
 
         if (summary.getSubjectAverages() != null) {
