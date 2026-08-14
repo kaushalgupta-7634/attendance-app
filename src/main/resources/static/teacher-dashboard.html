@@ -764,7 +764,7 @@
                 </div>
 
                 <!-- OVERALL CLASS AVERAGE & SUBJECT BREAKDOWN GRID -->
-                <div id="classAnalyticsPanel" style="display: none;">
+                <div id="classAnalyticsPanel" style="display: block;">
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
                         <div
@@ -840,7 +840,7 @@
                         </table>
                     </div>
                 </div>
-                <div id="classAnalyticsPlaceholder" class="empty-state">
+                <div id="classAnalyticsPlaceholder" class="empty-state" style="display: none;">
                     Please select one of your launched class sessions above to view overall class averages, subject
                     breakdowns, and enrolled student rosters.
                 </div>
@@ -2389,6 +2389,7 @@
                 }
 
                 select.innerHTML = optionsHtml;
+                loadSelectedClassAnalytics('all');
 
             } catch (err) {
                 console.error("Error loading teacher classes & subjects:", err);
