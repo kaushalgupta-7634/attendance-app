@@ -2404,18 +2404,20 @@
             const textVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
             let targetVal = textVal || selectVal;
 
-            if (!targetVal && selectVal) {
-                targetVal = selectVal;
+            if (targetVal.includes('|')) {
+                const parts = targetVal.split('|');
+                targetVal = parts[0];
+                if (parts[1] && (selectedSubject === 'all' || !selectedSubject)) {
+                    currentSubjectFilter = parts[1];
+                }
+            }
+
+            if (!targetVal) {
+                targetVal = 'all';
             }
 
             const panel = document.getElementById('classAnalyticsPanel');
             const placeholder = document.getElementById('classAnalyticsPlaceholder');
-
-            if (!targetVal) {
-                if (panel) panel.style.display = 'none';
-                if (placeholder) placeholder.style.display = 'block';
-                return;
-            }
 
             if (panel) panel.style.display = 'block';
             if (placeholder) placeholder.style.display = 'none';
