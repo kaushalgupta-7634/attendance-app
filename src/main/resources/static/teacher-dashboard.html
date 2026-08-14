@@ -739,7 +739,10 @@
                     <!-- TOP FILTER BAR FOR ROSTERS -->
                     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <select id="teacherClassSelect" class="form-input" style="width: auto; min-width: 160px;" onchange="onAnalyticsClassChange()">
-                            <option value="">Select a Class...</option>
+                            <option value="all">🌐 All Classes & Courses (Overall)</option>
+                            <option value="BCA">🎓 BCA</option>
+                            <option value="BBA">🎓 BBA</option>
+                            <option value="CS101">🎓 CS101</option>
                         </select>
                         <select id="teacherSubjectSelect" class="form-input" style="width: auto; min-width: 160px;" onchange="onAnalyticsSubjectChange()">
                             <option value="all">🌐 All Subjects (Combined)</option>
@@ -2463,8 +2466,7 @@
                     }
                 }
 
-                let classOptionsHtml = '<option value="">Select a Class...</option>';
-                classOptionsHtml += '<option value="all">🌐 All Classes & Courses (Overall)</option>';
+                let classOptionsHtml = '<option value="all">🌐 All Classes & Courses (Overall)</option>';
 
                 if (classSubjectsMap.size > 0) {
                     classSubjectsMap.forEach((subs, className) => {
@@ -2479,15 +2481,26 @@
 
                 classSelect.innerHTML = classOptionsHtml;
 
-                let defaultClass = 'BCA';
+                let defaultClass = 'all';
                 if (classSubjectsMap.size > 0) {
                     defaultClass = Array.from(classSubjectsMap.keys())[0];
                 }
-                classSelect.value = defaultClass;
-                const searchInput = document.getElementById('teacherClassNameSearch');
-                if (searchInput) searchInput.value = defaultClass;
 
-                await updateSubjectDropdownOptions(defaultClass); loadSelectedClassAnalytics('all');
+                // Match exact option value in classSelect
+                let matchedVal = 'all';
+                for (const opt of classSelect.options) {
+                    if (opt.value && opt.value.toLowerCase() === defaultClass.toLowerCase()) {
+                        matchedVal = opt.value;
+                        break;
+                    }
+                }
+                classSelect.value = matchedVal;
+
+                const searchInput = document.getElementById('teacherClassNameSearch');
+                if (searchInput) searchInput.value = matchedVal === 'all' ? '' : matchedVal;
+
+                await updateSubjectDropdownOptions(matchedVal);
+                await loadSelectedClassAnalytics('all');
 
             } catch (err) {
                 console.error("Error loading teacher classes & subjects:", err);
