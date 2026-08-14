@@ -271,4 +271,52 @@ class AuthServiceTest {
 
         assertTrue(ex.getMessage().contains("Maximum 3 PIN requests per hour allowed"));
     }
+
+    @Test
+    void testForgotPassword_AdminUser_Blocked() {
+        User admin = new User("Admin", "admin", "admin@example.com", "pass", Role.ADMIN);
+        ForgotPasswordRequest request = new ForgotPasswordRequest("admin@example.com");
+
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+
+        ForgotPasswordResponseDTO result = authService.forgotPassword(request);
+
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertFalse(result.isEmailSent());
+        assertTrue(result.getMessage().contains("Public password reset is disabled for Admin accounts"));
+    }
+
+    @Test
+    void testRequestPin_AdminUser_Blocked() {
+        User admin = new User("Admin", "admin", "admin@example.com", "pass", Role.ADMIN);
+        RequestPinRequest req = new RequestPinRequest("admin");
+
+        when(userRepository.findByEmailIgnoreCase("admin")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("admin")).thenReturn(Optional.of(admin));
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.requestPin(req)
+        );
+
+        assertTrue(ex.getMessage().contains("disabled for Admin accounts"));
+    }
+
+    @Test
+    void testRegister_AdminRole_Prohibited() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Hacker Admin");
+        request.setUsername("hackeradmin");
+        request.setEmail("hacker@example.com");
+        request.setPassword("password123");
+        request.setRole(Role.ADMIN);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.register(request)
+        );
+
+        assertTrue(ex.getMessage().contains("Public registration for ADMIN role is strictly prohibited"));
+    }
 }

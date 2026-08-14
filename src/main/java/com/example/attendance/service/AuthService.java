@@ -85,6 +85,9 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         
         Role role = registerRequest.getRole() != null ? registerRequest.getRole() : Role.STUDENT;
+        if (role == Role.ADMIN) {
+            throw new IllegalArgumentException("Public registration for ADMIN role is strictly prohibited. New Admin accounts can only be created directly by System Administrator.");
+        }
         user.setRole(role);
         if (registerRequest.getClassName() != null && !registerRequest.getClassName().isBlank()) {
             user.setClassName(registerRequest.getClassName().trim());
@@ -114,6 +117,10 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(cleanInput)
                 .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
                 .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + cleanInput + "'."));
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("Security PIN reset is disabled for Admin accounts. Admin passwords can only be managed via Admin Portal.");
+        }
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
 
@@ -231,6 +238,16 @@ public class AuthService {
 
         User user = userOpt.get();
 
+        if (user.getRole() == Role.ADMIN) {
+            return new ForgotPasswordResponseDTO(
+                    false,
+                    false,
+                    "Public password reset is disabled for Admin accounts. Only an Administrator can reset Admin passwords via Admin Portal.",
+                    null,
+                    null
+            );
+        }
+
         // Generate 6-digit numeric OTP
         int otpNum = 100000 + new java.security.SecureRandom().nextInt(900000);
         String otp = String.valueOf(otpNum);
@@ -320,6 +337,15 @@ public class AuthService {
             }
         } else {
             throw new IllegalArgumentException("Please provide a valid 4-Digit Private Security PIN to reset password.");
+        }
+
+        if (user != null && user.getRole() == Role.ADMIN) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin) {
+                throw new IllegalArgumentException("Access Denied: Public password reset is disabled for Admin accounts. Only an Administrator can reset Admin passwords.");
+            }
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
