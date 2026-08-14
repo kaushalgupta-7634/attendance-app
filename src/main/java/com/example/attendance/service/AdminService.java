@@ -271,6 +271,10 @@ public class AdminService {
     }
 
     public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr, String classNameFilter) {
+        return getDateRangeAnalytics(startDateStr, endDateStr, classNameFilter, null);
+    }
+
+    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr, String classNameFilter, String subjectFilter) {
         java.time.LocalDateTime startDateTime;
         java.time.LocalDateTime endDateTime;
 
@@ -305,6 +309,9 @@ public class AdminService {
         String finalClassFilter = (classNameFilter != null && !classNameFilter.isBlank() && !"ALL".equalsIgnoreCase(classNameFilter.trim()))
                 ? classNameFilter.trim() : null;
 
+        String finalSubjectFilter = (subjectFilter != null && !subjectFilter.isBlank() && !"ALL".equalsIgnoreCase(subjectFilter.trim()))
+                ? subjectFilter.trim() : null;
+
         final java.time.LocalDateTime finalStart = startDateTime;
         final java.time.LocalDateTime finalEnd = endDateTime;
 
@@ -312,6 +319,7 @@ public class AdminService {
                 .filter(s -> !s.isCancelled())
                 .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart) && !s.getStartTime().isAfter(finalEnd))
                 .filter(s -> finalClassFilter == null || (s.getClassName() != null && s.getClassName().equalsIgnoreCase(finalClassFilter)))
+                .filter(s -> finalSubjectFilter == null || (s.getSubject() != null && s.getSubject().equalsIgnoreCase(finalSubjectFilter)))
                 .collect(Collectors.toList());
 
         long totalSessions = allSessions.size();
@@ -321,6 +329,7 @@ public class AdminService {
                 .filter(r -> r.getStatus() == AttendanceStatus.PRESENT || r.getStatus() == AttendanceStatus.LATE)
                 .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
                 .filter(r -> finalClassFilter == null || (r.getSession() != null && r.getSession().getClassName() != null && r.getSession().getClassName().equalsIgnoreCase(finalClassFilter)))
+                .filter(r -> finalSubjectFilter == null || (r.getSession() != null && r.getSession().getSubject() != null && r.getSession().getSubject().equalsIgnoreCase(finalSubjectFilter)))
                 .collect(Collectors.toList());
 
         long totalPresentRecords = allRecords.size();
