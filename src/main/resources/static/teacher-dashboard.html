@@ -1008,11 +1008,10 @@
             );
         }
 
-        // Auto detect GPS, active session, courses, and class analytics on page load
+        // Auto detect GPS, active session, and courses on page load
         detectGPSLocation();
         autoFetchLatestActiveSession();
         loadTeacherCourses();
-        loadTeacherSessions();
 
         function logout() {
             if (qrTimer) clearInterval(qrTimer);
