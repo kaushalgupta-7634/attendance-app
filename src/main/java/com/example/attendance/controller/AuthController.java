@@ -53,6 +53,18 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/request-pin")
+    public ResponseEntity<String> requestPin(@RequestBody com.example.attendance.model.RequestPinRequest request) {
+        String response = authService.requestPin(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-pin")
+    public ResponseEntity<String> verifyPin(@RequestBody com.example.attendance.model.VerifyPinRequest request) {
+        authService.verifyPin(request);
+        return ResponseEntity.ok("Security PIN verified successfully.");
+    }
+
     @GetMapping("/me")
     public ResponseEntity<com.example.attendance.model.UserProfileDTO> getMe(java.security.Principal principal) {
         com.example.attendance.model.UserProfileDTO profile = authService.getCurrentUserProfile(principal.getName());

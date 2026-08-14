@@ -91,11 +91,117 @@ public class AuthService {
         }
         if (registerRequest.getSecurityPin() != null && !registerRequest.getSecurityPin().isBlank()) {
             user.setSecurityPin(registerRequest.getSecurityPin().trim());
+            user.setPinGeneratedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         }
 
         userRepository.save(user);
 
         return "User registered successfully with role: " + role.name();
+    }
+
+    public String requestPin(com.example.attendance.model.RequestPinRequest request) {
+        if (request == null || request.getUsernameOrEmail() == null || request.getUsernameOrEmail().isBlank()) {
+            throw new IllegalArgumentException("Username or Email address is required.");
+        }
+
+        String cleanInput = request.getUsernameOrEmail().trim();
+        User user = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
+                .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + cleanInput + "'."));
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        // Rate-limiting check: max 3 requests per user per hour
+        if (user.getPinRequestWindowStart() == null || now.isAfter(user.getPinRequestWindowStart().plusHours(1))) {
+            user.setPinRequestWindowStart(now);
+            user.setPinRequestCount(0);
+        }
+
+        if (user.getPinRequestCount() >= 3) {
+            throw new com.example.attendance.exception.TooManyRequestsException(
+                    "Maximum 3 PIN requests per hour allowed. Please try again later."
+            );
+        }
+
+        // Generate new 4-digit PIN
+        int pinNum = new java.security.SecureRandom().nextInt(10000);
+        String newPin = String.format("%04d", pinNum);
+
+        user.setSecurityPin(newPin);
+        user.setPinGeneratedAt(now);
+        user.setPinAttemptCount(0);
+        user.setPinLockedUntil(null);
+        user.setPinRequestCount(user.getPinRequestCount() + 1);
+
+        userRepository.save(user);
+
+        return "A new 4-digit Security PIN has been generated: " + newPin + " (Valid for 10 minutes).";
+    }
+
+    public boolean verifyPin(com.example.attendance.model.VerifyPinRequest request) {
+        if (request == null || request.getUsernameOrEmail() == null || request.getUsernameOrEmail().isBlank()
+                || request.getSecurityPin() == null || request.getSecurityPin().isBlank()) {
+            throw new IllegalArgumentException("Username/Email and Security PIN are required.");
+        }
+
+        String cleanInput = request.getUsernameOrEmail().trim();
+        User user = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
+                .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + cleanInput + "'."));
+
+        return verifyUserPin(user, request.getSecurityPin().trim());
+    }
+
+    private boolean verifyUserPin(User user, String pin) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        // 1. Check if PIN locked
+        if (user.getPinLockedUntil() != null && user.getPinLockedUntil().isAfter(now)) {
+            long secondsRemaining = java.time.Duration.between(now, user.getPinLockedUntil()).getSeconds();
+            long minutesRemaining = (long) Math.ceil(secondsRemaining / 60.0);
+            if (minutesRemaining < 1) minutesRemaining = 1;
+            throw new com.example.attendance.exception.TooManyRequestsException(
+                    "Too many attempts, try again after " + minutesRemaining + " minutes."
+            );
+        }
+
+        String registeredPin = user.getSecurityPin();
+        String effectiveMasterPin = getEffectiveMasterAdminPin();
+        boolean isMasterMatch = effectiveMasterPin != null && !effectiveMasterPin.isBlank() && effectiveMasterPin.equalsIgnoreCase(pin);
+
+        // 2. Check PIN Expiry (10 minutes)
+        if (!isMasterMatch) {
+            if (user.getPinGeneratedAt() == null || now.isAfter(user.getPinGeneratedAt().plusMinutes(10))) {
+                throw new IllegalArgumentException("The 4-digit Security PIN has expired. Please request a new PIN.");
+            }
+        }
+
+        // 3. Check PIN match
+        boolean isMatch = (registeredPin != null && !registeredPin.isBlank() && registeredPin.equalsIgnoreCase(pin))
+                       || isMasterMatch;
+
+        if (!isMatch) {
+            int attempts = user.getPinAttemptCount() + 1;
+            if (attempts >= 5) {
+                user.setPinLockedUntil(now.plusMinutes(15));
+                user.setPinAttemptCount(0);
+                userRepository.save(user);
+                throw new com.example.attendance.exception.TooManyRequestsException(
+                        "Too many attempts, try again after 15 minutes."
+                );
+            } else {
+                user.setPinAttemptCount(attempts);
+                userRepository.save(user);
+                throw new IllegalArgumentException("Incorrect 4-digit Security PIN for account '" + user.getUsername() + "'. Access Denied.");
+            }
+        }
+
+        // 4. Correct PIN entry - reset attempt count and clear lock
+        user.setPinAttemptCount(0);
+        user.setPinLockedUntil(null);
+        userRepository.save(user);
+
+        return true;
     }
 
     public ForgotPasswordResponseDTO forgotPassword(ForgotPasswordRequest request) {
@@ -196,16 +302,7 @@ public class AuthService {
                     .or(() -> userRepository.findByUsernameIgnoreCase(userOrEmail))
                     .orElseThrow(() -> new IllegalArgumentException("No registered account found matching '" + userOrEmail + "'."));
 
-            String registeredPin = user.getSecurityPin();
-            String effectiveMasterPin = getEffectiveMasterAdminPin();
-
-            // Check Admin Master PIN OR user's registered PIN
-            boolean isMatch = (registeredPin != null && !registeredPin.isBlank() && registeredPin.equalsIgnoreCase(pin))
-                           || (effectiveMasterPin != null && !effectiveMasterPin.isBlank() && effectiveMasterPin.equalsIgnoreCase(pin));
-
-            if (!isMatch) {
-                throw new IllegalArgumentException("Incorrect 4-digit Security PIN for account '" + userOrEmail + "'. Access Denied.");
-            }
+            verifyUserPin(user, pin);
         } 
         // Mode B: Verification by 6-digit OTP
         else if (inputOtp != null && !inputOtp.isBlank()) {
