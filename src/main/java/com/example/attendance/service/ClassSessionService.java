@@ -95,14 +95,43 @@ public class ClassSessionService {
             session.setClassName(request.getClassName());
         }
 
-        session.setStartTime(request.getStartTime());
-        session.setEndTime(request.getEndTime());
-        session.setClassroomLat(request.getClassroomLat());
-        session.setClassroomLng(request.getClassroomLng());
-        session.setRadiusMeters(request.getRadiusMeters());
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        LocalDateTime startTime = request.getStartTime() != null ? request.getStartTime() : now;
+        LocalDateTime endTime = request.getEndTime() != null ? request.getEndTime() : startTime.plusHours(1);
+
+        if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
+            throw new IllegalArgumentException("End Time must be after Start Time.");
+        }
+
+        session.setStartTime(startTime);
+        session.setEndTime(endTime);
+        session.setClassroomLat(request.getClassroomLat() != null ? request.getClassroomLat() : 12.9716);
+        session.setClassroomLng(request.getClassroomLng() != null ? request.getClassroomLng() : 77.5946);
+        session.setRadiusMeters(request.getRadiusMeters() != null ? request.getRadiusMeters() : 500.0);
         if (request.getExpectedWifiSsid() != null && !request.getExpectedWifiSsid().isBlank()) {
             session.setExpectedWifiSsid(request.getExpectedWifiSsid().trim());
         }
+
+        // Session is active immediately if startTime is current (or past) and endTime has not passed
+        boolean shouldBeActive = !startTime.isAfter(now.plusSeconds(30)) && now.isBefore(endTime);
+        session.setActive(shouldBeActive);
+
+        if (shouldBeActive) {
+            // Auto-end any previous active session if in progress before launching a new active one
+            List<ClassSession> existingActive = classSessionRepository.findByActiveTrue();
+            for (ClassSession active : existingActive) {
+                if (active.getTeacher() == null || active.getTeacher().getId().equals(teacher.getId())) {
+                    try {
+                        endSession(active.getId(), teacherUsername);
+                    } catch (Exception e) {
+                        active.setActive(false);
+                        classSessionRepository.save(active);
+                    }
+                }
+            }
+        }
+
         ClassSession savedSession = classSessionRepository.save(session);
         savedSession.setPasscode(qrCodeService.generateCurrentPasscode(savedSession.getId()));
         return savedSession;
@@ -148,6 +177,47 @@ public class ClassSessionService {
         }
 
         return savedSession;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public int autoManageScheduledSessions() {
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        // 1. Auto-Start: Find sessions where active = false, cancelled = false, startTime <= now, and endTime > now
+        List<ClassSession> scheduledToStart = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isActive() && !s.isCancelled())
+                .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
+                .filter(s -> !now.isBefore(s.getStartTime()) && now.isBefore(s.getEndTime()))
+                .collect(Collectors.toList());
+
+        for (ClassSession session : scheduledToStart) {
+            if (session.getTeacher() != null) {
+                List<ClassSession> activeList = classSessionRepository.findByTeacher(session.getTeacher()).stream()
+                        .filter(ClassSession::isActive)
+                        .collect(Collectors.toList());
+                for (ClassSession active : activeList) {
+                    try {
+                        endSession(active.getId(), session.getTeacher().getUsername());
+                    } catch (Exception e) {
+                        active.setActive(false);
+                        classSessionRepository.save(active);
+                    }
+                }
+            }
+
+            session.setActive(true);
+            session.setPasscode(qrCodeService.generateCurrentPasscode(session.getId()));
+            classSessionRepository.save(session);
+            org.slf4j.LoggerFactory.getLogger(ClassSessionService.class).info(
+                    "Auto-started scheduled ClassSession ID: {} ('{}', subject: '{}')",
+                    session.getId(), session.getClassName(), session.getSubject()
+            );
+        }
+
+        // 2. Auto-Close: Find active sessions where endTime <= now
+        int closedCount = autoCloseExpiredSessions();
+
+        return scheduledToStart.size() + closedCount;
     }
 
     @org.springframework.transaction.annotation.Transactional
