@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ATTENDX - Email Verification Portal">
+    <title>ATTENDX - Email Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --error-bg: rgba(239, 68, 68, 0.15);
+            --error-border: #ef4444;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --success-border: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .verify-container {
+            width: 100%;
+            max-width: 460px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .brand-header {
+            margin-bottom: 2rem;
+        }
+
+        .brand-icon {
+            margin-bottom: 1rem;
+        }
+
+        .brand-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.05em;
+        }
+
+        .brand-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.35rem;
+        }
+
+        .status-box {
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .status-box.loading {
+            background: rgba(14, 165, 233, 0.15);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #38bdf8;
+            display: block;
+        }
+
+        .status-box.success {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: #86efac;
+            display: block;
+        }
+
+        .status-box.error {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: #fca5a5;
+            display: block;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            width: 100%;
+            padding: 0.85rem;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue-hover);
+        }
+
+        .form-group {
+            margin-top: 1.25rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.825rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.7rem 0.9rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="verify-container">
+        <div class="brand-header">
+            <div class="brand-icon">
+                <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="vGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#0284c7" />
+                      <stop offset="50%" stop-color="#2563eb" />
+                      <stop offset="100%" stop-color="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="10" y="10" width="80" height="80" rx="20" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                  <path d="M30 52 L42 64 L70 34" stroke="url(#vGlow)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h1 class="brand-title">ATTENDX</h1>
+            <p class="brand-subtitle">Faculty Account Verification</p>
+        </div>
+
+        <div id="statusBox" class="status-box loading">
+            🔄 Verifying your email address... Please wait.
+        </div>
+
+        <div id="actionArea"></div>
+
+        <div id="resendForm" style="display: none;" class="form-group">
+            <label class="form-label" for="resendEmail">Enter Email Address to Request New Verification Link</label>
+            <input type="email" id="resendEmail" class="form-input" placeholder="faculty@example.com" required>
+            <button type="button" onclick="handleResend()" class="btn-primary" style="margin-top: 0.75rem;">Resend Verification Link</button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            const statusBox = document.getElementById('statusBox');
+            const actionArea = document.getElementById('actionArea');
+            const resendForm = document.getElementById('resendForm');
+
+            if (!token) {
+                statusBox.className = 'status-box error';
+                statusBox.textContent = '❌ Verification token missing. Please use the link sent to your email or request a new link.';
+                resendForm.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/verify-email?token=' + encodeURIComponent(token), {
+                    method: 'GET'
+                });
+
+                const text = await res.text();
+
+                if (res.ok && (text.includes('successfully') || text.includes('verified'))) {
+                    statusBox.className = 'status-box success';
+                    statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in to your dashboard.';
+                    actionArea.innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
+                } else {
+                    statusBox.className = 'status-box error';
+                    statusBox.textContent = text || 'Verification failed, request new link';
+                    resendForm.style.display = 'block';
+                }
+            } catch (err) {
+                statusBox.className = 'status-box error';
+                statusBox.textContent = 'Verification failed, request new link';
+                resendForm.style.display = 'block';
+            }
+        });
+
+        async function handleResend() {
+            const emailInput = document.getElementById('resendEmail');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const statusBox = document.getElementById('statusBox');
+
+            if (!email) {
+                alert('Please enter your registered email address.');
+                return;
+            }
+
+            statusBox.className = 'status-box loading';
+            statusBox.textContent = 'Sending verification link... Please wait.';
+
+            try {
+                const res = await fetch('/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const text = await res.text();
+
+                if (res.ok) {
+                    statusBox.className = 'status-box success';
+                    statusBox.textContent = text || 'Verification link sent successfully! Please check your inbox.';
+                } else {
+                    statusBox.className = 'status-box error';
+                    statusBox.textContent = text || 'Email service unavailable';
+                }
+            } catch (e) {
+                statusBox.className = 'status-box error';
+                statusBox.textContent = 'Email service unavailable';
+            }
+        }
+    </script>
+</body>
+</html>

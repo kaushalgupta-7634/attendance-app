@@ -41,6 +41,36 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam(name = "token", required = false) String token) {
+        String response = authService.verifyEmail(token);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<String> verifyEmailPost(@RequestBody(required = false) java.util.Map<String, String> body,
+                                                  @RequestParam(name = "token", required = false) String queryToken) {
+        String token = body != null && body.containsKey("token") ? body.get("token") : queryToken;
+        String response = authService.verifyEmail(token);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verifyRedirect(@RequestParam(name = "token", required = false) String token) {
+        String redirectUrl = "/verify.html" + (token != null && !token.isBlank() ? "?token=" + token : "");
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(java.net.URI.create(redirectUrl))
+                .build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestBody(required = false) java.util.Map<String, String> body,
+                                                     @RequestParam(name = "email", required = false) String queryEmail) {
+        String email = body != null && body.containsKey("email") ? body.get("email") : queryEmail;
+        String response = authService.resendVerification(email);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<com.example.attendance.model.ForgotPasswordResponseDTO> forgotPassword(@RequestBody com.example.attendance.model.ForgotPasswordRequest request) {
         com.example.attendance.model.ForgotPasswordResponseDTO response = authService.forgotPassword(request);
