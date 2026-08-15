@@ -128,7 +128,7 @@ public class AuthService {
                 return "Registration successful! A 6-digit OTP has been sent to " + cleanEmail + ". Please verify your OTP before login.";
             } catch (Exception e) {
                 org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification OTP during registration to {}: {}", cleanEmail, e.getMessage());
-                return "Registration successful! (Email service status: Verification OTP generated). Please verify your OTP before login.";
+                return "Registration successful! (Email service unavailable - please configure SMTP credentials in Railway variables). Please verify your OTP before login.";
             }
         }
 
@@ -210,7 +210,7 @@ public class AuthService {
             return "A new 6-digit OTP has been sent to " + user.getEmail() + ".";
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification OTP to {}: {}", user.getEmail(), e.getMessage());
-            return "New OTP generated. (Email service status: Error sending email).";
+            return "New OTP generated. (Email service unavailable - check Railway SMTP environment variables).";
         }
     }
 
