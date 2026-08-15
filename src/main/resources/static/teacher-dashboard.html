@@ -1450,24 +1450,37 @@
 
             let latVal = parseFloat(document.getElementById('classroomLat').value) || 0.0;
             let lngVal = parseFloat(document.getElementById('classroomLng').value) || 0.0;
-            const radiusVal = parseFloat(document.getElementById('radiusMeters').value) || 500;
+            let radiusVal = parseFloat(document.getElementById('radiusMeters').value) || 500;
             const isTestingMode = document.getElementById('testingModeCheckbox')?.checked || false;
 
             if (!isTestingMode && radiusVal < 99999 && (latVal === 0.0 || lngVal === 0.0)) {
                 btn.textContent = 'Acquiring GPS location...';
                 try {
                     const pos = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 });
                     });
                     latVal = pos.coords.latitude;
                     lngVal = pos.coords.longitude;
                     document.getElementById('classroomLat').value = latVal;
                     document.getElementById('classroomLng').value = lngVal;
                 } catch (gpsErr) {
-                    btn.disabled = false;
-                    btn.textContent = 'Launch Active Session';
-                    alert("📍 GPS Location Permission Required!\n\nYour browser blocked GPS location access. To enforce Geofencing (radius distance limit), please click the lock/settings icon in your browser address bar and ALLOW Location access for this site, then click Launch again.\n\nAlternatively, check 'Testing / Anywhere Mode' if you want to allow students to mark attendance from anywhere without distance limits.");
-                    return;
+                    console.warn("GPS acquire failed, trying IP fallback or anywhere mode:", gpsErr);
+                    try {
+                        const ipRes = await fetch('https://ipapi.co/json/');
+                        if (ipRes.ok) {
+                            const ipData = await ipRes.json();
+                            if (ipData.latitude && ipData.longitude) {
+                                latVal = parseFloat(ipData.latitude);
+                                lngVal = parseFloat(ipData.longitude);
+                                document.getElementById('classroomLat').value = latVal;
+                                document.getElementById('classroomLng').value = lngVal;
+                            }
+                        }
+                    } catch (e) {}
+
+                    if (latVal === 0.0 || lngVal === 0.0) {
+                        radiusVal = 100000;
+                    }
                 }
             }
 
