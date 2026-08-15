@@ -541,7 +541,8 @@ public class ClassSessionService {
             }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
-                    .filter(c -> (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
+                    .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(search)) ||
+                                 (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
                                  (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(search.toLowerCase()))) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
@@ -557,10 +558,12 @@ public class ClassSessionService {
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
-                    .filter(s -> (s.getEffectiveClassName() != null && s.getEffectiveClassName().equalsIgnoreCase(search)) ||
-                                 (s.getEffectiveSubject() != null && s.getEffectiveSubject().equalsIgnoreCase(search)) ||
-                                 (s.getClassName() != null && s.getClassName().equalsIgnoreCase(search)) ||
-                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(search)))
+                    .filter(s -> (s.getId() != null && s.getId().toString().equalsIgnoreCase(search)) ||
+                                 (s.getEffectiveClassName() != null && (s.getEffectiveClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getEffectiveClassName().toLowerCase()) || s.getEffectiveClassName().toLowerCase().contains(search.toLowerCase()))) ||
+                                 (s.getEffectiveSubject() != null && (s.getEffectiveSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getEffectiveSubject().toLowerCase()) || s.getEffectiveSubject().toLowerCase().contains(search.toLowerCase()))) ||
+                                 (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
+                                 (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(search.toLowerCase()))) ||
+                                 (s.getClassCourse() != null && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
@@ -623,12 +626,14 @@ public class ClassSessionService {
                     if (isAllClass) return true;
                     ClassSession s = r.getSession();
                     String effClass = s.getEffectiveClassName();
-                    if (effClass.equalsIgnoreCase(searchClass)) return true;
-                    if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) return true;
-                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) return true;
+                    if (effClass != null && (effClass.equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(effClass.toLowerCase()) || effClass.toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
                     if (s.getClassCourse() != null) {
-                        if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)) return true;
-                        if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                        if (s.getClassCourse().getSubject() != null && (s.getClassCourse().getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getSubject().toLowerCase()) || s.getClassCourse().getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
                         if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
                     }
                     return false;
