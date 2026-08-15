@@ -104,8 +104,8 @@ public class ClassSessionService {
 
         session.setStartTime(startTime);
         session.setEndTime(endTime);
-        session.setClassroomLat(request.getClassroomLat() != null ? request.getClassroomLat() : 12.9716);
-        session.setClassroomLng(request.getClassroomLng() != null ? request.getClassroomLng() : 77.5946);
+        session.setClassroomLat(request.getClassroomLat() != null ? request.getClassroomLat() : 0.0);
+        session.setClassroomLng(request.getClassroomLng() != null ? request.getClassroomLng() : 0.0);
         session.setRadiusMeters(request.getRadiusMeters() != null ? request.getRadiusMeters() : 500.0);
         if (request.getExpectedWifiSsid() != null && !request.getExpectedWifiSsid().isBlank()) {
             session.setExpectedWifiSsid(request.getExpectedWifiSsid().trim());
