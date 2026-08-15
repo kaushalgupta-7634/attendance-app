@@ -35,6 +35,15 @@ public class AttendanceService {
         this.enrollmentRepository = enrollmentRepository;
     }
 
+    private boolean matchesSearch(String target, String search) {
+        if (target == null || target.isBlank() || search == null || search.isBlank()) {
+            return false;
+        }
+        String t = target.trim().toLowerCase();
+        String s = search.trim().toLowerCase();
+        return t.equalsIgnoreCase(s) || t.contains(s) || s.contains(t);
+    }
+
     public AttendanceRecord markAttendance(MarkAttendanceRequest request, String studentUsername) {
         return markAttendance(request, studentUsername, null);
     }
@@ -481,10 +490,7 @@ public class AttendanceService {
             List<User> allStudents = userRepository.findByRole(Role.STUDENT);
             for (User st : allStudents) {
                 if (st.getClassName() != null && !st.getClassName().isBlank()) {
-                    String sName = st.getClassName().trim();
-                    if (sName.equalsIgnoreCase(searchClass) ||
-                        searchClass.toLowerCase().contains(sName.toLowerCase()) ||
-                        sName.toLowerCase().contains(searchClass.toLowerCase())) {
+                    if (matchesSearch(st.getClassName(), searchClass)) {
                         if (!distinctStudents.contains(st)) {
                             distinctStudents.add(st);
                         }
@@ -494,8 +500,8 @@ public class AttendanceService {
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
                     .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(searchClass)) ||
-                                 (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
-                                 (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                                 matchesSearch(c.getClassName(), searchClass) ||
+                                 matchesSearch(c.getSubject(), searchClass) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
@@ -504,8 +510,6 @@ public class AttendanceService {
             for (ClassCourse course : matchingCourses) {
                 List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
                 rawEnrollmentCount += enrollments.size();
-                logger.info("[DEBUG-ANALYTICS] ClassCourse ID={}, Name='{}', Code='{}', Subject='{}' has {} Enrollment record(s)",
-                        course.getId(), course.getClassName(), course.getClassCode(), course.getSubject(), enrollments.size());
                 for (Enrollment e : enrollments) {
                     if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
                         distinctStudents.add(e.getStudent());
@@ -513,15 +517,13 @@ public class AttendanceService {
                 }
             }
 
-            logger.info("[DEBUG-ANALYTICS] Total raw Enrollment records found for class '{}': {}", searchClass, rawEnrollmentCount);
-
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
                     .filter(s -> (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) ||
-                                 (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
-                                 (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                                 matchesSearch(s.getClassName(), searchClass) ||
+                                 matchesSearch(s.getSubject(), searchClass) ||
                                  (s.getClassCourse() != null && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) ||
-                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))))
+                                 (s.getClassCourse() != null && matchesSearch(s.getClassCourse().getClassName(), searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
@@ -530,16 +532,6 @@ public class AttendanceService {
                     if (r.getStudent() != null && !distinctStudents.contains(r.getStudent())) {
                         distinctStudents.add(r.getStudent());
                     }
-                }
-            }
-
-            if (distinctStudents.isEmpty()) {
-                logger.warn("[DEBUG-ANALYTICS] No enrolled students found for class '{}'. Falling back to all students.", searchClass);
-                distinctStudents = userRepository.findByRole(Role.STUDENT);
-                if (distinctStudents.isEmpty()) {
-                    distinctStudents = userRepository.findAll().stream()
-                            .filter(u -> u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN))
-                            .collect(java.util.stream.Collectors.toList());
                 }
             }
         } else {
@@ -557,13 +549,13 @@ public class AttendanceService {
                 .filter(s -> {
                     if (isAllClass) return true;
                     if (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) return true;
-                    if (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                    if (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                    if (s.getEffectiveClassName() != null && (s.getEffectiveClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getEffectiveClassName().toLowerCase()) || s.getEffectiveClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (matchesSearch(s.getClassName(), searchClass)) return true;
+                    if (matchesSearch(s.getSubject(), searchClass)) return true;
+                    if (matchesSearch(s.getEffectiveClassName(), searchClass)) return true;
                     if (s.getClassCourse() != null) {
                         if (s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) return true;
-                        if (s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                        if (s.getClassCourse().getSubject() != null && (s.getClassCourse().getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getSubject().toLowerCase()) || s.getClassCourse().getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                        if (matchesSearch(s.getClassCourse().getClassName(), searchClass)) return true;
+                        if (matchesSearch(s.getClassCourse().getSubject(), searchClass)) return true;
                         if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
                     }
                     return false;

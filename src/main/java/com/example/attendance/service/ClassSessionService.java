@@ -43,6 +43,15 @@ public class ClassSessionService {
         this.enrollmentRepository = enrollmentRepository;
     }
 
+    private boolean matchesSearch(String target, String search) {
+        if (target == null || target.isBlank() || search == null || search.isBlank()) {
+            return false;
+        }
+        String t = target.trim().toLowerCase();
+        String s = search.trim().toLowerCase();
+        return t.equalsIgnoreCase(s) || t.contains(s) || s.contains(t);
+    }
+
     public ClassSession startSession(CreateSessionRequest request, String teacherUsername) {
         User teacher = userRepository.findByUsername(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher user not found with username: " + teacherUsername));
@@ -529,10 +538,7 @@ public class ClassSessionService {
             List<User> allStudents = userRepository.findByRole(Role.STUDENT);
             for (User st : allStudents) {
                 if (st.getClassName() != null && !st.getClassName().isBlank()) {
-                    String sName = st.getClassName().trim();
-                    if (sName.equalsIgnoreCase(search) ||
-                        search.toLowerCase().contains(sName.toLowerCase()) ||
-                        sName.toLowerCase().contains(search.toLowerCase())) {
+                    if (matchesSearch(st.getClassName(), search)) {
                         if (!students.contains(st)) {
                             students.add(st);
                         }
@@ -542,8 +548,8 @@ public class ClassSessionService {
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
                     .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(search)) ||
-                                 (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
-                                 (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(search.toLowerCase()))) ||
+                                 matchesSearch(c.getClassName(), search) ||
+                                 matchesSearch(c.getSubject(), search) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
 
@@ -559,10 +565,10 @@ public class ClassSessionService {
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
                     .filter(s -> (s.getId() != null && s.getId().toString().equalsIgnoreCase(search)) ||
-                                 (s.getEffectiveClassName() != null && (s.getEffectiveClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getEffectiveClassName().toLowerCase()) || s.getEffectiveClassName().toLowerCase().contains(search.toLowerCase()))) ||
-                                 (s.getEffectiveSubject() != null && (s.getEffectiveSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getEffectiveSubject().toLowerCase()) || s.getEffectiveSubject().toLowerCase().contains(search.toLowerCase()))) ||
-                                 (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(search.toLowerCase()))) ||
-                                 (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(search) || search.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(search.toLowerCase()))) ||
+                                 matchesSearch(s.getEffectiveClassName(), search) ||
+                                 matchesSearch(s.getEffectiveSubject(), search) ||
+                                 matchesSearch(s.getClassName(), search) ||
+                                 matchesSearch(s.getSubject(), search) ||
                                  (s.getClassCourse() != null && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(search)))
                     .collect(Collectors.toList());
 
@@ -629,13 +635,13 @@ public class ClassSessionService {
                     ClassSession s = r.getSession();
                     String effClass = s.getEffectiveClassName();
                     if (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) return true;
-                    if (effClass != null && (effClass.equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(effClass.toLowerCase()) || effClass.toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                    if (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                    if (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (matchesSearch(effClass, searchClass)) return true;
+                    if (matchesSearch(s.getClassName(), searchClass)) return true;
+                    if (matchesSearch(s.getSubject(), searchClass)) return true;
                     if (s.getClassCourse() != null) {
                         if (s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) return true;
-                        if (s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
-                        if (s.getClassCourse().getSubject() != null && (s.getClassCourse().getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getSubject().toLowerCase()) || s.getClassCourse().getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                        if (matchesSearch(s.getClassCourse().getClassName(), searchClass)) return true;
+                        if (matchesSearch(s.getClassCourse().getSubject(), searchClass)) return true;
                         if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
                     }
                     return false;
@@ -647,17 +653,12 @@ public class ClassSessionService {
                     if (isAllSubject) return true;
                     ClassSession s = r.getSession();
                     String effSub = s.getEffectiveSubject();
-                    if (effSub.equalsIgnoreCase(searchSub)) return true;
-                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchSub)) return true;
-                    if (s.getClassCourse() != null && s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchSub)) return true;
+                    if (matchesSearch(effSub, searchSub)) return true;
+                    if (matchesSearch(s.getSubject(), searchSub)) return true;
+                    if (s.getClassCourse() != null && matchesSearch(s.getClassCourse().getSubject(), searchSub)) return true;
                     return false;
                 })
                 .collect(Collectors.toList());
-
-        // Fallback query if subject filter returned no records for this class
-        if (!isAllSubject && records.isEmpty()) {
-            records = classRecords;
-        }
 
         records.sort((a, b) -> {
             if (a.getMarkedAt() != null && b.getMarkedAt() != null) {

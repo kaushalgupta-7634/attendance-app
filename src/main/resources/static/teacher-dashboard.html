@@ -2596,10 +2596,10 @@
 
             // 2. Fetch summary backend to extract registered subjects
             try {
+                const token = getJwtToken();
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
                 const targetCls = (className && className !== 'all') ? className : 'all';
-                const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(targetCls)}/attendance-summary`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(targetCls)}/attendance-summary`, { headers });
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
                     if (summary.subjectAverages && summary.subjectAverages.length > 0) {
@@ -2650,8 +2650,11 @@
             let rosterTbody = document.getElementById('classRosterTableBody');
             let dailyLogTbody = document.getElementById('classDailyLogTableBody');
 
-            // If dashboard DOM has already loaded roster data on screen, render instantly in 0ms
-            const isLoadedOnScreen = rosterTbody && rosterTbody.innerHTML && !rosterTbody.innerHTML.includes('Calculating') && !rosterTbody.innerHTML.includes('Select a class');
+            const currentHeaderClass = document.getElementById('analyticsHeaderClassText')?.textContent?.trim() || '';
+            const isLoadedOnScreen = rosterTbody && rosterTbody.innerHTML &&
+                !rosterTbody.innerHTML.includes('Calculating') &&
+                !rosterTbody.innerHTML.includes('Select a class') &&
+                (currentHeaderClass.toLowerCase().includes(targetClass.toLowerCase()) || targetClass.toLowerCase().includes('all classes'));
 
             if (!isLoadedOnScreen) {
                 printWin.document.write(`
