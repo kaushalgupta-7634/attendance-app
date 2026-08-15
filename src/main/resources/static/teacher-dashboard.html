@@ -2862,7 +2862,14 @@
             if (!subjectName) return;
             currentSubjectFilter = subjectName;
             const subSelect = document.getElementById('teacherSubjectSelect');
-            if (subSelect) subSelect.value = subjectName;
+            if (subSelect) {
+                for (const opt of subSelect.options) {
+                    if (opt.value && opt.value.toLowerCase().trim() === subjectName.toLowerCase().trim()) {
+                        subSelect.value = opt.value;
+                        break;
+                    }
+                }
+            }
             await loadSelectedClassAnalytics(subjectName);
         }
 
@@ -2870,7 +2877,14 @@
             if (!subjectName) return;
             currentSubjectFilter = subjectName;
             const subSelect = document.getElementById('teacherSubjectSelect');
-            if (subSelect) subSelect.value = subjectName;
+            if (subSelect) {
+                for (const opt of subSelect.options) {
+                    if (opt.value && opt.value.toLowerCase().trim() === subjectName.toLowerCase().trim()) {
+                        subSelect.value = opt.value;
+                        break;
+                    }
+                }
+            }
             await loadSelectedClassAnalytics(subjectName);
 
             if (type === 'present') {
@@ -2926,8 +2940,13 @@
             }
 
             const subSelect = document.getElementById('teacherSubjectSelect');
-            if (subSelect && subSelect.value !== currentSubjectFilter) {
-                subSelect.value = currentSubjectFilter;
+            if (subSelect) {
+                for (const opt of subSelect.options) {
+                    if (opt.value && opt.value.toLowerCase().trim() === (currentSubjectFilter || 'all').toLowerCase().trim()) {
+                        subSelect.value = opt.value;
+                        break;
+                    }
+                }
             }
 
             const panel = document.getElementById('classAnalyticsPanel');
@@ -3064,11 +3083,11 @@
                                     const sSum = await sRes.json();
 
                                     if (currentSubjectFilter && currentSubjectFilter !== 'all' && sSum.subjectBreakdown) {
-                                        const subMatch = sSum.subjectBreakdown.find(sb => sb.subject && sb.subject.toLowerCase() === currentSubjectFilter.toLowerCase());
+                                        const subMatch = sSum.subjectBreakdown.find(sb => sb.subject && sb.subject.toLowerCase().trim() === currentSubjectFilter.toLowerCase().trim());
                                         if (subMatch) {
                                             percent = subMatch.percentage || 0.0;
                                         } else {
-                                            percent = sSum.overallPercentage || 0.0;
+                                            percent = 0.0;
                                         }
                                     } else {
                                         percent = sSum.overallPercentage || 0.0;
@@ -3077,7 +3096,7 @@
                                     if (sSum.subjectBreakdown && sSum.subjectBreakdown.length > 0) {
                                         let displayBreakdown = sSum.subjectBreakdown;
                                         if (currentSubjectFilter && currentSubjectFilter !== 'all') {
-                                            const filtered = displayBreakdown.filter(sb => sb.subject && sb.subject.toLowerCase() === currentSubjectFilter.toLowerCase());
+                                            const filtered = displayBreakdown.filter(sb => sb.subject && sb.subject.toLowerCase().trim() === currentSubjectFilter.toLowerCase().trim());
                                             if (filtered.length > 0) {
                                                 displayBreakdown = filtered;
                                             }
