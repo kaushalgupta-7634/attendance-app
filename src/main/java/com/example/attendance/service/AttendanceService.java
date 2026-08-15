@@ -12,6 +12,8 @@ import java.util.List;
 @Service
 public class AttendanceService {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AttendanceService.class);
+
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final ClassSessionRepository classSessionRepository;
     private final UserRepository userRepository;
@@ -447,6 +449,9 @@ public class AttendanceService {
     }
 
     public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String selectedSubject, String teacherUsername) {
+        logger.info("[DEBUG-ANALYTICS] getClassAttendanceSummaryByName invoked. Received className filter parameter: '{}', selectedSubject: '{}', teacher: '{}'",
+                className, selectedSubject, teacherUsername);
+
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
 
@@ -460,6 +465,7 @@ public class AttendanceService {
         String searchSub = filterSubject ? selectedSubject.trim() : "";
 
         List<User> distinctStudents = new java.util.ArrayList<>();
+        int rawEnrollmentCount = 0;
         if (!isAllClass) {
             List<User> allStudents = userRepository.findByRole(Role.STUDENT);
             for (User st : allStudents) {
@@ -481,14 +487,21 @@ public class AttendanceService {
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
+            logger.info("[DEBUG-ANALYTICS] searchClass='{}' matched {} ClassCourse record(s)", searchClass, matchingCourses.size());
+
             for (ClassCourse course : matchingCourses) {
                 List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
+                rawEnrollmentCount += enrollments.size();
+                logger.info("[DEBUG-ANALYTICS] ClassCourse ID={}, Name='{}', Code='{}', Subject='{}' has {} Enrollment record(s)",
+                        course.getId(), course.getClassName(), course.getClassCode(), course.getSubject(), enrollments.size());
                 for (Enrollment e : enrollments) {
                     if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
                         distinctStudents.add(e.getStudent());
                     }
                 }
             }
+
+            logger.info("[DEBUG-ANALYTICS] Total raw Enrollment records found for class '{}': {}", searchClass, rawEnrollmentCount);
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
@@ -507,10 +520,12 @@ public class AttendanceService {
             }
 
             if (distinctStudents.isEmpty()) {
+                logger.warn("[DEBUG-ANALYTICS] No enrolled students or attendance records found for class '{}'. Falling back to all students.", searchClass);
                 distinctStudents = userRepository.findByRole(Role.STUDENT);
             }
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
+            logger.info("[DEBUG-ANALYTICS] 'All Classes Overall' selected. Total student count: {}", distinctStudents.size());
         }
 
         List<ClassSession> classSessions = classSessionRepository.findAll().stream()
