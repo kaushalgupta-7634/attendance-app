@@ -53,12 +53,10 @@ public class FacultyEmailVerificationTest {
         request.setSecurityPin("1234");
 
         String result = authService.register(request);
-        assertTrue(result.contains("verification link") || result.contains("successful"));
+        assertTrue(result.contains("successful"));
 
         User savedUser = userRepository.findByUsernameIgnoreCase("prof_sharma").orElseThrow();
-        assertFalse(savedUser.getVerified(), "Faculty account must have verified = false on registration");
-        assertNotNull(savedUser.getVerificationToken(), "Verification token must be generated");
-        assertNotNull(savedUser.getVerificationTokenExpiry(), "Token expiry must be set");
+        assertTrue(savedUser.getVerified(), "Accounts register verified by default");
     }
 
     @Test
@@ -93,12 +91,12 @@ public class FacultyEmailVerificationTest {
         loginRequest.setUsername("dr_gupta");
         loginRequest.setPassword("password123");
 
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> authService.login(loginRequest));
-        assertEquals("Please verify your email before login", ex.getMessage());
+        var response = authService.login(loginRequest);
+        assertNotNull(response.getAccessToken());
     }
 
     @Test
-    void testFacultyEmailVerification_SuccessUnlocksLogin() {
+    void testFacultyEmailVerification_DirectLoginSucceeds() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Dr. Verma");
         request.setUsername("dr_verma");
@@ -109,17 +107,10 @@ public class FacultyEmailVerificationTest {
 
         authService.register(request);
 
-        User user = userRepository.findByUsernameIgnoreCase("dr_verma").orElseThrow();
-        String token = user.getVerificationToken();
-
-        String verifyMsg = authService.verifyEmail(token);
-        assertEquals("Email verified successfully! You can now log in.", verifyMsg);
-
         User verifiedUser = userRepository.findByUsernameIgnoreCase("dr_verma").orElseThrow();
-        assertTrue(verifiedUser.getVerified(), "User should now have verified = true");
-        assertNull(verifiedUser.getVerificationToken(), "Token should be cleared");
+        assertTrue(verifiedUser.getVerified(), "User should have verified = true");
 
-        // Login should now succeed
+        // Login should succeed directly
         com.example.attendance.model.LoginRequest loginRequest = new com.example.attendance.model.LoginRequest();
         loginRequest.setUsername("dr_verma");
         loginRequest.setPassword("password123");
@@ -135,7 +126,7 @@ public class FacultyEmailVerificationTest {
     }
 
     @Test
-    void testFacultyOtpVerification_SuccessUnlocksLogin() {
+    void testFacultyRegistration_AutoVerified() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Prof. Sen");
         request.setUsername("prof_sen");
@@ -147,16 +138,7 @@ public class FacultyEmailVerificationTest {
         authService.register(request);
 
         User user = userRepository.findByUsernameIgnoreCase("prof_sen").orElseThrow();
-        assertFalse(user.getVerified(), "Account must be unverified");
-        assertNotNull(user.getOtp(), "6-digit OTP must be generated");
-        assertNotNull(user.getOtpExpiresAt(), "OTP expiry time must be set");
-
-        String verifyMsg = authService.verifyOtp("sen@faculty.com", user.getOtp());
-        assertEquals("Email verified successfully! You can now log in.", verifyMsg);
-
-        User verifiedUser = userRepository.findByUsernameIgnoreCase("prof_sen").orElseThrow();
-        assertTrue(verifiedUser.getVerified(), "User should now have verified = true");
-        assertNull(verifiedUser.getOtp(), "OTP should be cleared after verification");
+        assertTrue(user.getVerified(), "Account must be verified by default");
     }
 
     @Test
