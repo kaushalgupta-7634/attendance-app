@@ -254,6 +254,16 @@
             }
         });
 
+        function cleanMessage(rawText) {
+            if (!rawText) return 'Verification failed, request new OTP';
+            try {
+                const parsed = JSON.parse(rawText);
+                if (parsed.message) return parsed.message;
+                if (parsed.error) return parsed.error;
+            } catch(e) {}
+            return rawText;
+        }
+
         async function handleVerifyOtp() {
             const email = document.getElementById('verifyEmail').value.trim();
             const otp = document.getElementById('verifyOtp').value.trim();
@@ -276,15 +286,16 @@
                 });
 
                 const text = await res.text();
+                const displayMsg = cleanMessage(text);
 
-                if (res.ok && (text.includes('successfully') || text.includes('verified'))) {
+                if (res.ok && (displayMsg.includes('successfully') || displayMsg.includes('verified'))) {
                     statusBox.className = 'status-box success';
                     statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in to your dashboard.';
                     document.getElementById('otpForm').style.display = 'none';
                     document.getElementById('actionArea').innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
                 } else {
                     statusBox.className = 'status-box error';
-                    statusBox.textContent = text || 'Verification failed, request new OTP';
+                    statusBox.textContent = displayMsg;
                 }
             } catch (e) {
                 statusBox.className = 'status-box error';
@@ -312,13 +323,14 @@
                 });
 
                 const text = await res.text();
+                const displayMsg = cleanMessage(text);
 
                 if (res.ok) {
                     statusBox.className = 'status-box success';
-                    statusBox.textContent = text || 'A new 6-digit OTP has been sent to your email.';
+                    statusBox.textContent = displayMsg;
                 } else {
                     statusBox.className = 'status-box error';
-                    statusBox.textContent = text || 'Verification failed, request new OTP';
+                    statusBox.textContent = displayMsg;
                 }
             } catch (e) {
                 statusBox.className = 'status-box error';
