@@ -2684,9 +2684,6 @@
             const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
             const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
 
-            const rosterTbody = document.getElementById('classRosterTableBody');
-            const dailyLogTbody = document.getElementById('classDailyLogTableBody');
-
             // 4. Overwrite pop-up window with fully populated PDF report
             printWin.document.open();
             printWin.document.write(`
