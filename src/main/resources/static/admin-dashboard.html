@@ -390,8 +390,18 @@
                 </div>
             </div>
 
-            <!-- SECTION 2: COURSES -->
+            <!-- SECTION 2: COURSES & SUBJECTS -->
             <div id="coursesSection" class="hidden">
+                <!-- SUBJECT MANAGER BANNER (ADMIN EXCLUSIVE) -->
+                <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                    <div style="font-weight: 700; color: #ffffff; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        📚 <span>Registered Subjects Manager (Admin Delete Control)</span>
+                    </div>
+                    <div id="subjectManagerBadges" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <span class="badge badge-teacher">Loading subjects...</span>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -776,8 +786,60 @@
             }
         }
 
+        async function loadSubjectsManager() {
+            const container = document.getElementById('subjectManagerBadges');
+            if (!container) return;
+
+            try {
+                const res = await fetch('/classes/available-classes', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const allSubjects = new Set();
+                    data.forEach(item => {
+                        if (item.subjects) {
+                            item.subjects.forEach(s => { if (s && s.trim()) allSubjects.add(s.trim()); });
+                        }
+                    });
+
+                    if (allSubjects.size > 0) {
+                        container.innerHTML = Array.from(allSubjects).map(sub => `
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ffffff; padding: 0.5rem 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.6rem; font-size: 0.85rem;">
+                                📖 <strong>${escapeHtml(sub)}</strong>
+                                <button onclick="deleteSubjectByName('${escapeJs(sub)}')" title="Delete Subject '${escapeHtml(sub)}'" style="background: #ef4444; color: white; border: none; padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">🗑️ Delete Subject</button>
+                            </span>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem;">No subjects registered currently.</span>';
+                    }
+                }
+            } catch (e) {
+                container.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem;">Failed to load subjects.</span>';
+            }
+        }
+
+        async function deleteSubjectByName(subjectName) {
+            if (!subjectName) return;
+            if (!confirm(`Are you sure you want to delete subject '${subjectName}'?\n\nThis will remove all class sessions and attendance records associated with this subject across all classes.`)) return;
+
+            try {
+                const res = await fetch(`/classes/subjects/by-name/${encodeURIComponent(subjectName)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!res.ok) throw new Error('Failed to delete subject');
+                alert(`Subject '${subjectName}' has been deleted successfully!`);
+                loadStats();
+                loadCourses();
+                loadSubjectsManager();
+            } catch (err) {
+                alert(err.message || 'Error deleting subject.');
+            }
+        }
+
         async function loadCourses() {
             const tbody = document.getElementById('coursesTableBody');
+            loadSubjectsManager();
             try {
                 const res = await fetch('/admin/courses', { headers: { 'Authorization': 'Bearer ' + token } });
                 if (!res.ok) throw new Error('Failed to load courses');
@@ -798,6 +860,7 @@
                         <td>${c.enrolledStudentsCount} Students</td>
                         <td>
                             <button class="btn-sm btn-delete" onclick="deleteCourseRecord(${c.id}, '${escapeJs(c.className)}')">Delete Course</button>
+                            <button class="btn-sm btn-delete" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5; margin-left: 4px;" onclick="deleteSubjectByName('${escapeJs(c.subject)}')">🗑️ Delete Subject</button>
                         </td>
                     </tr>
                 `).join('');
