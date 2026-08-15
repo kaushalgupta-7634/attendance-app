@@ -560,19 +560,29 @@
         }
 
         let token = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
-        let role = localStorage.getItem('userRole') || getCookie('attendx_user_role');
 
-        if (!token || role !== 'STUDENT' || isTokenExpired(token)) {
+        if (!token || isTokenExpired(token)) {
+            localStorage.removeItem('jwtToken');
+            setCookie('attendx_student_token', '', -1);
+            window.location.href = '/login.html';
+        }
+
+        const payload = parseJwtPayload(token);
+        const actualRole = payload.role || localStorage.getItem('userRole') || getCookie('attendx_user_role');
+
+        if (actualRole === 'TEACHER') {
+            window.location.href = '/teacher-dashboard.html';
+        } else if (actualRole === 'ADMIN') {
+            window.location.href = '/admin-dashboard.html';
+        } else if (actualRole !== 'STUDENT') {
             localStorage.removeItem('jwtToken');
             setCookie('attendx_student_token', '', -1);
             window.location.href = '/login.html';
         } else {
-            // Keep localStorage and cookies synchronized
             localStorage.setItem('jwtToken', token);
             setCookie('attendx_student_token', token, 365);
         }
 
-        const payload = parseJwtPayload(token);
         let displayName = localStorage.getItem('userName') || payload.name || payload.sub || 'Student';
 
         const studentHeader = document.getElementById('studentNameDisplay');

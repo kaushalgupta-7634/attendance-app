@@ -464,16 +464,43 @@
     </footer>
 
     <script>
+        function parseJwtPayload(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function isTokenExpired(token) {
+            if (!token) return true;
+            const payload = parseJwtPayload(token);
+            if (!payload.exp) return false;
+            return Date.now() >= payload.exp * 1000;
+        }
+
         const token = localStorage.getItem('jwtToken');
-        const role = localStorage.getItem('userRole');
         const mainPortalBtn = document.getElementById('mainPortalBtn');
 
-        if (token && role === 'TEACHER') {
-            mainPortalBtn.textContent = 'Dashboard';
-            mainPortalBtn.href = '/teacher-dashboard.html';
-        } else if (token && role === 'STUDENT') {
-            mainPortalBtn.textContent = 'Scan / Check-in';
-            mainPortalBtn.href = '/student-scan.html';
+        if (token && !isTokenExpired(token)) {
+            const payload = parseJwtPayload(token);
+            const actualRole = payload.role || localStorage.getItem('userRole');
+            if (actualRole === 'TEACHER') {
+                mainPortalBtn.textContent = 'Faculty Dashboard';
+                mainPortalBtn.href = '/teacher-dashboard.html';
+            } else if (actualRole === 'STUDENT') {
+                mainPortalBtn.textContent = 'Student Portal';
+                mainPortalBtn.href = '/student-scan.html';
+            } else if (actualRole === 'ADMIN') {
+                mainPortalBtn.textContent = 'Admin Dashboard';
+                mainPortalBtn.href = '/admin-dashboard.html';
+            }
+        } else if (token) {
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userRole');
         }
 
         async function fetchSystemInfo() {

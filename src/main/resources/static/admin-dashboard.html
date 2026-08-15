@@ -600,11 +600,38 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('jwtToken');
-        const role = localStorage.getItem('userRole');
+        function parseJwtPayload(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return {};
+            }
+        }
 
-        if (!token || role !== 'ADMIN') {
-            alert('Access Denied. Admin authentication required.');
+        function isTokenExpired(token) {
+            if (!token) return true;
+            const payload = parseJwtPayload(token);
+            if (!payload.exp) return false;
+            return Date.now() >= payload.exp * 1000;
+        }
+
+        const token = localStorage.getItem('jwtToken');
+        if (!token || isTokenExpired(token)) {
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login.html';
+        }
+
+        const payload = parseJwtPayload(token);
+        const actualRole = payload.role || localStorage.getItem('userRole');
+
+        if (actualRole === 'TEACHER') {
+            window.location.href = '/teacher-dashboard.html';
+        } else if (actualRole === 'STUDENT') {
+            window.location.href = '/student-scan.html';
+        } else if (actualRole !== 'ADMIN') {
             window.location.href = '/login.html';
         }
 

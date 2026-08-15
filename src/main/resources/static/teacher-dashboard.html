@@ -1086,6 +1086,13 @@
             }
         }
 
+        function isTokenExpired(token) {
+            if (!token) return true;
+            const payload = parseJwtPayload(token);
+            if (!payload.exp) return false;
+            return Date.now() >= payload.exp * 1000;
+        }
+
         var activeSessionId = null;
         var qrTimer = null;
         var countdownTimer = null;
@@ -1097,13 +1104,21 @@
         var classSubjectsMap = new Map();
 
         const token = localStorage.getItem('jwtToken');
-        const role = localStorage.getItem('userRole');
-
-        if (!token || (role !== 'TEACHER' && role !== 'ADMIN')) {
+        if (!token || isTokenExpired(token)) {
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userRole');
             window.location.href = '/login.html';
         }
 
         const payload = parseJwtPayload(token);
+        const actualRole = payload.role || localStorage.getItem('userRole');
+
+        if (actualRole === 'STUDENT') {
+            window.location.href = '/student-scan.html';
+        } else if (actualRole !== 'TEACHER' && actualRole !== 'ADMIN') {
+            window.location.href = '/login.html';
+        }
+
         let displayName = localStorage.getItem('userName') || payload.name || payload.sub || 'Teacher';
 
         const teacherHeader = document.getElementById('teacherNameDisplay');
