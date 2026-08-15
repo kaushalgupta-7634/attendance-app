@@ -2675,7 +2675,6 @@
                     </body>
                     </html>
                 `);
-                printWin.document.close();
 
                 await loadSelectedClassAnalytics(subVal);
 
@@ -2687,85 +2686,76 @@
             const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
             const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
 
-            // 4. Overwrite pop-up window with fully populated PDF report
-            printWin.document.open();
-            printWin.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Attendance Report - Class: ${escapeHtml(targetClass)} | Subject: ${escapeHtml(subjectDisplay)}</title>
-                    <style>
-                        @media print {
-                            .no-print { display: none !important; }
-                        }
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; color: #1e293b; }
-                        h2 { margin-bottom: 5px; color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
-                        .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
-                        .meta-box strong { color: #0f172a; }
-                        h3 { font-size: 15px; color: #334155; margin-top: 20px; margin-bottom: 8px; }
-                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 12px; text-align: left; }
-                        th { background-color: #f1f5f9; font-weight: 700; color: #334155; }
-                        tr:nth-child(even) { background-color: #f8fafc; }
-                        .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: right; }
-                        .print-bar { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: #ffffff; padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; font-family: system-ui, sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-                        .print-btn { background: #3b82f6; color: #ffffff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s; }
-                        .print-btn:hover { background: #2563eb; }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-bar no-print">
-                        <span style="font-size: 14px; font-weight: 600;">📄 Faculty Attendance Summary Report Preview</span>
-                        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-                    </div>
+            printWin.document.title = `Attendance Report - Class: ${targetClass} | Subject: ${subjectDisplay}`;
+            printWin.document.body.innerHTML = `
+                <style>
+                    @media print {
+                        .no-print { display: none !important; }
+                    }
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; color: #1e293b; text-align: left; }
+                    h2 { margin-bottom: 5px; color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+                    .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+                    .meta-box strong { color: #0f172a; }
+                    h3 { font-size: 15px; color: #334155; margin-top: 20px; margin-bottom: 8px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 12px; text-align: left; }
+                    th { background-color: #f1f5f9; font-weight: 700; color: #334155; }
+                    tr:nth-child(even) { background-color: #f8fafc; }
+                    .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: right; }
+                    .print-bar { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: #ffffff; padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; font-family: system-ui, sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+                    .print-btn { background: #3b82f6; color: #ffffff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+                    .print-btn:hover { background: #2563eb; }
+                </style>
 
-                    <h2>Faculty Attendance Summary Report</h2>
-                    <div class="meta-box">
-                        <strong>Class Name:</strong> ${escapeHtml(targetClass)} &nbsp;|&nbsp; 
-                        <strong>Subject Filter:</strong> ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
-                        <strong>Overall Class Average:</strong> ${escapeHtml(overallAvgText)} &nbsp;|&nbsp; 
-                        <strong>Total Students:</strong> ${escapeHtml(totalStudentsText)}<br>
-                        <strong>Export Format:</strong> Class: ${escapeHtml(targetClass)} | Subject: ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
-                        <strong>Export Date:</strong> ${new Date().toLocaleString()}
-                    </div>
+                <div class="print-bar no-print">
+                    <span style="font-size: 14px; font-weight: 600;">📄 Faculty Attendance Summary Report Preview</span>
+                    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+                </div>
 
-                    <h3>Enrolled Student Roster & Individual Performance</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Attendance %</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rosterTbody ? rosterTbody.innerHTML : ''}
-                        </tbody>
-                    </table>
+                <h2>Faculty Attendance Summary Report</h2>
+                <div class="meta-box">
+                    <strong>Class Name:</strong> ${escapeHtml(targetClass)} &nbsp;|&nbsp; 
+                    <strong>Subject Filter:</strong> ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
+                    <strong>Overall Class Average:</strong> ${escapeHtml(overallAvgText)} &nbsp;|&nbsp; 
+                    <strong>Total Students:</strong> ${escapeHtml(totalStudentsText)}<br>
+                    <strong>Export Format:</strong> Class: ${escapeHtml(targetClass)} | Subject: ${escapeHtml(subjectDisplay)} &nbsp;|&nbsp; 
+                    <strong>Export Date:</strong> ${new Date().toLocaleString()}
+                </div>
 
-                    <h3>Everyday Student Attendance Log</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>Student Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${dailyLogTbody ? dailyLogTbody.innerHTML : ''}
-                        </tbody>
-                    </table>
+                <h3>Enrolled Student Roster & Individual Performance</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Attendance %</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rosterTbody ? rosterTbody.innerHTML : ''}
+                    </tbody>
+                </table>
 
-                    <div class="footer">Smart Attendance Management System • Official Faculty PDF Report</div>
-                </body>
-                </html>
-            `);
-            printWin.document.close();
+                <h3>Everyday Student Attendance Log</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Student Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dailyLogTbody ? dailyLogTbody.innerHTML : ''}
+                    </tbody>
+                </table>
+
+                <div class="footer">Smart Attendance Management System • Official Faculty PDF Report</div>
+            `;
             printWin.focus();
         }
 
