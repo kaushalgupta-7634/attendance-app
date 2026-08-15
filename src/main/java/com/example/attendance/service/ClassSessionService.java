@@ -575,14 +575,6 @@ public class ClassSessionService {
                 }
             }
 
-            if (students.isEmpty()) {
-                students = userRepository.findByRole(Role.STUDENT);
-                if (students.isEmpty()) {
-                    students = userRepository.findAll().stream()
-                            .filter(u -> u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN))
-                            .collect(Collectors.toList());
-                }
-            }
         } else {
             students = userRepository.findByRole(Role.STUDENT);
             if (students.isEmpty()) {
