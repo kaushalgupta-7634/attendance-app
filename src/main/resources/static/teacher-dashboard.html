@@ -2652,6 +2652,10 @@
             const dailyLogTbody = document.getElementById('classDailyLogTableBody');
 
             const printWin = window.open('', '_blank', 'width=950,height=750');
+            if (!printWin) {
+                alert('Pop-up blocked! Please allow pop-ups in your browser address bar to view and print the PDF Report.');
+                return;
+            }
             printWin.document.write(`
                 <!DOCTYPE html>
                 <html>
