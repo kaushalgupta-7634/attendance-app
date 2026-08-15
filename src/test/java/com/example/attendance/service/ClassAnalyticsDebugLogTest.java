@@ -86,17 +86,12 @@ class ClassAnalyticsDebugLogTest {
     @Test
     void testGetClassAttendanceSummary_ByNumericClassId_LogsBehavior() {
         when(userRepository.findByUsernameIgnoreCase("teacher1")).thenReturn(Optional.of(teacher));
-
-        // When a numeric ID is passed to getClassAttendanceSummary, it attempts to find ClassSession by ID
-        ClassSession session = new ClassSession(teacher, course, "BCA", "Math",
-                LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1),
-                12.0, 77.0, 500.0, false, "123456");
-        session.setId(100L);
-        when(classSessionRepository.findById(100L)).thenReturn(Optional.of(session));
-        when(attendanceRecordRepository.findDistinctStudentsBySessionOrClassName(session, "BCA")).thenReturn(List.of());
+        when(classCourseRepository.findById(100L)).thenReturn(Optional.of(course));
         when(userRepository.findByRole(Role.STUDENT)).thenReturn(List.of(student1));
+        when(classCourseRepository.findAll()).thenReturn(List.of(course));
 
         ClassAttendanceSummaryDTO summary = attendanceService.getClassAttendanceSummary(100L, "teacher1");
         assertNotNull(summary);
+        assertEquals("BCA", summary.getClassName());
     }
 }

@@ -393,9 +393,6 @@ public class AttendanceService {
     }
 
     public ClassAttendanceSummaryDTO getClassAttendanceSummary(Long classId, String teacherUsername) {
-        ClassSession session = classSessionRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + classId));
-
         User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
 
@@ -403,49 +400,63 @@ public class AttendanceService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class attendance summary.");
         }
 
-        List<User> distinctStudents = attendanceRecordRepository.findDistinctStudentsBySessionOrClassName(session, session.getClassName());
-        if (distinctStudents == null || distinctStudents.isEmpty()) {
-            distinctStudents = userRepository.findByRole(Role.STUDENT);
+        ClassCourse course = classCourseRepository.findById(classId).orElse(null);
+        if (course != null) {
+            return getClassAttendanceSummaryByName(course.getClassName(), teacherUsername);
         }
 
-        List<String> subjects = classSessionRepository.findDistinctSubjects();
-        List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
-
-        List<ClassAttendanceSummaryDTO.ClassSubjectAverageDTO> subjectAverages = new java.util.ArrayList<>();
-        double totalAverageSum = 0.0;
-        int activeSubjectCount = 0;
-
-        for (String subject : subjects) {
-            long totalSessionsHeld = classSessionRepository.countBySubjectAndCancelledFalse(subject);
-            if (totalSessionsHeld == 0) continue;
-
-            double subjectTotalPercent = 0.0;
-            for (User student : distinctStudents) {
-                long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
-                        student, subject, attendedStatuses
-                );
-                double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
-                subjectTotalPercent += studentPercent;
+        ClassSession session = classSessionRepository.findById(classId).orElse(null);
+        if (session != null) {
+            if (session.getClassCourse() != null) {
+                return getClassAttendanceSummaryByName(session.getClassCourse().getClassName(), teacherUsername);
             }
 
-            double avgPercent = distinctStudents.isEmpty() ? 0.0 : subjectTotalPercent / distinctStudents.size();
-            subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
-                    subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size()
-            ));
+            List<User> distinctStudents = attendanceRecordRepository.findDistinctStudentsBySessionOrClassName(session, session.getClassName());
+            if (distinctStudents == null || distinctStudents.isEmpty()) {
+                distinctStudents = userRepository.findByRole(Role.STUDENT);
+            }
 
-            totalAverageSum += avgPercent;
-            activeSubjectCount++;
+            List<String> subjects = classSessionRepository.findDistinctSubjects();
+            List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
+
+            List<ClassAttendanceSummaryDTO.ClassSubjectAverageDTO> subjectAverages = new java.util.ArrayList<>();
+            double totalAverageSum = 0.0;
+            int activeSubjectCount = 0;
+
+            for (String subject : subjects) {
+                long totalSessionsHeld = classSessionRepository.countBySubjectAndCancelledFalse(subject);
+                if (totalSessionsHeld == 0) continue;
+
+                double subjectTotalPercent = 0.0;
+                for (User student : distinctStudents) {
+                    long presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
+                            student, subject, attendedStatuses
+                    );
+                    double studentPercent = ((double) presentCount / totalSessionsHeld) * 100.0;
+                    subjectTotalPercent += studentPercent;
+                }
+
+                double avgPercent = distinctStudents.isEmpty() ? 0.0 : subjectTotalPercent / distinctStudents.size();
+                subjectAverages.add(new ClassAttendanceSummaryDTO.ClassSubjectAverageDTO(
+                        subject, totalSessionsHeld, Math.round(avgPercent * 10.0) / 10.0, distinctStudents.size()
+                ));
+
+                totalAverageSum += avgPercent;
+                activeSubjectCount++;
+            }
+
+            double overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
+
+            return new ClassAttendanceSummaryDTO(
+                    session.getId(),
+                    session.getClassName(),
+                    distinctStudents.size(),
+                    Math.round(overallClassAvg * 10.0) / 10.0,
+                    subjectAverages
+            );
         }
 
-        double overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
-
-        return new ClassAttendanceSummaryDTO(
-                session.getId(),
-                session.getClassName(),
-                distinctStudents.size(),
-                Math.round(overallClassAvg * 10.0) / 10.0,
-                subjectAverages
-        );
+        return getClassAttendanceSummaryByName(classId.toString(), teacherUsername);
     }
 
     public ClassAttendanceSummaryDTO getClassAttendanceSummaryByName(String className, String selectedSubject, String teacherUsername) {
@@ -482,7 +493,8 @@ public class AttendanceService {
             }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
-                    .filter(c -> (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                    .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(searchClass)) ||
+                                 (c.getClassName() != null && (c.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getClassName().toLowerCase()) || c.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
                                  (c.getSubject() != null && (c.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(c.getSubject().toLowerCase()) || c.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
@@ -505,9 +517,11 @@ public class AttendanceService {
 
             List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
-                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) ||
-                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) ||
-                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
+                    .filter(s -> (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                                 (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) ||
+                                 (s.getClassCourse() != null && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
@@ -520,7 +534,7 @@ public class AttendanceService {
             }
 
             if (distinctStudents.isEmpty()) {
-                logger.warn("[DEBUG-ANALYTICS] No enrolled students or attendance records found for class '{}'. Falling back to all students.", searchClass);
+                logger.warn("[DEBUG-ANALYTICS] No enrolled students found for class '{}'. Falling back to all students.", searchClass);
                 distinctStudents = userRepository.findByRole(Role.STUDENT);
             }
         } else {
@@ -532,11 +546,14 @@ public class AttendanceService {
                 .filter(s -> !s.isCancelled())
                 .filter(s -> {
                     if (isAllClass) return true;
-                    if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) return true;
-                    if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) return true;
+                    if (s.getClassName() != null && (s.getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassName().toLowerCase()) || s.getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (s.getSubject() != null && (s.getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getSubject().toLowerCase()) || s.getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                    if (s.getEffectiveClassName() != null && (s.getEffectiveClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getEffectiveClassName().toLowerCase()) || s.getEffectiveClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
                     if (s.getClassCourse() != null) {
-                        if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)) return true;
-                        if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) return true;
+                        if (s.getClassCourse().getClassName() != null && (s.getClassCourse().getClassName().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getClassName().toLowerCase()) || s.getClassCourse().getClassName().toLowerCase().contains(searchClass.toLowerCase()))) return true;
+                        if (s.getClassCourse().getSubject() != null && (s.getClassCourse().getSubject().equalsIgnoreCase(searchClass) || searchClass.toLowerCase().contains(s.getClassCourse().getSubject().toLowerCase()) || s.getClassCourse().getSubject().toLowerCase().contains(searchClass.toLowerCase()))) return true;
                         if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(searchClass)) return true;
                     }
                     return false;
