@@ -54,16 +54,19 @@ class DeviceAntiProxyTest {
 
         User teacher = userRepository.findByUsernameIgnoreCase("teacher_proxy").orElseGet(() -> {
             User u = new User("Prof. AntiProxy", "teacher_proxy", "teacher_proxy@example.com", encPass, Role.TEACHER);
+            u.setVerified(true);
             return userRepository.save(u);
         });
 
         student1 = userRepository.findByUsernameIgnoreCase("student_proxy_1").orElseGet(() -> {
             User u = new User("Student One", "student_proxy_1", "proxy1@example.com", encPass, Role.STUDENT);
+            u.setVerified(true);
             return userRepository.save(u);
         });
 
         student2 = userRepository.findByUsernameIgnoreCase("student_proxy_2").orElseGet(() -> {
             User u = new User("Student Two", "student_proxy_2", "proxy2@example.com", encPass, Role.STUDENT);
+            u.setVerified(true);
             return userRepository.save(u);
         });
 

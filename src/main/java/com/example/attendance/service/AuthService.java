@@ -57,6 +57,10 @@ public class AuthService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
+        if (user.getVerified() == null || !user.getVerified()) {
+            throw new IllegalArgumentException("Please verify your email before login");
+        }
+
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
         user = userRepository.save(user);
@@ -66,9 +70,47 @@ public class AuthService {
         return new JwtAuthResponse(token);
     }
 
+    private void validateEmailAddress(String email) {
+        if (email == null || email.isBlank() || !email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Invalid email address");
+        }
+
+        String apiKey = System.getenv("EMAIL_VALIDATION_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = "qUJd8uG5TGWGh5q6Gs2eIN5H9QG3";
+        }
+
+        try {
+            String encodedEmail = java.net.URLEncoder.encode(email.trim(), java.nio.charset.StandardCharsets.UTF_8);
+            String apiUrl = "https://emailvalidationapi.com/validate?email=" + encodedEmail + "&apikey=" + apiKey;
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(4))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(apiUrl))
+                    .timeout(java.time.Duration.ofSeconds(4))
+                    .GET()
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                String body = response.body().toLowerCase();
+                if (body.contains("\"valid\":false") || body.contains("\"status\":\"invalid\"") || body.contains("\"deliverable\":false") || body.contains("\"is_valid\":false")) {
+                    throw new IllegalArgumentException("Invalid email address");
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).warn("Email validation API call warning: {}", e.getMessage());
+        }
+    }
+
     public String register(RegisterRequest registerRequest) {
         String cleanUsername = registerRequest.getUsername() != null ? registerRequest.getUsername().trim() : "";
         String cleanEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().trim().toLowerCase() : "";
+
+        validateEmailAddress(cleanEmail);
 
         if (userRepository.existsByUsernameIgnoreCase(cleanUsername)) {
             throw new IllegalArgumentException("Username is already taken!");
@@ -103,10 +145,20 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
-        user.setVerified(true);
+        user.setVerified(false);
+        String otp = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
+        user.setOtp(otp);
+        user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(10));
+
         userRepository.save(user);
 
-        return "User registered successfully with role: " + role.name();
+        try {
+            emailService.sendFacultyOtpEmail(cleanEmail, user.getName(), otp);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).warn("Failed to send OTP email for {}: {}", cleanEmail, e.getMessage());
+        }
+
+        return "User registered successfully with role: " + role.name() + ". Please verify your email before login.";
     }
 
     public String verifyOtp(String emailOrUsername, String otp) {
