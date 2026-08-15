@@ -320,8 +320,8 @@ public class AttendanceService {
                 List<ClassSession> subjectSessions = classSessionRepository.findAll().stream()
                         .filter(s -> !s.isCancelled())
                         .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
-                        .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart))
-                        .filter(s -> s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd))
+                        .filter(s -> finalStart == null || (s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)))
+                        .filter(s -> finalEnd == null || (s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd)))
                         .collect(java.util.stream.Collectors.toList());
 
                 totalSessions = subjectSessions.size();

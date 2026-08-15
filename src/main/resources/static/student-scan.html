@@ -406,7 +406,7 @@
                     <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">To:</label>
                     <input type="month" id="studentEndMonth" style="background: #0f172a; border: 1px solid var(--input-border); color: white; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color-scheme: dark;">
                 </div>
-                <button style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;" onclick="fetchStudentAttendanceSummary()">Filter</button>
+                <button id="studentFilterBtn" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.45rem 0.95rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;" onclick="fetchStudentAttendanceSummary()">Filter</button>
             </div>
 
             <!-- CIRCULAR PERCENTAGE DONUT RING GRAPH -->
@@ -1224,6 +1224,12 @@
         async function fetchStudentAttendanceSummary() {
             initStudentDateControls();
 
+            const btn = document.getElementById('studentFilterBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Filtering...';
+            }
+
             const startMonth = document.getElementById('studentStartMonth') ? document.getElementById('studentStartMonth').value : '';
             const endMonth = document.getElementById('studentEndMonth') ? document.getElementById('studentEndMonth').value : '';
 
@@ -1232,7 +1238,13 @@
                 const res = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Filter';
+                    }
+                    return;
+                }
 
                 const data = await res.json();
                 
@@ -1249,8 +1261,20 @@
                 renderSubjectBreakdownCards();
                 renderFilteredAttendanceHistory();
 
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Filtered ✓';
+                    setTimeout(() => {
+                        if (btn) btn.textContent = 'Filter';
+                    }, 1500);
+                }
+
             } catch (err) {
                 console.error("Error loading attendance summary:", err);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Filter';
+                }
             }
         }
 
