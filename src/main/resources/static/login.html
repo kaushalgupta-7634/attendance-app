@@ -494,14 +494,12 @@
                     throw new Error(regResText || 'Registration failed');
                 }
 
-                if (role === 'TEACHER' || regResText.includes('verify')) {
-                    showAlert(regResText || 'Registration successful! Please verify your email before login.', true);
-                    setTimeout(() => {
-                        switchTab('login');
-                        document.getElementById('loginUsername').value = username;
-                    }, 1500);
-                    return;
-                }
+                showAlert(regResText || 'Registration successful! Please check your email to verify your account before logging in.', true);
+                setTimeout(() => {
+                    switchTab('login');
+                    document.getElementById('loginUsername').value = username;
+                }, 1800);
+                return;
 
                 showAlert('Account registered successfully! Logging you in...', true);
                 
