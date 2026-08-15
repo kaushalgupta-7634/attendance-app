@@ -2724,7 +2724,7 @@
             }, 300);
         }
 
-        function onAnalyticsClassChange() {
+        async function onAnalyticsClassChange() {
             const classSelect = document.getElementById('teacherClassSelect');
             const searchInput = document.getElementById('teacherClassNameSearch');
             const targetClass = classSelect ? classSelect.value.trim() : '';
@@ -2734,8 +2734,8 @@
             }
 
             currentSubjectFilter = 'all';
-            updateSubjectDropdownOptions(targetClass);
-            loadSelectedClassAnalytics('all');
+            await updateSubjectDropdownOptions(targetClass);
+            await loadSelectedClassAnalytics('all');
         }
 
         function onAnalyticsSubjectChange() {
@@ -2769,7 +2769,7 @@
                 currentSubjectFilter = 'all';
                 const effectiveClass = val || classSelect?.value || 'all';
                 await updateSubjectDropdownOptions(effectiveClass);
-                loadSelectedClassAnalytics('all');
+                await loadSelectedClassAnalytics('all');
             }, 300);
         }
 
@@ -2857,7 +2857,7 @@
 
             let targetVal = 'all';
             if (searchVal && searchVal !== '') {
-                targetVal = searchVal;
+                targetVal = searchVal.trim();
                 for (const key of classSubjectsMap.keys()) {
                     if (key.toLowerCase() === searchVal.toLowerCase()) {
                         targetVal = key;
@@ -2891,8 +2891,17 @@
             try {
                 // 1. Fetch Class Summary Analytics
                 const sumRes = await fetch(sumUrl, {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
                 });
+
+                if (sumRes.status === 401 || sumRes.status === 403) {
+                    console.error(`[API-AUTH-ERROR] HTTP ${sumRes.status} on ${sumUrl}. Token expired or missing authorization header.`);
+                    const progGrid = document.getElementById('subjectProgressCardsGrid');
+                    if (progGrid) {
+                        progGrid.innerHTML = '<p style="font-size: 0.85rem; color: #fca5a5; font-weight: 600;">🔑 Connection error / Token expired. Please log in again.</p>';
+                    }
+                    return;
+                }
 
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
