@@ -2634,11 +2634,15 @@
             }
         }
 
-        function exportSelectedClassSummaryPdf() {
+        async function exportSelectedClassSummaryPdf() {
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
             const targetClass = searchVal || classSelectVal || 'All Classes';
             const subVal = currentSubjectFilter || 'all';
+
+            // Ensure analytics & roster data are fully loaded from backend before printing PDF
+            await loadSelectedClassAnalytics(subVal);
+
             const subjectDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
 
             const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';

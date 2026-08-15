@@ -536,9 +536,19 @@ public class AttendanceService {
             if (distinctStudents.isEmpty()) {
                 logger.warn("[DEBUG-ANALYTICS] No enrolled students found for class '{}'. Falling back to all students.", searchClass);
                 distinctStudents = userRepository.findByRole(Role.STUDENT);
+                if (distinctStudents.isEmpty()) {
+                    distinctStudents = userRepository.findAll().stream()
+                            .filter(u -> u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN))
+                            .collect(java.util.stream.Collectors.toList());
+                }
             }
         } else {
             distinctStudents = userRepository.findByRole(Role.STUDENT);
+            if (distinctStudents.isEmpty()) {
+                distinctStudents = userRepository.findAll().stream()
+                        .filter(u -> u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN))
+                        .collect(java.util.stream.Collectors.toList());
+            }
             logger.info("[DEBUG-ANALYTICS] 'All Classes Overall' selected. Total student count: {}", distinctStudents.size());
         }
 
