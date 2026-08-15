@@ -2729,8 +2729,8 @@
             const searchInput = document.getElementById('teacherClassNameSearch');
             const targetClass = classSelect ? classSelect.value.trim() : '';
 
-            if (searchInput) {
-                searchInput.value = (targetClass === 'all') ? '' : targetClass;
+            if (searchInput && targetClass !== 'all') {
+                searchInput.value = targetClass;
             }
 
             currentSubjectFilter = 'all';
@@ -2752,12 +2752,19 @@
                 const val = searchInput ? searchInput.value.trim() : '';
                 const classSelect = document.getElementById('teacherClassSelect');
                 if (val && classSelect) {
+                    let matched = false;
                     for (const option of classSelect.options) {
                         if (option.value && option.value.toLowerCase() === val.toLowerCase()) {
                             classSelect.value = option.value;
+                            matched = true;
                             break;
                         }
                     }
+                    if (!matched && classSelect.options.length > 0) {
+                        classSelect.value = 'all';
+                    }
+                } else if (!val && classSelect) {
+                    classSelect.value = 'all';
                 }
                 currentSubjectFilter = 'all';
                 const effectiveClass = val || classSelect?.value || 'all';
