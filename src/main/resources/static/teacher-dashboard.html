@@ -1094,6 +1094,7 @@
         var currentAssignFilter = 'all';
         var currentSubjectFilter = 'all';
         var lastFetchedDefaulters = [];
+        var classSubjectsMap = new Map();
 
         const token = localStorage.getItem('jwtToken');
         const role = localStorage.getItem('userRole');
@@ -2472,8 +2473,6 @@
         // Auto load all assignments on page load
         loadTeacherAssignments('all');
 
-        let classSubjectsMap = new Map();
-
         function filterBySubjectCard(subjectName) {
             currentSubjectFilter = subjectName || 'all';
             const subSelect = document.getElementById('teacherSubjectSelect');
@@ -2951,10 +2950,12 @@
             let targetVal = 'all';
             if (searchVal && searchVal !== '') {
                 targetVal = searchVal.trim();
-                for (const key of classSubjectsMap.keys()) {
-                    if (key.toLowerCase() === searchVal.toLowerCase()) {
-                        targetVal = key;
-                        break;
+                if (classSubjectsMap && typeof classSubjectsMap.keys === 'function') {
+                    for (const key of classSubjectsMap.keys()) {
+                        if (key.toLowerCase() === searchVal.toLowerCase()) {
+                            targetVal = key;
+                            break;
+                        }
                     }
                 }
             } else if (classSelectVal && classSelectVal !== '') {
