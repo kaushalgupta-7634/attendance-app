@@ -120,4 +120,17 @@ public class ClassCourseController {
         classCourseService.deleteClassCourse(id, principal.getName());
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * DELETE /classes/subjects/by-name/{subjectName} (TEACHER and ADMIN)
+     * Deletes all records associated with a subject by name.
+     */
+    @DeleteMapping("/subjects/by-name/{subjectName}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<Void> deleteSubjectByName(
+            @PathVariable("subjectName") String subjectName,
+            Principal principal) {
+        classCourseService.deleteSubjectByName(subjectName, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
 }

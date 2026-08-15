@@ -1,6 +1,7 @@
 package com.example.attendance.service;
 
 import com.example.attendance.model.*;
+import com.example.attendance.repository.AttendanceRecordRepository;
 import com.example.attendance.repository.ClassCourseRepository;
 import com.example.attendance.repository.ClassSessionRepository;
 import com.example.attendance.repository.EnrollmentRepository;
@@ -20,15 +21,18 @@ public class ClassCourseService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final ClassSessionRepository classSessionRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
 
     public ClassCourseService(ClassCourseRepository classCourseRepository,
                               EnrollmentRepository enrollmentRepository,
                               UserRepository userRepository,
-                              ClassSessionRepository classSessionRepository) {
+                              ClassSessionRepository classSessionRepository,
+                              AttendanceRecordRepository attendanceRecordRepository) {
         this.classCourseRepository = classCourseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.classSessionRepository = classSessionRepository;
+        this.attendanceRecordRepository = attendanceRecordRepository;
     }
 
     /**
@@ -129,6 +133,38 @@ public class ClassCourseService {
         }
 
         classCourseRepository.delete(course);
+    }
+
+    @Transactional
+    public void deleteSubjectByName(String subjectName, String username) {
+        User requester = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Access denied: Only teachers or admins can delete subjects.");
+        }
+
+        if (subjectName == null || subjectName.isBlank()) return;
+        String subTrim = subjectName.trim();
+
+        // 1. Delete matching ClassCourse records for this subject
+        List<ClassCourse> courses = classCourseRepository.findAll().stream()
+                .filter(c -> c.getSubject() != null && c.getSubject().trim().equalsIgnoreCase(subTrim))
+                .toList();
+        for (ClassCourse c : courses) {
+            enrollmentRepository.deleteByClassCourse(c);
+            classCourseRepository.delete(c);
+        }
+
+        // 2. Delete matching ClassSession records and attendance records for this subject
+        List<ClassSession> sessions = classSessionRepository.findAll().stream()
+                .filter(s -> (s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subTrim)) ||
+                             (s.getEffectiveSubject() != null && s.getEffectiveSubject().trim().equalsIgnoreCase(subTrim)))
+                .toList();
+        for (ClassSession s : sessions) {
+            attendanceRecordRepository.deleteBySession(s);
+            classSessionRepository.delete(s);
+        }
     }
 
     private String generateUniqueClassCode(String subject) {

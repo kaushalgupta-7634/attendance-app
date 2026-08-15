@@ -2894,6 +2894,36 @@
             }
         }
 
+        async function deleteSubjectByName(subjectName) {
+            if (!subjectName) return;
+            const confirmed = confirm(`Are you sure you want to delete subject '${subjectName}'?\n\nThis will remove all class sessions and attendance records associated with this subject.`);
+            if (!confirmed) return;
+
+            try {
+                const token = getJwtToken();
+                const res = await fetch(`/classes/subjects/by-name/${encodeURIComponent(subjectName)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok || res.status === 204) {
+                    alert(`Subject '${subjectName}' has been deleted successfully!`);
+                    currentSubjectFilter = 'all';
+                    const subSelect = document.getElementById('teacherSubjectSelect');
+                    if (subSelect) subSelect.value = 'all';
+                    const searchInput = document.getElementById('teacherClassNameSearch');
+                    const classSelect = document.getElementById('teacherClassSelect');
+                    const effectiveClass = (searchInput?.value?.trim()) || classSelect?.value || 'all';
+                    await updateSubjectDropdownOptions(effectiveClass);
+                    await loadSelectedClassAnalytics('all');
+                } else {
+                    alert(`Failed to delete subject '${subjectName}'.`);
+                }
+            } catch (err) {
+                console.error("Error deleting subject:", err);
+                alert("An error occurred while deleting the subject.");
+            }
+        }
+
         function populateDefaultersTable() {
             const tbody = document.getElementById('defaultersTableBody');
             if (!tbody) return;
@@ -3011,7 +3041,10 @@
                                                 <h4 style="font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0;">📖 ${escapeHtml(sa.subject)}</h4>
                                                 <span style="font-size: 0.75rem; color: var(--text-secondary);">${sa.totalSessionsHeld} sessions held • ${sa.studentCount || summary.totalStudents || 0} students</span>
                                             </div>
-                                            <span style="font-size: 1.3rem; font-weight: 800; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${sa.averagePercentage}%</span>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <span style="font-size: 1.3rem; font-weight: 800; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${sa.averagePercentage}%</span>
+                                                <button onclick="event.stopPropagation(); deleteSubjectByName('${escapeHtml(sa.subject)}')" title="Delete Subject '${escapeHtml(sa.subject)}'" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.8rem; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">🗑️ Delete</button>
+                                            </div>
                                         </div>
 
                                         <!-- PROGRESS BAR -->

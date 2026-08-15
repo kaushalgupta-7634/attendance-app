@@ -1,7 +1,9 @@
 package com.example.attendance.service;
 
 import com.example.attendance.model.*;
+import com.example.attendance.repository.AttendanceRecordRepository;
 import com.example.attendance.repository.ClassCourseRepository;
+import com.example.attendance.repository.ClassSessionRepository;
 import com.example.attendance.repository.EnrollmentRepository;
 import com.example.attendance.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,12 @@ class ClassCourseServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ClassSessionRepository classSessionRepository;
+
+    @Mock
+    private AttendanceRecordRepository attendanceRecordRepository;
 
     @InjectMocks
     private ClassCourseService classCourseService;
