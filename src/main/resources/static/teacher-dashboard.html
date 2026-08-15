@@ -2634,25 +2634,52 @@
             }
         }
 
-        function exportSelectedClassSummaryPdf() {
-            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
-            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            const targetClass = searchVal || classSelectVal || 'All Classes & Courses (Overall)';
-            const subSelectVal = document.getElementById('teacherSubjectSelect')?.value.trim() || currentSubjectFilter || 'all';
-            const subjectDisplay = (subSelectVal === 'all' || !subSelectVal) ? 'All Subjects (Combined)' : subSelectVal;
-
-            const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
-            const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
-
-            const rosterTbody = document.getElementById('classRosterTableBody');
-            const dailyLogTbody = document.getElementById('classDailyLogTableBody');
-
+        async function exportSelectedClassSummaryPdf() {
+            // 1. Open window synchronously on user click to prevent browser pop-up blocking
             const printWin = window.open('', '_blank', 'width=950,height=750');
             if (!printWin) {
                 alert('Pop-up blocked! Please allow pop-ups in your browser address bar to view and print the PDF Report.');
                 return;
             }
 
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            const targetClass = searchVal || classSelectVal || 'All Classes & Courses (Overall)';
+            const subVal = currentSubjectFilter || 'all';
+
+            // 2. Render initial loading preview into pop-up window immediately so it is never blank
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Generating PDF Report...</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 35px; color: #1e293b; text-align: center; }
+                        .loading-box { padding: 40px 20px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; margin-top: 30px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="loading-box">
+                        <h2 style="color: #3b82f6; margin-bottom: 10px;">⏳ Generating Attendance PDF Report...</h2>
+                        <p style="color: #64748b; font-size: 14px;">Retrieving student rosters, attendance percentages, and daily check-in records for <strong>${escapeHtml(targetClass)}</strong>...</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+
+            // 3. Ensure analytics & roster data are 100% loaded from backend
+            await loadSelectedClassAnalytics(subVal);
+
+            const subjectDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
+            const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
+            const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
+
+            const rosterTbody = document.getElementById('classRosterTableBody');
+            const dailyLogTbody = document.getElementById('classDailyLogTableBody');
+
+            // 4. Overwrite pop-up window with fully populated PDF report
+            printWin.document.open();
             printWin.document.write(`
                 <!DOCTYPE html>
                 <html>
