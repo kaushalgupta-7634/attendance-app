@@ -57,6 +57,10 @@ public class AuthService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
+        if (user.getRole() != Role.ADMIN && (user.getVerified() == null || !user.getVerified())) {
+            throw new IllegalArgumentException("Please verify your email before login");
+        }
+
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
         user = userRepository.save(user);
@@ -103,10 +107,20 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
-        user.setVerified(true);
+        user.setVerified(false);
+        String vToken = java.util.UUID.randomUUID().toString();
+        user.setVerificationToken(vToken);
+        user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
+
         userRepository.save(user);
 
-        return "User registered successfully with role: " + role.name();
+        try {
+            emailService.sendEmailVerificationLink(cleanEmail, user.getName(), vToken);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).warn("Failed to send verification email for {}: {}", cleanEmail, e.getMessage());
+        }
+
+        return "User registered successfully with role: " + role.name() + ". Please check your email to click the verification link before logging in.";
     }
 
     public String verifyOtp(String emailOrUsername, String otp) {

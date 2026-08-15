@@ -43,24 +43,40 @@ public class FacultyEmailVerificationTest {
     }
 
     @Test
-    void testFacultyRegistration_AutoVerifiedByDefault() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Prof. Sharma");
-        request.setUsername("prof_sharma");
-        request.setEmail("sharma@faculty.com");
-        request.setPassword("password123");
-        request.setRole(Role.TEACHER);
-        request.setSecurityPin("1234");
+    void testRegistration_SetsVerifiedFalseAndGeneratesToken_ForFacultyAndStudent() {
+        // Faculty Registration
+        RegisterRequest req1 = new RegisterRequest();
+        req1.setName("Prof. Sharma");
+        req1.setUsername("prof_sharma");
+        req1.setEmail("sharma@faculty.com");
+        req1.setPassword("password123");
+        req1.setRole(Role.TEACHER);
+        req1.setSecurityPin("1234");
 
-        String result = authService.register(request);
-        assertTrue(result.contains("successful"));
+        authService.register(req1);
 
-        User savedUser = userRepository.findByUsernameIgnoreCase("prof_sharma").orElseThrow();
-        assertTrue(savedUser.getVerified(), "Accounts register verified by default");
+        User savedTeacher = userRepository.findByUsernameIgnoreCase("prof_sharma").orElseThrow();
+        assertFalse(savedTeacher.getVerified(), "Faculty accounts register with verified = false");
+        assertNotNull(savedTeacher.getVerificationToken(), "Verification token generated for Faculty");
+
+        // Student Registration
+        RegisterRequest req2 = new RegisterRequest();
+        req2.setName("Rahul Student");
+        req2.setUsername("rahul_stud");
+        req2.setEmail("rahul@student.com");
+        req2.setPassword("password123");
+        req2.setRole(Role.STUDENT);
+        req2.setSecurityPin("1234");
+
+        authService.register(req2);
+
+        User savedStudent = userRepository.findByUsernameIgnoreCase("rahul_stud").orElseThrow();
+        assertFalse(savedStudent.getVerified(), "Student accounts register with verified = false");
+        assertNotNull(savedStudent.getVerificationToken(), "Verification token generated for Student");
     }
 
     @Test
-    void testDirectLogin_SucceedsAfterRegistration() {
+    void testLogin_RejectedWhenUnverified() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Dr. Gupta");
         request.setUsername("dr_gupta");
@@ -75,13 +91,45 @@ public class FacultyEmailVerificationTest {
         loginRequest.setUsername("dr_gupta");
         loginRequest.setPassword("password123");
 
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> authService.login(loginRequest));
+        assertEquals("Please verify your email before login", ex.getMessage());
+    }
+
+    @Test
+    void testMagicLinkVerification_EnablesLogin() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Dr. Verma");
+        request.setUsername("dr_verma");
+        request.setEmail("verma@faculty.com");
+        request.setPassword("password123");
+        request.setRole(Role.TEACHER);
+        request.setSecurityPin("1234");
+
+        authService.register(request);
+
+        User user = userRepository.findByUsernameIgnoreCase("dr_verma").orElseThrow();
+        assertFalse(user.getVerified());
+        String token = user.getVerificationToken();
+
+        // Verify via Magic Link token
+        String verifyRes = authService.verifyEmail(token);
+        assertTrue(verifyRes.contains("verified successfully"));
+
+        User verifiedUser = userRepository.findByUsernameIgnoreCase("dr_verma").orElseThrow();
+        assertTrue(verifiedUser.getVerified(), "User verified = true after Magic Link token verification");
+
+        // Login should now succeed
+        com.example.attendance.model.LoginRequest loginRequest = new com.example.attendance.model.LoginRequest();
+        loginRequest.setUsername("dr_verma");
+        loginRequest.setPassword("password123");
+
         var response = authService.login(loginRequest);
         assertNotNull(response.getAccessToken());
     }
 
     @Test
-    void testVerifyOtp_InvalidUser_ThrowsError() {
-        Exception ex1 = assertThrows(IllegalArgumentException.class, () -> authService.verifyOtp("unknown@faculty.com", "123456"));
-        assertEquals("Verification failed, request new OTP", ex1.getMessage());
+    void testVerifyEmail_InvalidToken_ThrowsError() {
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> authService.verifyEmail("invalid-token-xyz"));
+        assertEquals("Verification failed, request new link", ex.getMessage());
     }
 }

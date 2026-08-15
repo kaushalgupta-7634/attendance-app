@@ -460,7 +460,12 @@
                 }, 800);
 
             } catch (err) {
-                showAlert(err.message || 'Login failed. Please check username and password.');
+                const msg = err.message || 'Login failed. Please check username and password.';
+                if (msg.includes('verify your email')) {
+                    showAlert('⚠️ Please verify your email before login. <a href="/verify.html?email=' + encodeURIComponent(username) + '" style="color: #38bdf8; text-decoration: underline; margin-left: 8px;">Verify / Resend Magic Link</a>');
+                } else {
+                    showAlert(msg);
+                }
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Sign In to Dashboard';
@@ -494,52 +499,11 @@
                     throw new Error(regResText || 'Registration failed');
                 }
 
-                showAlert('Account registered successfully! Logging you in...', true);
+                showAlert('Account created! A Magic Link has been sent to your email address. Redirecting to verification page...', true);
                 
-                try {
-                    const devId = getOrCreateDeviceId();
-                    const loginRes = await fetch('/auth/login', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-Device-Id': devId
-                        },
-                        body: JSON.stringify({ username, password, deviceId: devId })
-                    });
-                    if (loginRes.ok) {
-                        const loginData = await loginRes.json();
-                        const payload = parseJwtPayload(loginData.accessToken);
-                        const userRole = payload.role || role;
-                        const userFullName = payload.name || name;
-
-                        localStorage.setItem('jwtToken', loginData.accessToken);
-                        localStorage.setItem('userRole', userRole);
-                        localStorage.setItem('userName', userFullName);
-                        localStorage.setItem('username', payload.sub || username);
-
-                        setCookie('attendx_student_token', loginData.accessToken, 365);
-                        setCookie('attendx_user_role', userRole, 365);
-                        setCookie('attendx_username', payload.sub || username, 365);
-
-                        setTimeout(() => {
-                            if (userRole === 'ADMIN') {
-                                window.location.href = '/admin-dashboard.html';
-                            } else if (userRole === 'TEACHER') {
-                                window.location.href = '/teacher-dashboard.html';
-                            } else {
-                                window.location.href = '/student-scan.html';
-                            }
-                        }, 600);
-                        return;
-                    }
-                } catch (loginErr) {
-                    console.warn("Auto login post registration failed:", loginErr);
-                }
-
                 setTimeout(() => {
-                    switchTab('login');
-                    document.getElementById('loginUsername').value = username;
-                }, 1000);
+                    window.location.href = '/verify.html?email=' + encodeURIComponent(email);
+                }, 1200);
 
             } catch (err) {
                 showAlert(err.message || 'Failed to register account.');
