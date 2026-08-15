@@ -2634,29 +2634,24 @@
             }
         }
 
-        async function exportSelectedClassSummaryPdf() {
-            // Open window synchronously immediately on user click to prevent browser pop-up blocking
-            const printWin = window.open('', '_blank', 'width=950,height=750');
-            if (!printWin) {
-                alert('Pop-up blocked! Please allow pop-ups in your browser address bar to view and print the PDF Report.');
-                return;
-            }
-
+        function exportSelectedClassSummaryPdf() {
             const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || '';
             const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
-            const targetClass = searchVal || classSelectVal || 'All Classes';
-            const subVal = currentSubjectFilter || 'all';
-
-            // Ensure analytics & roster data are fully loaded from backend before printing PDF
-            await loadSelectedClassAnalytics(subVal);
-
-            const subjectDisplay = (subVal === 'all' || !subVal) ? 'All Subjects (Combined)' : subVal;
+            const targetClass = searchVal || classSelectVal || 'All Classes & Courses (Overall)';
+            const subSelectVal = document.getElementById('teacherSubjectSelect')?.value.trim() || currentSubjectFilter || 'all';
+            const subjectDisplay = (subSelectVal === 'all' || !subSelectVal) ? 'All Subjects (Combined)' : subSelectVal;
 
             const overallAvgText = document.getElementById('classOverallAvgText')?.textContent?.trim() || '0%';
             const totalStudentsText = document.getElementById('classTotalStudentsText')?.textContent?.trim() || '0 Students';
 
             const rosterTbody = document.getElementById('classRosterTableBody');
             const dailyLogTbody = document.getElementById('classDailyLogTableBody');
+
+            const printWin = window.open('', '_blank', 'width=950,height=750');
+            if (!printWin) {
+                alert('Pop-up blocked! Please allow pop-ups in your browser address bar to view and print the PDF Report.');
+                return;
+            }
 
             printWin.document.write(`
                 <!DOCTYPE html>
