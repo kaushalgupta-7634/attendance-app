@@ -2892,13 +2892,23 @@
             if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal === 'all' ? 'All Classes & Courses (Overall)' : targetVal}`;
             if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
-            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            console.log(`[DIAGNOSTIC-CHECK] Initiating analytics load for Class: '${targetVal}', Subject: '${currentSubjectFilter}'`);
+            if (!token) {
+                console.error("[DIAGNOSTIC-AUTH] Token missing / Auth error. Prompting re-login.");
+                alert("🔑 Token missing / Session expired. Please log in again.");
+                logout();
+                return;
+            }
+
+            const headers = { 'Authorization': 'Bearer ' + token };
 
             // 1. Fetch Class Summary Analytics
             try {
+                console.log(`[DIAGNOSTIC-API] Requesting Summary: ${sumUrl}`);
                 const sumRes = await fetch(sumUrl, { headers });
                 if (sumRes.status === 401 || sumRes.status === 403) {
-                    alert("🔑 Your session has expired. Please log in again.");
+                    console.error(`[DIAGNOSTIC-AUTH] Token expired / Auth error (HTTP ${sumRes.status}) on ${sumUrl}`);
+                    alert("🔑 Token expired / Auth error. Please log in again.");
                     logout();
                     return;
                 }
@@ -2959,17 +2969,20 @@
 
             // 2. Fetch Class Student Roster
             try {
+                console.log(`[DIAGNOSTIC-API] Requesting Roster: ${rosterUrl}`);
                 let roster = null;
                 const rosterRes = await fetch(rosterUrl, { headers });
                 if (rosterRes.status === 401 || rosterRes.status === 403) {
-                    alert("🔑 Your session has expired. Please log in again.");
+                    console.error(`[DIAGNOSTIC-AUTH] Token expired / Auth error (HTTP ${rosterRes.status}) on ${rosterUrl}`);
+                    alert("🔑 Token expired / Auth error. Please log in again.");
                     logout();
                     return;
                 }
                 if (rosterRes.ok) {
                     roster = await rosterRes.json();
+                    console.log(`[DIAGNOSTIC-SUCCESS] Roster loaded for '${targetVal}': ${roster?.students?.length || 0} students`);
                 } else {
-                    console.warn(`Roster fetch for '${targetVal}' returned HTTP ${rosterRes.status}, trying fallback...`);
+                    console.warn(`[DIAGNOSTIC-WARN] Roster fetch for '${targetVal}' returned HTTP ${rosterRes.status}, trying fallback...`);
                 }
 
                 if (!roster || !roster.students || roster.students.length === 0) {
