@@ -156,6 +156,12 @@ public class User {
     @Column(name = "verification_token_expiry")
     private java.time.LocalDateTime verificationTokenExpiry;
 
+    @Column(name = "otp")
+    private String otp;
+
+    @Column(name = "otp_expires_at")
+    private java.time.LocalDateTime otpExpiresAt;
+
     public Boolean getVerified() {
         return Boolean.TRUE.equals(verified);
     }
@@ -178,6 +184,30 @@ public class User {
 
     public void setVerificationToken(String verificationToken) {
         this.verificationToken = verificationToken;
+    }
+
+    public java.time.LocalDateTime getVerificationTokenExpiry() {
+        return verificationTokenExpiry;
+    }
+
+    public void setVerificationTokenExpiry(java.time.LocalDateTime verificationTokenExpiry) {
+        this.verificationTokenExpiry = verificationTokenExpiry;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+
+    public java.time.LocalDateTime getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(java.time.LocalDateTime otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
     }
 
     public java.time.LocalDateTime getVerificationTokenExpiry() {

@@ -43,4 +43,19 @@ public class VerificationController {
         String response = authService.resendVerification(email);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtpRoot(@RequestBody java.util.Map<String, String> body) {
+        String email = body != null ? (body.containsKey("email") ? body.get("email") : body.get("username")) : null;
+        String otp = body != null ? body.get("otp") : null;
+        String response = authService.verifyOtp(email, otp);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtpRoot(@RequestBody java.util.Map<String, String> body) {
+        String email = body != null ? (body.containsKey("email") ? body.get("email") : body.get("username")) : null;
+        String response = authService.resendOtp(email);
+        return ResponseEntity.ok(response);
+    }
 }

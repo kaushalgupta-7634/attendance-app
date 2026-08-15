@@ -71,6 +71,21 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(@RequestBody java.util.Map<String, String> body) {
+        String email = body != null ? (body.containsKey("email") ? body.get("email") : body.get("username")) : null;
+        String otp = body != null ? body.get("otp") : null;
+        String response = authService.verifyOtp(email, otp);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(@RequestBody java.util.Map<String, String> body) {
+        String email = body != null ? (body.containsKey("email") ? body.get("email") : body.get("username")) : null;
+        String response = authService.resendOtp(email);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<com.example.attendance.model.ForgotPasswordResponseDTO> forgotPassword(@RequestBody com.example.attendance.model.ForgotPasswordRequest request) {
         com.example.attendance.model.ForgotPasswordResponseDTO response = authService.forgotPassword(request);

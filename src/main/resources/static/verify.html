@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ATTENDX - Email Verification Portal">
+    <meta name="description" content="ATTENDX - Email OTP Verification Portal">
     <title>ATTENDX - Email Verification</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,8 +124,28 @@
             background: var(--accent-blue-hover);
         }
 
+        .btn-secondary {
+            display: inline-block;
+            width: 100%;
+            padding: 0.75rem;
+            background: transparent;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
         .form-group {
-            margin-top: 1.25rem;
+            margin-top: 1rem;
             text-align: left;
         }
 
@@ -151,6 +171,13 @@
         .form-input:focus {
             border-color: var(--accent-blue);
         }
+
+        .otp-input {
+            letter-spacing: 0.4em;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -171,41 +198,81 @@
                 </svg>
             </div>
             <h1 class="brand-title">ATTENDX</h1>
-            <p class="brand-subtitle">Faculty Account Verification</p>
+            <p class="brand-subtitle">Faculty OTP Verification</p>
         </div>
 
-        <div id="statusBox" class="status-box loading">
-            🔄 Verifying your email address... Please wait.
+        <div id="statusBox" class="status-box"></div>
+
+        <div id="otpForm">
+            <div class="form-group">
+                <label class="form-label" for="verifyEmail">Email Address</label>
+                <input type="email" id="verifyEmail" class="form-input" placeholder="faculty@example.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="verifyOtp">Enter 6-Digit Verification OTP</label>
+                <input type="text" id="verifyOtp" class="form-input otp-input" maxlength="6" placeholder="000000" required>
+            </div>
+            <button type="button" onclick="handleVerifyOtp()" class="btn-primary" style="margin-top: 1.25rem;">Verify OTP & Activate Account</button>
+            <button type="button" onclick="handleResendOtp()" class="btn-secondary">Resend OTP Code</button>
         </div>
 
-        <div id="actionArea"></div>
-
-        <div id="resendForm" style="display: none;" class="form-group">
-            <label class="form-label" for="resendEmail">Enter Email Address to Request New Verification Link</label>
-            <input type="email" id="resendEmail" class="form-input" placeholder="faculty@example.com" required>
-            <button type="button" onclick="handleResend()" class="btn-primary" style="margin-top: 0.75rem;">Resend Verification Link</button>
-        </div>
+        <div id="actionArea" style="margin-top: 1rem;"></div>
     </div>
 
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
+            const emailParam = urlParams.get('email');
 
+            if (emailParam) {
+                document.getElementById('verifyEmail').value = emailParam;
+            }
+
+            if (token) {
+                const statusBox = document.getElementById('statusBox');
+                statusBox.className = 'status-box loading';
+                statusBox.textContent = '🔄 Verifying token... Please wait.';
+
+                try {
+                    const res = await fetch('/verify-email?token=' + encodeURIComponent(token));
+                    const text = await res.text();
+
+                    if (res.ok && (text.includes('successfully') || text.includes('verified'))) {
+                        statusBox.className = 'status-box success';
+                        statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in.';
+                        document.getElementById('otpForm').style.display = 'none';
+                        document.getElementById('actionArea').innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
+                    } else {
+                        statusBox.className = 'status-box error';
+                        statusBox.textContent = text || 'Verification failed, request new OTP';
+                    }
+                } catch (err) {
+                    statusBox.className = 'status-box error';
+                    statusBox.textContent = 'Verification failed, request new OTP';
+                }
+            }
+        });
+
+        async function handleVerifyOtp() {
+            const email = document.getElementById('verifyEmail').value.trim();
+            const otp = document.getElementById('verifyOtp').value.trim();
             const statusBox = document.getElementById('statusBox');
-            const actionArea = document.getElementById('actionArea');
-            const resendForm = document.getElementById('resendForm');
 
-            if (!token) {
+            if (!email || !otp) {
                 statusBox.className = 'status-box error';
-                statusBox.textContent = '❌ Verification token missing. Please use the link sent to your email or request a new link.';
-                resendForm.style.display = 'block';
+                statusBox.textContent = 'Please enter your email and 6-digit OTP code.';
                 return;
             }
 
+            statusBox.className = 'status-box loading';
+            statusBox.textContent = 'Verifying OTP... Please wait.';
+
             try {
-                const res = await fetch('/verify-email?token=' + encodeURIComponent(token), {
-                    method: 'GET'
+                const res = await fetch('/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp })
                 });
 
                 const text = await res.text();
@@ -213,34 +280,32 @@
                 if (res.ok && (text.includes('successfully') || text.includes('verified'))) {
                     statusBox.className = 'status-box success';
                     statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in to your dashboard.';
-                    actionArea.innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
+                    document.getElementById('otpForm').style.display = 'none';
+                    document.getElementById('actionArea').innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
                 } else {
                     statusBox.className = 'status-box error';
-                    statusBox.textContent = text || 'Verification failed, request new link';
-                    resendForm.style.display = 'block';
+                    statusBox.textContent = text || 'Verification failed, request new OTP';
                 }
-            } catch (err) {
+            } catch (e) {
                 statusBox.className = 'status-box error';
-                statusBox.textContent = 'Verification failed, request new link';
-                resendForm.style.display = 'block';
+                statusBox.textContent = 'Verification failed, request new OTP';
             }
-        });
+        }
 
-        async function handleResend() {
-            const emailInput = document.getElementById('resendEmail');
-            const email = emailInput ? emailInput.value.trim() : '';
+        async function handleResendOtp() {
+            const email = document.getElementById('verifyEmail').value.trim();
             const statusBox = document.getElementById('statusBox');
 
             if (!email) {
-                alert('Please enter your registered email address.');
+                alert('Please enter your email address to resend OTP.');
                 return;
             }
 
             statusBox.className = 'status-box loading';
-            statusBox.textContent = 'Sending verification link... Please wait.';
+            statusBox.textContent = 'Sending new OTP code... Please wait.';
 
             try {
-                const res = await fetch('/resend-verification', {
+                const res = await fetch('/resend-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -250,14 +315,14 @@
 
                 if (res.ok) {
                     statusBox.className = 'status-box success';
-                    statusBox.textContent = text || 'Verification link sent successfully! Please check your inbox.';
+                    statusBox.textContent = text || 'A new 6-digit OTP has been sent to your email.';
                 } else {
                     statusBox.className = 'status-box error';
-                    statusBox.textContent = text || 'Email service unavailable';
+                    statusBox.textContent = text || 'Verification failed, request new OTP';
                 }
             } catch (e) {
                 statusBox.className = 'status-box error';
-                statusBox.textContent = 'Email service unavailable';
+                statusBox.textContent = 'Verification failed, request new OTP';
             }
         }
     </script>

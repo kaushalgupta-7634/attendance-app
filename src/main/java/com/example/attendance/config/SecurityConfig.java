@@ -69,7 +69,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/admin-info").hasRole("ADMIN")
-                        .requestMatchers("/", "/index.html", "/login.html", "/verify.html", "/verify", "/verify-email", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/login.html", "/verify.html", "/verify", "/verify-email", "/verify-otp", "/resend-otp", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
