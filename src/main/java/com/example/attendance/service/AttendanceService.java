@@ -663,10 +663,11 @@ public class AttendanceService {
             ClassAttendanceSummaryDTO.ClassSubjectAverageDTO match = subjectAverages.stream()
                     .filter(sa -> sa.getSubject() != null && sa.getSubject().equalsIgnoreCase(searchSub))
                     .findFirst().orElse(null);
-            if (match != null) {
+            if (match != null && match.getTotalSessionsHeld() > 0) {
                 overallClassAvg = match.getAveragePercentage();
             } else {
-                overallClassAvg = 0.0;
+                logger.warn("[FALLBACK-ANALYTICS] Subject filter '{}' produced no session records for class '{}'. Falling back to consolidated class-wide average.", searchSub, searchClass);
+                overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
             }
         } else {
             overallClassAvg = activeSubjectCount > 0 ? totalAverageSum / activeSubjectCount : 0.0;
