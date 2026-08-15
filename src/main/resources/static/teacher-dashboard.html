@@ -2894,7 +2894,7 @@
                     const progGrid = document.getElementById('subjectProgressCardsGrid');
                     if (progGrid) {
                         if (!summary.subjectAverages || summary.subjectAverages.length === 0) {
-                            progGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No subject records found for this class.</p>';
+                            progGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records available.</p>';
                         } else {
                             progGrid.innerHTML = summary.subjectAverages.map(sa => {
                                 const isActive = currentSubjectFilter.toLowerCase() === sa.subject.toLowerCase();
@@ -2952,7 +2952,7 @@
                 const tbody = document.getElementById('classRosterTableBody');
                 if (tbody) {
                     if (!roster || !roster.students || roster.students.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No registered students found for this class.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No records available.</td></tr>';
                     } else {
                         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
 
@@ -3042,7 +3042,7 @@
                         const logTbody = document.getElementById('classDailyLogTableBody');
 
                         if (!records || records.length === 0) {
-                            logTbody.innerHTML = `<tr><td colspan="5" class="empty-state">No daily attendance entries logged for class ${escapeHtml(targetVal)}${currentSubjectFilter !== 'all' ? ' (' + escapeHtml(currentSubjectFilter) + ')' : ''} yet.</td></tr>`;
+                            logTbody.innerHTML = `<tr><td colspan="5" class="empty-state">No records available.</td></tr>`;
                         } else {
                             logTbody.innerHTML = records.map(r => {
                                 const formattedTime = r.markedAt ? new Date(r.markedAt).toLocaleString() : 'N/A';
