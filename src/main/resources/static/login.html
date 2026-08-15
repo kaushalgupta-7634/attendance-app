@@ -220,10 +220,10 @@
         <div id="alertBox" class="alert-box"></div>
 
         <!-- LOGIN FORM -->
-        <form id="loginForm" onsubmit="handleLogin(event)">
+        <form id="loginForm" autocomplete="off" onsubmit="handleLogin(event)">
             <div class="form-group">
                 <label class="form-label" for="loginUsername">Username</label>
-                <input type="text" id="loginUsername" class="form-input" placeholder="Enter your username" required>
+                <input type="text" id="loginUsername" class="form-input" placeholder="Enter your username" autocomplete="off" required>
             </div>
 
             <div class="form-group">
@@ -231,7 +231,7 @@
                     <label class="form-label" for="loginPassword" style="margin-bottom: 0;">Password</label>
                     <a href="/forgot-password.html" style="font-size: 0.8rem; color: var(--accent-purple); text-decoration: none; font-weight: 500;">Forgot Password?</a>
                 </div>
-                <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="new-password" required>
             </div>
 
             <button type="submit" id="loginSubmitBtn" class="submit-btn">Sign In to Dashboard</button>
@@ -314,25 +314,25 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Always ensure login inputs are clean and not pre-filled with stale credentials
+            const uInput = document.getElementById('loginUsername');
+            const pInput = document.getElementById('loginPassword');
+            if (uInput) uInput.value = '';
+            if (pInput) pInput.value = '';
+            
+            // Remove stale remembered username cookies
+            localStorage.removeItem('username');
+            setCookie('attendx_username', '', -1);
+
             const pendingQr = sessionStorage.getItem('pendingQrToken') || getCookie('pendingQrToken');
             if (pendingQr) {
-                const rememberedUser = localStorage.getItem('username') || getCookie('attendx_username');
-                if (!rememberedUser && !localStorage.getItem('jwtToken') && !getCookie('attendx_student_token')) {
+                const token = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
+                if (!token || isTokenExpired(token)) {
                     switchTab('register');
-                    showAlert('📲 QR Code Scanned! New Student? Register your account below to mark Attendance automatically! (Already registered? Switch to Sign In)', true);
+                    showAlert('📲 QR Code Scanned! Register your account below to mark Attendance automatically!', true);
                 } else {
                     switchTab('login');
-                    if (rememberedUser) {
-                        const uInput = document.getElementById('loginUsername');
-                        if (uInput) uInput.value = rememberedUser;
-                    }
                     showAlert('📲 QR Code Scanned! Sign in to mark your Attendance automatically.', true);
-                }
-            } else {
-                const rememberedUser = localStorage.getItem('username') || getCookie('attendx_username');
-                if (rememberedUser) {
-                    const uInput = document.getElementById('loginUsername');
-                    if (uInput && !uInput.value) uInput.value = rememberedUser;
                 }
             }
         });
@@ -441,11 +441,9 @@
                 localStorage.setItem('jwtToken', data.accessToken);
                 localStorage.setItem('userRole', role);
                 localStorage.setItem('userName', name);
-                localStorage.setItem('username', payload.sub || username);
 
                 setCookie('attendx_student_token', data.accessToken, 365);
                 setCookie('attendx_user_role', role, 365);
-                setCookie('attendx_username', payload.sub || username, 365);
 
                 showAlert('Login successful! Redirecting...', true);
 
@@ -515,11 +513,9 @@
                         localStorage.setItem('jwtToken', loginData.accessToken);
                         localStorage.setItem('userRole', userRole);
                         localStorage.setItem('userName', userFullName);
-                        localStorage.setItem('username', payload.sub || username);
 
                         setCookie('attendx_student_token', loginData.accessToken, 365);
                         setCookie('attendx_user_role', userRole, 365);
-                        setCookie('attendx_username', payload.sub || username, 365);
 
                         setTimeout(() => {
                             if (userRole === 'ADMIN') {
