@@ -137,23 +137,26 @@ public class AttendanceService {
                     + session.getStartTime() + " to " + session.getEndTime() + ".");
         }
 
-        // Step (c): Calculate distance via haversine formula and verify radius
-        // Server-side anti-proxy enforcement: ignores client-supplied bypass flags
-        boolean isDefaultTeacherLocation = (Math.abs(session.getClassroomLat() - 12.9716) < 0.01 && Math.abs(session.getClassroomLng() - 77.5946) < 0.01)
-                || session.getClassroomLat() == 0.0 || session.getClassroomLng() == 0.0;
+        // Step (c): Strict Geofencing Enforcement for anti-proxy protection (QR scan & Passcode/Token Number)
+        boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
+                && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
 
-        if (!isDefaultTeacherLocation && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
+        if (hasValidClassroomCoords && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
             double distanceMeters = calculateHaversineMeters(
                     request.getStudentLat(), request.getStudentLng(),
                     session.getClassroomLat(), session.getClassroomLng()
             );
 
             if (distanceMeters > session.getRadiusMeters()) {
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! Your location (" 
-                        + String.format("%.4f", request.getStudentLat()) + ", " + String.format("%.4f", request.getStudentLng()) 
-                        + ") is " + String.format("%.1f", distanceMeters) + "m away from classroom (" 
+                double distKm = distanceMeters / 1000.0;
+                String formattedDistance = distKm >= 1.0 
+                        ? String.format("%.1f km", distKm) 
+                        : String.format("%.1f meters", distanceMeters);
+
+                throw new IllegalArgumentException("Attendance rejected: Distance limit! Location out of range. You are " 
+                        + formattedDistance + " away from classroom (" 
                         + String.format("%.4f", session.getClassroomLat()) + ", " + String.format("%.4f", session.getClassroomLng()) 
-                        + "). Allowed: " + session.getRadiusMeters() + "m.");
+                        + "). Maximum allowed radius: " + (int) session.getRadiusMeters().doubleValue() + "m.");
             }
         }
 
