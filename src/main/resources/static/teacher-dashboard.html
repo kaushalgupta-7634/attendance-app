@@ -2829,6 +2829,28 @@
             }
         }
 
+        async function filterBySubjectCard(subjectName) {
+            if (!subjectName) return;
+            currentSubjectFilter = subjectName;
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            if (subSelect) subSelect.value = subjectName;
+            await loadSelectedClassAnalytics(subjectName);
+        }
+
+        async function filterBySubjectBadge(subjectName, type) {
+            if (!subjectName) return;
+            currentSubjectFilter = subjectName;
+            const subSelect = document.getElementById('teacherSubjectSelect');
+            if (subSelect) subSelect.value = subjectName;
+            await loadSelectedClassAnalytics(subjectName);
+
+            if (type === 'present') {
+                switchSmartSubTab('roster');
+            } else if (type === 'absent') {
+                switchSmartSubTab('defaulters');
+            }
+        }
+
         function populateDefaultersTable() {
             const tbody = document.getElementById('defaultersTableBody');
             if (!tbody) return;
@@ -2951,8 +2973,12 @@
 
                                         <!-- METRIC BADGES: PRESENT & ABSENT COUNTS -->
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.65rem;">
-                                            <span style="color: #4ade80; font-weight: 600;">🟢 ${presentCount} Present Check-ins</span>
-                                            <span style="color: #f87171; font-weight: 600;">🔴 ${absentCount} Absences</span>
+                                            <span onclick="event.stopPropagation(); filterBySubjectBadge('${escapeHtml(sa.subject)}', 'present')" title="Click to view Present Students" style="color: #4ade80; font-weight: 600; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 6px; background: rgba(74, 222, 128, 0.1);" onmouseover="this.style.background='rgba(74, 222, 128, 0.25)'" onmouseout="this.style.background='rgba(74, 222, 128, 0.1)'">
+                                                🟢 ${presentCount} Present Check-ins
+                                            </span>
+                                            <span onclick="event.stopPropagation(); filterBySubjectBadge('${escapeHtml(sa.subject)}', 'absent')" title="Click to view Absent / Defaulter Students" style="color: #f87171; font-weight: 600; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 6px; background: rgba(248, 113, 113, 0.1);" onmouseover="this.style.background='rgba(248, 113, 113, 0.25)'" onmouseout="this.style.background='rgba(248, 113, 113, 0.1)'">
+                                                🔴 ${absentCount} Absences
+                                            </span>
                                         </div>
                                     </div>
                                 `;
