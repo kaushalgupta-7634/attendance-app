@@ -570,7 +570,7 @@ public class AttendanceService {
                 })
                 .collect(java.util.stream.Collectors.toList());
 
-        if (classSessions.isEmpty()) {
+        if (isAllClass && classSessions.isEmpty()) {
             classSessions = classSessionRepository.findAll().stream()
                     .filter(s -> !s.isCancelled())
                     .collect(java.util.stream.Collectors.toList());
@@ -597,8 +597,8 @@ public class AttendanceService {
             }
         });
 
-        // 3. Fallback to all distinct subjects if still empty
-        if (subjectSet.isEmpty()) {
+        // 3. Fallback to all distinct subjects ONLY if isAllClass
+        if (isAllClass && subjectSet.isEmpty()) {
             List<String> globalSubs = classSessionRepository.findDistinctSubjects();
             if (globalSubs != null) {
                 globalSubs.stream().filter(java.util.Objects::nonNull).filter(s -> !s.isBlank()).forEach(s -> subjectSet.add(s.trim()));

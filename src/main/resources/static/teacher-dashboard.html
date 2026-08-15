@@ -3049,7 +3049,7 @@
                     console.warn(`[DIAGNOSTIC-WARN] Roster fetch for '${targetVal}' returned HTTP ${rosterRes.status}, trying fallback...`);
                 }
 
-                if (!roster || !roster.students || roster.students.length === 0) {
+                if ((!roster || !roster.students || roster.students.length === 0) && (targetVal === 'all' || !targetVal)) {
                     const fallbackRes = await fetch('/classes/by-name/all/roster', { headers });
                     if (fallbackRes.ok) roster = await fallbackRes.json();
                 }
