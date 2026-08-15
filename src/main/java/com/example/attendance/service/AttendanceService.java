@@ -138,10 +138,16 @@ public class AttendanceService {
         }
 
         // Step (c): Strict Geofencing Enforcement for anti-proxy protection (QR scan & Passcode/Token Number)
-        boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
-                && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
+        boolean isTestingAnywhereMode = session.getRadiusMeters() != null && session.getRadiusMeters() >= 99999;
 
-        if (hasValidClassroomCoords && session.getRadiusMeters() > 0 && session.getRadiusMeters() < 99999) {
+        if (!isTestingAnywhereMode) {
+            boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
+                    && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
+
+            if (!hasValidClassroomCoords) {
+                throw new IllegalArgumentException("Attendance rejected: Distance limit! Classroom GPS location was not captured by teacher for this session. Please ask your teacher to allow location on their browser and re-launch session, or enable 'Testing / Anywhere Mode'.");
+            }
+
             double distanceMeters = calculateHaversineMeters(
                     request.getStudentLat(), request.getStudentLng(),
                     session.getClassroomLat(), session.getClassroomLng()
