@@ -15,6 +15,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.springframework.boot.test.mock.mockito.MockBean;
+
 @SpringBootTest
 @TestPropertySource(properties = {
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -31,6 +33,9 @@ public class FacultyEmailVerificationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockBean
+    private EmailService emailService;
 
     @BeforeEach
     void setUp() {
