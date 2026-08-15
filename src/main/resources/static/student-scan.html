@@ -429,13 +429,19 @@
             </div>
 
             <!-- SUBJECT WISE BREAKDOWN GRID -->
-            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Subject Average Breakdown</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="font-size: 0.9rem; color: var(--text-primary); margin: 0; font-weight: 600;">Subject Average Breakdown</h4>
+                <span style="font-size: 0.72rem; color: var(--text-secondary);">(Click subject card to filter history)</span>
+            </div>
             <div id="subjectBreakdownContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem;">
                 <p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">Loading subject percentages...</p>
             </div>
 
             <!-- DAILY ATTENDANCE RECORDS HISTORY LIST -->
-            <h4 style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Attendance Log & Daily History</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h4 id="historyFilterTitle" style="font-size: 0.9rem; color: var(--text-primary); margin: 0; font-weight: 600;">Attendance Log & Daily History</h4>
+                <div id="historyFilterBadge"></div>
+            </div>
             <div id="attendanceHistoryContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
                 <p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">Loading attendance history...</p>
             </div>
@@ -1119,6 +1125,102 @@
             }
         }
 
+        let selectedStudentSubjectFilter = null;
+        let allStudentRecentRecords = [];
+        let cachedSubjectBreakdown = [];
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderFilteredAttendanceHistory() {
+            const histContainer = document.getElementById('attendanceHistoryContainer');
+            const badgeElem = document.getElementById('historyFilterBadge');
+            
+            if (!histContainer) return;
+
+            let filtered = allStudentRecentRecords;
+            if (selectedStudentSubjectFilter) {
+                const cleanSub = selectedStudentSubjectFilter.trim().toLowerCase();
+                filtered = allStudentRecentRecords.filter(rec => rec.subject && rec.subject.trim().toLowerCase() === cleanSub);
+            }
+
+            if (badgeElem) {
+                if (selectedStudentSubjectFilter) {
+                    badgeElem.innerHTML = `<span style="font-size: 0.72rem; font-weight: 600; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 0.2rem 0.6rem; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onclick="filterStudentBySubject(null)" title="Click to show all subjects">Showing: ${escapeHtml(selectedStudentSubjectFilter)} ✖ (Show All)</span>`;
+                } else {
+                    badgeElem.innerHTML = `<span style="font-size: 0.72rem; color: var(--text-secondary);">Showing All (${allStudentRecentRecords.length} records)</span>`;
+                }
+            }
+
+            if (!filtered || filtered.length === 0) {
+                histContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 1rem;">No attendance records found ${selectedStudentSubjectFilter ? 'for subject: ' + escapeHtml(selectedStudentSubjectFilter) : ''}.</p>`;
+                return;
+            }
+
+            histContainer.innerHTML = filtered.map(rec => {
+                const dateStr = rec.markedAt ? new Date(rec.markedAt).toLocaleString() : 'N/A';
+                const isPresent = rec.status === 'PRESENT' || rec.status === 'LATE';
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--input-border); padding: 0.65rem 0.85rem; border-radius: 8px;">
+                        <div>
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); display: block;">${escapeHtml(rec.subject)}</span>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary);">${dateStr}</span>
+                        </div>
+                        <span style="font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 6px; background: ${isPresent ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${isPresent ? '#86efac' : '#fca5a5'}; border: 1px solid ${isPresent ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'};">
+                            ${escapeHtml(rec.status)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSubjectBreakdownCards() {
+            const subContainer = document.getElementById('subjectBreakdownContainer');
+            if (!subContainer) return;
+
+            if (!cachedSubjectBreakdown || cachedSubjectBreakdown.length === 0) {
+                subContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">No subject sessions recorded yet in selected month range.</p>';
+                return;
+            }
+
+            subContainer.innerHTML = cachedSubjectBreakdown.map(sb => {
+                const isSelected = selectedStudentSubjectFilter && sb.subject && sb.subject.trim().toLowerCase() === selectedStudentSubjectFilter.trim().toLowerCase();
+                const borderStyle = isSelected ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.08)';
+                const bgStyle = isSelected ? 'rgba(56, 189, 248, 0.18)' : 'rgba(15, 23, 42, 0.4)';
+                const shadowStyle = isSelected ? '0 0 14px rgba(56, 189, 248, 0.35)' : 'none';
+
+                return `
+                    <div class="subject-breakdown-card" onclick="filterStudentBySubject('${sb.subject ? sb.subject.replace(/'/g, "\\'") : ''}')" 
+                         style="background: ${bgStyle}; border: ${borderStyle}; box-shadow: ${shadowStyle}; padding: 0.65rem 0.8rem; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; user-select: none;" 
+                         title="Click to view details for ${escapeHtml(sb.subject)}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: ${isSelected ? '#38bdf8' : 'var(--text-primary)'}; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sb.subject)}</span>
+                            ${isSelected ? '<span style="font-size: 0.68rem; font-weight: 700; background: #38bdf8; color: #0f172a; padding: 0.1rem 0.35rem; border-radius: 10px;">Selected</span>' : '<span style="font-size: 0.65rem; color: var(--text-secondary);">📌</span>'}
+                        </div>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: ${sb.percentage >= 75 ? 'var(--accent-green)' : (sb.percentage >= 60 ? '#fde047' : 'var(--accent-red)')};">${sb.percentage}%</span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary); display: block; margin-top: 0.1rem;">(${sb.presentCount}/${sb.totalSessions} sessions)</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterStudentBySubject(subject) {
+            if (selectedStudentSubjectFilter && subject && selectedStudentSubjectFilter.trim().toLowerCase() === subject.trim().toLowerCase()) {
+                selectedStudentSubjectFilter = null; // Toggle off if clicked again
+            } else {
+                selectedStudentSubjectFilter = subject;
+            }
+            renderSubjectBreakdownCards();
+            renderFilteredAttendanceHistory();
+        }
+
         async function fetchStudentAttendanceSummary() {
             initStudentDateControls();
 
@@ -1141,41 +1243,11 @@
                     : (data.subjectBreakdown && data.subjectBreakdown.length > 0);
                 drawStudentCircularChart(percent, hasSessions);
 
-                // Render Subject Breakdown Grid
-                const subContainer = document.getElementById('subjectBreakdownContainer');
-                if (!data.subjectBreakdown || data.subjectBreakdown.length === 0) {
-                    subContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary); grid-column: 1/-1;">No subject sessions recorded yet in selected month range.</p>';
-                } else {
-                    subContainer.innerHTML = data.subjectBreakdown.map(sb => `
-                        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 0.75rem; border-radius: 8px;">
-                            <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sb.subject)}</span>
-                            <span style="font-size: 1.1rem; font-weight: 700; color: ${sb.percentage >= 75 ? 'var(--accent-green)' : (sb.percentage >= 60 ? '#fde047' : 'var(--accent-red)')};">${sb.percentage}%</span>
-                            <span style="font-size: 0.7rem; color: var(--text-secondary); display: block;">(${sb.presentCount}/${sb.totalSessions} sessions)</span>
-                        </div>
-                    `).join('');
-                }
+                cachedSubjectBreakdown = data.subjectBreakdown || [];
+                allStudentRecentRecords = data.recentRecords || [];
 
-                // Render Attendance Daily History Records
-                const histContainer = document.getElementById('attendanceHistoryContainer');
-                if (!data.recentRecords || data.recentRecords.length === 0) {
-                    histContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center;">No attendance records found yet.</p>';
-                } else {
-                    histContainer.innerHTML = data.recentRecords.map(rec => {
-                        const dateStr = rec.markedAt ? new Date(rec.markedAt).toLocaleString() : 'N/A';
-                        const isPresent = rec.status === 'PRESENT' || rec.status === 'LATE';
-                        return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--input-border); padding: 0.65rem 0.85rem; border-radius: 8px;">
-                                <div>
-                                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); display: block;">${escapeHtml(rec.subject)}</span>
-                                    <span style="font-size: 0.72rem; color: var(--text-secondary);">${dateStr}</span>
-                                </div>
-                                <span style="font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 6px; background: ${isPresent ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${isPresent ? '#86efac' : '#fca5a5'}; border: 1px solid ${isPresent ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'};">
-                                    ${escapeHtml(rec.status)}
-                                </span>
-                            </div>
-                        `;
-                    }).join('');
-                }
+                renderSubjectBreakdownCards();
+                renderFilteredAttendanceHistory();
 
             } catch (err) {
                 console.error("Error loading attendance summary:", err);
