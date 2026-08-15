@@ -494,16 +494,6 @@
                     throw new Error(regResText || 'Registration failed');
                 }
 
-                if (role === 'TEACHER') {
-                    showAlert(regResText || 'Registration successful! A 6-digit OTP has been sent to your email. Redirecting to verification page...', true);
-                    setTimeout(() => {
-                        window.location.href = '/verify.html?email=' + encodeURIComponent(email);
-                    }, 1500);
-                    return;
-                }
-
-                showAlert(regResText || 'Account registered successfully! Logging you in...', true);
-
                 showAlert('Account registered successfully! Logging you in...', true);
                 
                 // Auto-login registered student to mark attendance seamlessly

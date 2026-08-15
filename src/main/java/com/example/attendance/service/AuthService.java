@@ -57,10 +57,6 @@ public class AuthService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
-        if (user.getRole() == Role.TEACHER && Boolean.FALSE.equals(user.getVerified())) {
-            throw new IllegalArgumentException("Please verify your email before login");
-        }
-
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
         user = userRepository.save(user);
@@ -107,30 +103,8 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
-        if (role == Role.TEACHER) {
-            user.setVerified(false);
-            String generatedOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
-            user.setOtp(generatedOtp);
-            user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(10));
-
-            String verificationToken = java.util.UUID.randomUUID().toString();
-            user.setVerificationToken(verificationToken);
-            user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
-        } else {
-            user.setVerified(true);
-        }
-
+        user.setVerified(true);
         userRepository.save(user);
-
-        if (role == Role.TEACHER) {
-            try {
-                emailService.sendFacultyOtpEmail(cleanEmail, user.getName(), user.getOtp());
-                return "Registration successful! A 6-digit OTP has been sent to " + cleanEmail + ". Please verify your OTP before login.";
-            } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification OTP during registration to {}: {}", cleanEmail, e.getMessage());
-                return "Registration successful! (Email service unavailable - please configure SMTP credentials in Railway variables). Please verify your OTP before login.";
-            }
-        }
 
         return "User registered successfully with role: " + role.name();
     }
