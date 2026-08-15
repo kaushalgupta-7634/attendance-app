@@ -2888,21 +2888,16 @@
             if (headerClassElem) headerClassElem.textContent = `Class: ${targetVal === 'all' ? 'All Classes & Courses (Overall)' : targetVal}`;
             if (headerSubElem) headerSubElem.textContent = `Subject: ${(currentSubjectFilter === 'all' || !currentSubjectFilter) ? 'All Subjects (Combined)' : currentSubjectFilter}`;
 
-            try {
-                // 1. Fetch Class Summary Analytics
-                const sumRes = await fetch(sumUrl, {
-                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-                });
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
+            // 1. Fetch Class Summary Analytics
+            try {
+                const sumRes = await fetch(sumUrl, { headers });
                 if (sumRes.status === 401 || sumRes.status === 403) {
-                    console.error(`[API-AUTH-ERROR] HTTP ${sumRes.status} on ${sumUrl}. Token expired or missing authorization header.`);
-                    const progGrid = document.getElementById('subjectProgressCardsGrid');
-                    if (progGrid) {
-                        progGrid.innerHTML = '<p style="font-size: 0.85rem; color: #fca5a5; font-weight: 600;">🔑 Connection error / Token expired. Please log in again.</p>';
-                    }
+                    alert("🔑 Your session has expired. Please log in again.");
+                    logout();
                     return;
                 }
-
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
 
@@ -2948,14 +2943,25 @@
                             }).join('');
                         }
                     }
+                } else {
+                    const progGrid = document.getElementById('subjectProgressCardsGrid');
+                    if (progGrid) progGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records available.</p>';
                 }
+            } catch (err) {
+                console.error("Error fetching summary analytics:", err);
+                const progGrid = document.getElementById('subjectProgressCardsGrid');
+                if (progGrid) progGrid.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-secondary);">No records available.</p>';
+            }
 
-                // 2. Fetch Class Student Roster
+            // 2. Fetch Class Student Roster
+            try {
                 let roster = null;
-                const rosterRes = await fetch(rosterUrl, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
+                const rosterRes = await fetch(rosterUrl, { headers });
+                if (rosterRes.status === 401 || rosterRes.status === 403) {
+                    alert("🔑 Your session has expired. Please log in again.");
+                    logout();
+                    return;
+                }
                 if (rosterRes.ok) {
                     roster = await rosterRes.json();
                 } else {
@@ -2963,9 +2969,7 @@
                 }
 
                 if (!roster || !roster.students || roster.students.length === 0) {
-                    const fallbackRes = await fetch('/classes/by-name/all/roster', {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
+                    const fallbackRes = await fetch('/classes/by-name/all/roster', { headers });
                     if (fallbackRes.ok) roster = await fallbackRes.json();
                 }
 
@@ -2981,9 +2985,7 @@
                             let percent = 0.0;
                             let subjectBadges = '';
                             try {
-                                const sRes = await fetch(`/students/${s.id}/attendance-summary`, {
-                                    headers: { 'Authorization': 'Bearer ' + token }
-                                });
+                                const sRes = await fetch(`/students/${s.id}/attendance-summary`, { headers });
                                 if (sRes.ok) {
                                     const sSum = await sRes.json();
 
@@ -3051,16 +3053,20 @@
                         populateDefaultersTable();
                     }
                 }
+            } catch (err) {
+                console.error("Error fetching roster:", err);
+                const tbody = document.getElementById('classRosterTableBody');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No records available.</td></tr>';
+            }
 
-                // 3. Fetch Everyday Class Attendance Records Log
-                try {
-                    const logRes = await fetch(logUrl, {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (logRes.ok) {
-                        const records = await logRes.json();
-                        const logTbody = document.getElementById('classDailyLogTableBody');
+            // 3. Fetch Everyday Class Attendance Records Log
+            try {
+                const logRes = await fetch(logUrl, { headers });
+                if (logRes.ok) {
+                    const records = await logRes.json();
+                    const logTbody = document.getElementById('classDailyLogTableBody');
 
+                    if (logTbody) {
                         if (!records || records.length === 0) {
                             logTbody.innerHTML = `<tr><td colspan="5" class="empty-state">No records available.</td></tr>`;
                         } else {
@@ -3080,12 +3086,11 @@
                             }).join('');
                         }
                     }
-                } catch (e) {
-                    console.error("Error loading daily log:", e);
                 }
-
-            } catch (err) {
-                console.error("Error loading class analytics:", err);
+            } catch (e) {
+                console.error("Error loading daily log:", e);
+                const logTbody = document.getElementById('classDailyLogTableBody');
+                if (logTbody) logTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No records available.</td></tr>';
             }
         }
 
