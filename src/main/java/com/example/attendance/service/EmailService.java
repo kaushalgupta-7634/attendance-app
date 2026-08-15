@@ -118,4 +118,41 @@ public class EmailService {
     public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
         sendPasswordResetOtpEmail(toEmail, userName, resetToken);
     }
+
+    /**
+     * Sends a Faculty account email verification link.
+     */
+    public void sendEmailVerificationLink(String toEmail, String userName, String token) throws MailException {
+        if (toEmail == null || toEmail.isBlank() || token == null || token.isBlank()) {
+            return;
+        }
+
+        String cleanBaseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
+        String verificationLink = cleanBaseUrl + "/verify?token=" + token;
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Faculty Member").append(",\n\n");
+        body.append("Thank you for registering on the ATTENDX Portal!\n\n");
+        body.append("Please click the verification link below to verify your email and activate your Faculty account:\n\n");
+        body.append("    🔗 ").append(verificationLink).append("\n\n");
+        body.append("This verification link is valid for 24 hours. Please verify your email before attempting to log in.\n\n");
+        body.append("If you did not register for an ATTENDX account, please ignore this email.\n\n");
+        body.append("Best regards,\n");
+        body.append("ATTENDX Support Team");
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getEffectiveFromAddress());
+            message.setTo(toEmail);
+            message.setSubject("Verify Your Faculty Account Email - ATTENDX");
+            message.setText(body.toString());
+
+            mailSender.send(message);
+            logger.info("Verification email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
+        } catch (MailException e) {
+            logger.error("Failed to send verification email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
+            logger.info("Dev/Test Mode - Verification Link for {}: {}", toEmail, verificationLink);
+            throw e;
+        }
+    }
 }

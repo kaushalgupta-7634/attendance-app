@@ -147,6 +147,47 @@ public class User {
         this.enabled = enabled;
     }
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = true;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    private java.time.LocalDateTime verificationTokenExpiry;
+
+    public Boolean getVerified() {
+        return emailVerified == null || Boolean.TRUE.equals(emailVerified);
+    }
+
+    public Boolean isEmailVerified() {
+        return getVerified();
+    }
+
+    public void setVerified(Boolean verified) {
+        this.emailVerified = verified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
+    }
+
+    public java.time.LocalDateTime getVerificationTokenExpiry() {
+        return verificationTokenExpiry;
+    }
+
+    public void setVerificationTokenExpiry(java.time.LocalDateTime verificationTokenExpiry) {
+        this.verificationTokenExpiry = verificationTokenExpiry;
+    }
+
     public String getSecurityPin() {
         return securityPin;
     }

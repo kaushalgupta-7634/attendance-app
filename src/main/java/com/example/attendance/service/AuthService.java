@@ -57,6 +57,10 @@ public class AuthService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
+        if (user.getRole() == Role.TEACHER && Boolean.FALSE.equals(user.getVerified())) {
+            throw new IllegalArgumentException("Please verify your email before login");
+        }
+
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
         user = userRepository.save(user);
@@ -103,9 +107,77 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
+        if (role == Role.TEACHER) {
+            user.setVerified(false);
+            String verificationToken = java.util.UUID.randomUUID().toString();
+            user.setVerificationToken(verificationToken);
+            user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
+        } else {
+            user.setVerified(true);
+        }
+
         userRepository.save(user);
 
+        if (role == Role.TEACHER) {
+            try {
+                emailService.sendEmailVerificationLink(cleanEmail, user.getName(), user.getVerificationToken());
+                return "Registration successful! A verification link has been sent to " + cleanEmail + ". Please verify your email before login.";
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification email during registration to {}: {}", cleanEmail, e.getMessage());
+                return "Registration successful! (Email service status: Verification link generated). Please verify your email before login.";
+            }
+        }
+
         return "User registered successfully with role: " + role.name();
+    }
+
+    public String verifyEmail(String token) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Verification failed, request new link");
+        }
+
+        User user = userRepository.findByVerificationToken(token.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Verification failed, request new link"));
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        if (user.getVerificationTokenExpiry() != null && now.isAfter(user.getVerificationTokenExpiry())) {
+            throw new IllegalArgumentException("Verification failed, request new link");
+        }
+
+        user.setVerified(true);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        userRepository.save(user);
+
+        return "Email verified successfully! You can now log in.";
+    }
+
+    public String resendVerification(String emailOrUsername) {
+        if (emailOrUsername == null || emailOrUsername.isBlank()) {
+            throw new IllegalArgumentException("Email address is required.");
+        }
+
+        String cleanInput = emailOrUsername.trim();
+        User user = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
+                .orElseThrow(() -> new IllegalArgumentException("No account found matching '" + cleanInput + "'."));
+
+        if (Boolean.TRUE.equals(user.getVerified())) {
+            return "Email is already verified. You can log in.";
+        }
+
+        String newToken = java.util.UUID.randomUUID().toString();
+        user.setVerificationToken(newToken);
+        user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
+        userRepository.save(user);
+
+        try {
+            emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), newToken);
+            return "Verification link sent successfully to " + user.getEmail();
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification email to {}: {}", user.getEmail(), e.getMessage());
+            throw new IllegalArgumentException("Email service unavailable");
+        }
     }
 
     public String requestPin(com.example.attendance.model.RequestPinRequest request) {

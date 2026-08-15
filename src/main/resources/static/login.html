@@ -488,9 +488,19 @@
                     body: JSON.stringify({ name, username, email, password, role, className, securityPin })
                 });
 
+                const regResText = await res.text();
+
                 if (!res.ok) {
-                    const errText = await res.text();
-                    throw new Error(errText || 'Registration failed');
+                    throw new Error(regResText || 'Registration failed');
+                }
+
+                if (role === 'TEACHER' || regResText.includes('verify')) {
+                    showAlert(regResText || 'Registration successful! Please verify your email before login.', true);
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('loginUsername').value = username;
+                    }, 1500);
+                    return;
                 }
 
                 showAlert('Account registered successfully! Logging you in...', true);
