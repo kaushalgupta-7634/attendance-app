@@ -714,28 +714,54 @@
             dot.className = 'dot';
             text.textContent = 'Acquiring GPS location...';
 
-            if (!navigator.geolocation) {
-                currentLat = 12.9716;
-                currentLng = 77.5946;
+            const applyStudentPos = (lat, lng, sourceName) => {
+                currentLat = lat;
+                currentLng = lng;
                 dot.className = 'dot active';
-                text.textContent = 'GPS Active: Default Location (12.9716, 77.5946)';
+                text.textContent = `Location Acquired via ${sourceName} (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
+            };
+
+            const fetchStudentIpFallback = async () => {
+                try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    if (!res.ok) throw new Error('IP API failed');
+                    const data = await res.json();
+                    if (data.latitude && data.longitude) {
+                        applyStudentPos(parseFloat(data.latitude), parseFloat(data.longitude), 'Network/IP');
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('Student IP location error:', e);
+                }
+                return false;
+            };
+
+            if (!navigator.geolocation) {
+                fetchStudentIpFallback().then(ok => {
+                    if (!ok) {
+                        dot.className = 'dot';
+                        text.textContent = '⚠️ Location Unsupported on browser';
+                    }
+                });
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    currentLat = pos.coords.latitude;
-                    currentLng = pos.coords.longitude;
-                    dot.className = 'dot active';
-                    text.textContent = `GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
-                },
+                (pos) => applyStudentPos(pos.coords.latitude, pos.coords.longitude, 'GPS'),
                 (err) => {
-                    currentLat = 12.9716;
-                    currentLng = 77.5946;
-                    dot.className = 'dot active';
-                    text.textContent = 'GPS Active: Default Location (12.9716, 77.5946)';
+                    navigator.geolocation.getCurrentPosition(
+                        (pos2) => applyStudentPos(pos2.coords.latitude, pos2.coords.longitude, 'GPS'),
+                        async () => {
+                            const ok = await fetchStudentIpFallback();
+                            if (!ok) {
+                                dot.className = 'dot';
+                                text.textContent = '⚠️ Location Access Blocked: Please allow location in browser';
+                            }
+                        },
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                    );
                 },
-                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         }
 

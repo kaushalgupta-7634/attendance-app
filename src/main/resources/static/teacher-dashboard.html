@@ -1170,58 +1170,66 @@
             const lngInput = document.getElementById('classroomLng');
             const gpsBadge = document.getElementById('teacherGpsBadge');
 
-            if (!navigator.geolocation) {
-                if (gpsBadge) {
-                    gpsBadge.style.color = '#fcd34d';
-                    gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-                    gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                    gpsBadge.innerHTML = '<span>⚠️ Browser Geolocation Unsupported: Enable Location or check "Testing / Anywhere Mode"</span>';
-                }
-                return;
-            }
-
             if (gpsBadge) {
                 gpsBadge.style.color = '#7dd3fc';
                 gpsBadge.style.background = 'rgba(14, 165, 233, 0.15)';
                 gpsBadge.style.borderColor = 'rgba(14, 165, 233, 0.3)';
-                gpsBadge.innerHTML = '<span>📍 Acquiring Classroom GPS Location...</span>';
+                gpsBadge.innerHTML = '<span>📍 Acquiring Classroom Location...</span>';
             }
 
-            const applyPosition = (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
+            const applyPosition = (lat, lng, sourceName) => {
                 if (latInput) latInput.value = lat;
                 if (lngInput) lngInput.value = lng;
                 if (gpsBadge) {
                     gpsBadge.style.color = '#86efac';
                     gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
                     gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
-                    gpsBadge.innerHTML = `<span>📍 Classroom GPS Acquired (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh GPS</button>`;
+                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
                 }
             };
 
-            const renderGpsErrorBadge = (err) => {
-                if (gpsBadge) {
+            const fetchIpLocationFallback = async () => {
+                try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    if (!res.ok) throw new Error('IP API failed');
+                    const data = await res.json();
+                    if (data.latitude && data.longitude) {
+                        applyPosition(parseFloat(data.latitude), parseFloat(data.longitude), 'Network/IP');
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('IP Geolocation fallback error:', e);
+                }
+                return false;
+            };
+
+            const renderGpsErrorBadge = async () => {
+                const ipOk = await fetchIpLocationFallback();
+                if (!ipOk && gpsBadge) {
                     gpsBadge.style.color = '#fcd34d';
                     gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
                     gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                    gpsBadge.innerHTML = '<span>⚠️ GPS Permission Blocked/Timed Out: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry GPS</button>';
+                    gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
                 }
             };
 
-            const handleGpsError = (err) => {
-                // Fallback attempt with low accuracy if high accuracy timed out
-                navigator.geolocation.getCurrentPosition(
-                    applyPosition,
-                    (finalErr) => renderGpsErrorBadge(finalErr),
-                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-                );
-            };
+            if (!navigator.geolocation) {
+                fetchIpLocationFallback().then(ok => {
+                    if (!ok) renderGpsErrorBadge();
+                });
+                return;
+            }
 
             navigator.geolocation.getCurrentPosition(
-                applyPosition,
-                handleGpsError,
-                { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+                (pos) => applyPosition(pos.coords.latitude, pos.coords.longitude, 'GPS'),
+                (err) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos2) => applyPosition(pos2.coords.latitude, pos2.coords.longitude, 'GPS'),
+                        () => renderGpsErrorBadge(),
+                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                    );
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         }
 
