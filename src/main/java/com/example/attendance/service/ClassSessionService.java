@@ -620,7 +620,7 @@ public class ClassSessionService {
         String searchClass = className != null ? className.trim() : "";
         String searchSub = selectedSubject != null ? selectedSubject.trim() : "";
 
-        List<AttendanceRecord> records = attendanceRecordRepository.findAll().stream()
+        List<AttendanceRecord> classRecords = attendanceRecordRepository.findAll().stream()
                 .filter(r -> r.getSession() != null)
                 .filter(r -> {
                     if (isAllClass) return true;
@@ -638,6 +638,9 @@ public class ClassSessionService {
                     }
                     return false;
                 })
+                .collect(Collectors.toList());
+
+        List<AttendanceRecord> records = classRecords.stream()
                 .filter(r -> {
                     if (isAllSubject) return true;
                     ClassSession s = r.getSession();
@@ -647,13 +650,19 @@ public class ClassSessionService {
                     if (s.getClassCourse() != null && s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(searchSub)) return true;
                     return false;
                 })
-                .sorted((a, b) -> {
-                    if (a.getMarkedAt() != null && b.getMarkedAt() != null) {
-                        return b.getMarkedAt().compareTo(a.getMarkedAt());
-                    }
-                    return 0;
-                })
                 .collect(Collectors.toList());
+
+        // Fallback query if subject filter returned no records for this class
+        if (!isAllSubject && records.isEmpty()) {
+            records = classRecords;
+        }
+
+        records.sort((a, b) -> {
+            if (a.getMarkedAt() != null && b.getMarkedAt() != null) {
+                return b.getMarkedAt().compareTo(a.getMarkedAt());
+            }
+            return 0;
+        });
 
         return records.stream().map(r -> new AttendanceRecordDTO(
                 r.getId(),

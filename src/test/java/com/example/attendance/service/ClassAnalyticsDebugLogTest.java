@@ -94,4 +94,32 @@ class ClassAnalyticsDebugLogTest {
         assertNotNull(summary);
         assertEquals("BCA", summary.getClassName());
     }
+
+    @Test
+    void testSubjectFilterWithNoSessions_ExecutesFallbackQuery() {
+        when(userRepository.findByUsernameIgnoreCase("teacher1")).thenReturn(Optional.of(teacher));
+        when(userRepository.findByRole(Role.STUDENT)).thenReturn(List.of(student1));
+        when(classCourseRepository.findAll()).thenReturn(List.of(course));
+
+        Enrollment enrollment = new Enrollment(student1, course, LocalDateTime.now());
+        when(enrollmentRepository.findByClassCourse(course)).thenReturn(List.of(enrollment));
+
+        // Session exists for Physics, but filter requests NonExistentSubject
+        ClassSession session = new ClassSession(teacher, course, "BCA", "Physics",
+                LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1),
+                12.0, 77.0, 500.0, false, "123456");
+        session.setId(51L);
+        when(classSessionRepository.findAll()).thenReturn(List.of(session));
+
+        AttendanceRecord record = new AttendanceRecord(session, student1, LocalDateTime.now().minusHours(1), 12.0, 77.0, AttendanceStatus.PRESENT);
+        when(attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(student1)).thenReturn(List.of(record));
+
+        ClassAttendanceSummaryDTO summary = attendanceService.getClassAttendanceSummaryByName("BCA", "NonExistentSubject", "teacher1");
+
+        assertNotNull(summary);
+        assertEquals("BCA", summary.getClassName());
+        assertEquals(1, summary.getTotalStudents());
+        // Fallback query engages and returns consolidated overall class average
+        assertEquals(100.0, summary.getOverallClassAveragePercentage());
+    }
 }
