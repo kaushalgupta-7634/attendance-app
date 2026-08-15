@@ -122,11 +122,11 @@ public class ClassCourseController {
     }
 
     /**
-     * DELETE /classes/subjects/by-name/{subjectName} (TEACHER and ADMIN)
+     * DELETE /classes/subjects/by-name/{subjectName} (ADMIN only)
      * Deletes all records associated with a subject by name.
      */
     @DeleteMapping("/subjects/by-name/{subjectName}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteSubjectByName(
             @PathVariable("subjectName") String subjectName,
             Principal principal) {

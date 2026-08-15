@@ -140,8 +140,8 @@ public class ClassCourseService {
         User requester = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
-        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
-            throw new AccessDeniedException("Access denied: Only teachers or admins can delete subjects.");
+        if (requester.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Access denied: Only admins can delete subjects.");
         }
 
         if (subjectName == null || subjectName.isBlank()) return;
