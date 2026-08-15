@@ -109,6 +109,10 @@ public class AuthService {
 
         if (role == Role.TEACHER) {
             user.setVerified(false);
+            String generatedOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+            user.setOtp(generatedOtp);
+            user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(10));
+
             String verificationToken = java.util.UUID.randomUUID().toString();
             user.setVerificationToken(verificationToken);
             user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
@@ -120,15 +124,43 @@ public class AuthService {
 
         if (role == Role.TEACHER) {
             try {
-                emailService.sendEmailVerificationLink(cleanEmail, user.getName(), user.getVerificationToken());
-                return "Registration successful! A verification link has been sent to " + cleanEmail + ". Please verify your email before login.";
+                emailService.sendFacultyOtpEmail(cleanEmail, user.getName(), user.getOtp());
+                return "Registration successful! A 6-digit OTP has been sent to " + cleanEmail + ". Please verify your OTP before login.";
             } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification email during registration to {}: {}", cleanEmail, e.getMessage());
-                return "Registration successful! (Email service status: Verification link generated). Please verify your email before login.";
+                org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification OTP during registration to {}: {}", cleanEmail, e.getMessage());
+                return "Registration successful! (Email service status: Verification OTP generated). Please verify your OTP before login.";
             }
         }
 
         return "User registered successfully with role: " + role.name();
+    }
+
+    public String verifyOtp(String emailOrUsername, String otp) {
+        if (emailOrUsername == null || emailOrUsername.isBlank() || otp == null || otp.isBlank()) {
+            throw new IllegalArgumentException("Verification failed, request new OTP");
+        }
+
+        String cleanInput = emailOrUsername.trim();
+        String cleanOtp = otp.trim();
+
+        User user = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
+                .orElseThrow(() -> new IllegalArgumentException("Verification failed, request new OTP"));
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+
+        if (user.getOtp() == null || !user.getOtp().equals(cleanOtp) || user.getOtpExpiresAt() == null || now.isAfter(user.getOtpExpiresAt())) {
+            throw new IllegalArgumentException("Verification failed, request new OTP");
+        }
+
+        user.setVerified(true);
+        user.setOtp(null);
+        user.setOtpExpiresAt(null);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        userRepository.save(user);
+
+        return "Email verified successfully! You can now log in.";
     }
 
     public String verifyEmail(String token) {
@@ -145,11 +177,41 @@ public class AuthService {
         }
 
         user.setVerified(true);
+        user.setOtp(null);
+        user.setOtpExpiresAt(null);
         user.setVerificationToken(null);
         user.setVerificationTokenExpiry(null);
         userRepository.save(user);
 
         return "Email verified successfully! You can now log in.";
+    }
+
+    public String resendOtp(String emailOrUsername) {
+        if (emailOrUsername == null || emailOrUsername.isBlank()) {
+            throw new IllegalArgumentException("Email address is required.");
+        }
+
+        String cleanInput = emailOrUsername.trim();
+        User user = userRepository.findByEmailIgnoreCase(cleanInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(cleanInput))
+                .orElseThrow(() -> new IllegalArgumentException("No account found matching '" + cleanInput + "'."));
+
+        if (Boolean.TRUE.equals(user.getVerified())) {
+            return "Email is already verified. You can log in.";
+        }
+
+        String newOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+        user.setOtp(newOtp);
+        user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(10));
+        userRepository.save(user);
+
+        try {
+            emailService.sendFacultyOtpEmail(user.getEmail(), user.getName(), newOtp);
+            return "A new 6-digit OTP has been sent to " + user.getEmail() + ".";
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification OTP to {}: {}", user.getEmail(), e.getMessage());
+            return "New OTP generated. (Email service status: Error sending email).";
+        }
     }
 
     public String resendVerification(String emailOrUsername) {

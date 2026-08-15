@@ -133,4 +133,48 @@ public class FacultyEmailVerificationTest {
         Exception ex = assertThrows(IllegalArgumentException.class, () -> authService.verifyEmail("invalid-token-123"));
         assertEquals("Verification failed, request new link", ex.getMessage());
     }
+
+    @Test
+    void testFacultyOtpVerification_SuccessUnlocksLogin() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Prof. Sen");
+        request.setUsername("prof_sen");
+        request.setEmail("sen@faculty.com");
+        request.setPassword("password123");
+        request.setRole(Role.TEACHER);
+        request.setSecurityPin("1234");
+
+        authService.register(request);
+
+        User user = userRepository.findByUsernameIgnoreCase("prof_sen").orElseThrow();
+        assertFalse(user.getVerified(), "Account must be unverified");
+        assertNotNull(user.getOtp(), "6-digit OTP must be generated");
+        assertNotNull(user.getOtpExpiresAt(), "OTP expiry time must be set");
+
+        String verifyMsg = authService.verifyOtp("sen@faculty.com", user.getOtp());
+        assertEquals("Email verified successfully! You can now log in.", verifyMsg);
+
+        User verifiedUser = userRepository.findByUsernameIgnoreCase("prof_sen").orElseThrow();
+        assertTrue(verifiedUser.getVerified(), "User should now have verified = true");
+        assertNull(verifiedUser.getOtp(), "OTP should be cleared after verification");
+    }
+
+    @Test
+    void testVerifyOtp_InvalidOrExpired_ThrowsError() {
+        Exception ex1 = assertThrows(IllegalArgumentException.class, () -> authService.verifyOtp("unknown@faculty.com", "123456"));
+        assertEquals("Verification failed, request new OTP", ex1.getMessage());
+
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Prof. Roy");
+        request.setUsername("prof_roy");
+        request.setEmail("roy@faculty.com");
+        request.setPassword("password123");
+        request.setRole(Role.TEACHER);
+        request.setSecurityPin("1234");
+
+        authService.register(request);
+
+        Exception ex2 = assertThrows(IllegalArgumentException.class, () -> authService.verifyOtp("roy@faculty.com", "000000"));
+        assertEquals("Verification failed, request new OTP", ex2.getMessage());
+    }
 }

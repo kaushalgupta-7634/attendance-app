@@ -155,4 +155,38 @@ public class EmailService {
             throw e;
         }
     }
+
+    /**
+     * Sends a 6-digit OTP verification email for Faculty account registration.
+     */
+    public void sendFacultyOtpEmail(String toEmail, String userName, String otp) throws MailException {
+        if (toEmail == null || toEmail.isBlank() || otp == null || otp.isBlank()) {
+            return;
+        }
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Faculty Member").append(",\n\n");
+        body.append("Thank you for registering on the ATTENDX Portal!\n\n");
+        body.append("Your 6-digit Email Verification OTP is:\n\n");
+        body.append("    🔑 ").append(otp).append("\n\n");
+        body.append("This OTP is valid for 10 minutes. Please enter this OTP to activate your Faculty account.\n\n");
+        body.append("If you did not register for an ATTENDX account, please ignore this email.\n\n");
+        body.append("Best regards,\n");
+        body.append("ATTENDX Support Team");
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(getEffectiveFromAddress());
+            message.setTo(toEmail);
+            message.setSubject("Your Faculty Verification OTP - ATTENDX");
+            message.setText(body.toString());
+
+            mailSender.send(message);
+            logger.info("Faculty verification OTP email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
+        } catch (MailException e) {
+            logger.error("Failed to send Faculty verification OTP email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
+            logger.info("Dev/Test Mode - Faculty Verification OTP for {}: {}", toEmail, otp);
+            throw e;
+        }
+    }
 }
