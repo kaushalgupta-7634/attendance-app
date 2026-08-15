@@ -147,8 +147,8 @@ public class User {
         this.enabled = enabled;
     }
 
-    @Column(name = "email_verified")
-    private Boolean emailVerified = false;
+    @Column(name = "verified")
+    private Boolean verified = false;
 
     @Column(name = "verification_token")
     private String verificationToken;
@@ -157,7 +157,7 @@ public class User {
     private java.time.LocalDateTime verificationTokenExpiry;
 
     public Boolean getVerified() {
-        return Boolean.TRUE.equals(emailVerified);
+        return Boolean.TRUE.equals(verified);
     }
 
     public Boolean isEmailVerified() {
@@ -165,11 +165,11 @@ public class User {
     }
 
     public void setVerified(Boolean verified) {
-        this.emailVerified = verified;
+        this.verified = verified;
     }
 
     public void setEmailVerified(Boolean emailVerified) {
-        this.emailVerified = emailVerified;
+        this.verified = emailVerified;
     }
 
     public String getVerificationToken() {
