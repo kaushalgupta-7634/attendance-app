@@ -482,25 +482,10 @@
             return Date.now() >= payload.exp * 1000;
         }
 
-        const token = localStorage.getItem('jwtToken');
         const mainPortalBtn = document.getElementById('mainPortalBtn');
-
-        if (token && !isTokenExpired(token)) {
-            const payload = parseJwtPayload(token);
-            const actualRole = payload.role || localStorage.getItem('userRole');
-            if (actualRole === 'TEACHER') {
-                mainPortalBtn.textContent = 'Faculty Dashboard';
-                mainPortalBtn.href = '/teacher-dashboard.html';
-            } else if (actualRole === 'STUDENT') {
-                mainPortalBtn.textContent = 'Student Portal';
-                mainPortalBtn.href = '/student-scan.html';
-            } else if (actualRole === 'ADMIN') {
-                mainPortalBtn.textContent = 'Admin Dashboard';
-                mainPortalBtn.href = '/admin-dashboard.html';
-            }
-        } else if (token) {
-            localStorage.removeItem('jwtToken');
-            localStorage.removeItem('userRole');
+        if (mainPortalBtn) {
+            mainPortalBtn.textContent = 'Sign In to Portal';
+            mainPortalBtn.href = '/login.html';
         }
 
         async function fetchSystemInfo() {
