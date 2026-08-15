@@ -502,12 +502,7 @@
                     return;
                 }
 
-                showAlert(regResText || 'Registration successful! Please check your email to verify your account before logging in.', true);
-                setTimeout(() => {
-                    switchTab('login');
-                    document.getElementById('loginUsername').value = username;
-                }, 1800);
-                return;
+                showAlert(regResText || 'Account registered successfully! Logging you in...', true);
 
                 showAlert('Account registered successfully! Logging you in...', true);
                 
