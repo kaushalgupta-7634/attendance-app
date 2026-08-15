@@ -210,14 +210,6 @@ public class User {
         this.otpExpiresAt = otpExpiresAt;
     }
 
-    public java.time.LocalDateTime getVerificationTokenExpiry() {
-        return verificationTokenExpiry;
-    }
-
-    public void setVerificationTokenExpiry(java.time.LocalDateTime verificationTokenExpiry) {
-        this.verificationTokenExpiry = verificationTokenExpiry;
-    }
-
     public String getSecurityPin() {
         return securityPin;
     }
