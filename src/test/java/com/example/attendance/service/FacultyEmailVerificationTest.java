@@ -57,6 +57,22 @@ public class FacultyEmailVerificationTest {
     }
 
     @Test
+    void testStudentRegistration_AutoVerifiedForStudentPortal() {
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Rahul Kumar");
+        request.setUsername("rahul_student");
+        request.setEmail("rahul@student.com");
+        request.setPassword("password123");
+        request.setRole(Role.STUDENT);
+        request.setSecurityPin("1234");
+
+        authService.register(request);
+
+        User savedUser = userRepository.findByUsernameIgnoreCase("rahul_student").orElseThrow();
+        assertTrue(savedUser.getVerified(), "Student accounts register auto-verified so student portal remains untouched");
+    }
+
+    @Test
     void testFacultyLogin_RejectedWhenUnverified() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Dr. Gupta");
