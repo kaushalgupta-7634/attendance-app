@@ -103,8 +103,18 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
-        user.setVerified(true);
+        // Generate email verification token for new faculty accounts
+        String verificationToken = java.util.UUID.randomUUID().toString();
+        user.setVerified(false);
+        user.setVerificationToken(verificationToken);
+        user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
+        // Send verification email with the generated token
+        try {
+            emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
+        } catch (Exception e) {
+            logger.error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
+        }
 
         return "User registered successfully with role: " + role.name();
     }

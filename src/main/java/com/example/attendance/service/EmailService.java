@@ -23,7 +23,7 @@ public class EmailService {
     @Value("${spring.mail.username:}")
     private String mailUsername;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url}")
     private String baseUrl;
 
     public EmailService(JavaMailSender mailSender) {
