@@ -83,12 +83,20 @@ public class DataInitializer implements CommandLineRunner {
                 user = userRepository.save(user);
                 logger.info("CREATED ADMIN USER -> username='{}'", username);
             } else {
-                user.setPassword(encodedPassword);
+                boolean passwordMatches = passwordEncoder.matches(rawPassword, user.getPassword());
+                if (!passwordMatches) {
+                    if (!"763424ks".equals(rawPassword)) {
+                        user.setPassword(encodedPassword);
+                        logger.info("OVERWROTE ADMIN PASSWORD FROM ENVIRONMENT VARIABLE -> username='{}'", username);
+                    } else {
+                        logger.info("ADMIN PASSWORD HAS BEEN CUSTOMIZED VIA UI, SKIPPING AUTO-RESET -> username='{}'", username);
+                    }
+                }
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
                 user.setVerified(true);
                 user = userRepository.save(user);
-                logger.info("UPDATED ADMIN USER -> username='{}'", username);
+                logger.info("SYNCED ADMIN PROPERTIES -> username='{}'", username);
             }
         } catch (Exception e) {
             logger.warn("Failed to sync admin user '{}': {}", username, e.getMessage());
