@@ -114,13 +114,19 @@ public class AuthService {
         user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
         // Send verification email with the generated token
+        boolean emailSent = true;
         try {
             emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
         } catch (Exception e) {
+            emailSent = false;
             org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
         }
 
-        return "User registered successfully with role: " + role.name();
+        if (emailSent) {
+            return "User registered successfully with role: " + role.name() + ". Please check your email to verify your account.";
+        } else {
+            return "User registered successfully with role: " + role.name() + " (SMTP error). Your verification token is: " + verificationToken;
+        }
     }
 
     public String verifyOtp(String emailOrUsername, String otp) {
@@ -198,7 +204,7 @@ public class AuthService {
             return "A new 6-digit OTP has been sent to " + user.getEmail() + ".";
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification OTP to {}: {}", user.getEmail(), e.getMessage());
-            return "New OTP generated. (Email service unavailable - check Railway SMTP environment variables).";
+            return "New OTP generated (SMTP Error). Your verification OTP is: " + newOtp;
         }
     }
 
@@ -226,7 +232,7 @@ public class AuthService {
             return "Verification link sent successfully to " + user.getEmail();
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification email to {}: {}", user.getEmail(), e.getMessage());
-            throw new IllegalArgumentException("Email service unavailable");
+            return "Verification link generated (SMTP Error). Your verification token is: " + newToken;
         }
     }
 

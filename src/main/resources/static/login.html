@@ -308,7 +308,12 @@
 
         function showAlert(msg, isSuccess = false) {
             const alertBox = document.getElementById('alertBox');
-            alertBox.textContent = msg;
+            if (msg && msg.toLowerCase().includes('not verified')) {
+                const username = document.getElementById('loginUsername').value.trim() || '';
+                alertBox.innerHTML = msg + ' <a href="/verify.html?email=' + encodeURIComponent(username) + '" style="color: #60a5fa; text-decoration: underline; font-weight: 600; margin-left: 5px;">Verify Now</a>';
+            } else {
+                alertBox.textContent = msg;
+            }
             alertBox.className = 'alert-box ' + (isSuccess ? 'success' : 'error');
             alertBox.style.display = 'block';
         }
@@ -492,7 +497,16 @@
                     throw new Error(regResText || 'Registration failed');
                 }
 
-                showAlert('Account registered successfully! Logging you in...', true);
+                if (regResText.includes('token is:')) {
+                    const token = regResText.split('token is:')[1].trim();
+                    showAlert('Account created! Email server unavailable, redirecting to verify...', true);
+                    setTimeout(() => {
+                        window.location.href = '/verify.html?token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
+                    }, 1500);
+                    return;
+                }
+
+                showAlert('Account registered successfully! Checking email verification...', true);
                 
                 try {
                     const devId = getOrCreateDeviceId();
