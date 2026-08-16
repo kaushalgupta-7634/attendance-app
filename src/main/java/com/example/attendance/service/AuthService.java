@@ -153,15 +153,31 @@ public class AuthService {
     }
 
     public String verifyEmail(String token) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AuthService.class);
+        logger.info("verifyEmail called with token: '{}'", token);
+
         if (token == null || token.isBlank()) {
+            logger.warn("verifyEmail called with empty token");
             throw new IllegalArgumentException("Verification failed, request new link");
         }
 
-        User user = userRepository.findByVerificationToken(token.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Verification failed, request new link"));
+        String cleanToken = token.trim();
+        User user = userRepository.findByVerificationToken(cleanToken)
+                .orElseGet(() -> {
+                    logger.warn("No user found in database with verification token: '{}'", cleanToken);
+                    return null;
+                });
+
+        if (user == null) {
+            throw new IllegalArgumentException("Verification failed, request new link");
+        }
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        logger.info("Found user '{}' for token. Expiry: {}, Current time: {}", user.getUsername(), user.getVerificationTokenExpiry(), now);
+
         if (user.getVerificationTokenExpiry() != null && now.isAfter(user.getVerificationTokenExpiry())) {
+            logger.warn("Verification token '{}' for user '{}' has expired. Expiry: {}, Current: {}", 
+                    cleanToken, user.getUsername(), user.getVerificationTokenExpiry(), now);
             throw new IllegalArgumentException("Verification failed, request new link");
         }
 
@@ -172,6 +188,7 @@ public class AuthService {
         user.setVerificationTokenExpiry(null);
         userRepository.save(user);
 
+        logger.info("User '{}' email verified successfully via token.", user.getUsername());
         return "Email verified successfully! You can now log in.";
     }
 
