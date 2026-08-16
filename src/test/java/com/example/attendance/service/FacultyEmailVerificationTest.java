@@ -56,7 +56,7 @@ public class FacultyEmailVerificationTest {
         assertTrue(result.contains("successful"));
 
         User savedUser = userRepository.findByUsernameIgnoreCase("prof_sharma").orElseThrow();
-        assertTrue(savedUser.getVerified(), "Accounts register verified by default");
+        assertFalse(savedUser.getVerified(), "Accounts should not be verified until email link is clicked");
     }
 
     @Test
