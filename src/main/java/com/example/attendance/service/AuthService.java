@@ -113,7 +113,7 @@ public class AuthService {
         try {
             emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
         } catch (Exception e) {
-            logger.error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
+            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
         }
 
         return "User registered successfully with role: " + role.name();
