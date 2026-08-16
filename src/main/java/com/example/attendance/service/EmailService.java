@@ -128,6 +128,9 @@ public class EmailService {
         }
 
         String cleanBaseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
+        if (!cleanBaseUrl.startsWith("http://") && !cleanBaseUrl.startsWith("https://")) {
+            cleanBaseUrl = "https://" + cleanBaseUrl;
+        }
         String verificationLink = cleanBaseUrl + "/verify?token=" + token;
 
         StringBuilder body = new StringBuilder();
