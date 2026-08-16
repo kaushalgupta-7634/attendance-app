@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +26,9 @@ public class EmailService {
     @Value("${app.base-url}")
     private String baseUrl;
 
+    @Value("${resend.api.key:}")
+    private String resendApiKey;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -38,11 +41,57 @@ public class EmailService {
     }
 
     /**
+     * Generic method to send emails via Resend REST API over HTTP.
+     * Prevents SMTP port blocks on platforms like Railway.
+     */
+    private void sendEmailViaResend(String toEmail, String subject, String body) throws MailException {
+        try {
+            String apiKey = (resendApiKey != null && !resendApiKey.isBlank()) ? resendApiKey.trim() : System.getenv("RESEND_API_KEY");
+            if (apiKey == null || apiKey.isBlank()) {
+                logger.warn("Resend API Key is not configured. Please set RESEND_API_KEY environment variable.");
+                throw new MailSendException("Resend API Key is not configured. Email cannot be sent.");
+            }
+
+            // Clean inputs for JSON encoding
+            String cleanTo = toEmail.trim();
+            String cleanSubject = subject.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+            String cleanBody = body.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+
+            // Construct JSON request body
+            String jsonPayload = String.format(
+                "{\"from\":\"ATTENDX <onboarding@resend.dev>\",\"to\":\"%s\",\"subject\":\"%s\",\"text\":\"%s\"}",
+                cleanTo,
+                cleanSubject,
+                cleanBody
+            );
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(jsonPayload))
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                logger.info("Email successfully sent via Resend to {}", toEmail);
+            } else {
+                logger.error("Resend API failed with status {}: {}", response.statusCode(), response.body());
+                throw new MailSendException("Resend API error: " + response.body());
+            }
+        } catch (Exception e) {
+            logger.error("Failed to send email to {} via Resend: {}", toEmail, e.getMessage());
+            if (e instanceof MailException) {
+                throw (MailException) e;
+            }
+            throw new MailSendException("Failed to send email via Resend HTTP API", e);
+        }
+    }
+
+    /**
      * Sends a warning email to a student listing subjects with attendance below 75%.
-     *
-     * @param toEmail Email address of the student
-     * @param studentName Name of the student
-     * @param lowAttendanceMap Map of subject names to attendance percentages
      */
     public void sendLowAttendanceWarning(String toEmail, String studentName, Map<String, Double> lowAttendanceMap) {
         if (toEmail == null || toEmail.isBlank() || lowAttendanceMap == null || lowAttendanceMap.isEmpty()) {
@@ -63,26 +112,14 @@ public class EmailService {
         body.append("Attendance Management System");
 
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(getEffectiveFromAddress());
-            message.setTo(toEmail);
-            message.setSubject("Warning: Low Attendance Alert");
-            message.setText(body.toString());
-
-            mailSender.send(message);
-            logger.info("Low attendance alert email successfully sent to {}", toEmail);
+            sendEmailViaResend(toEmail, "Warning: Low Attendance Alert", body.toString());
         } catch (MailException e) {
-            logger.error("Failed to send low attendance alert email to {}: {}", toEmail, e.getMessage());
+            logger.error("Failed to send low attendance alert email: {}", e.getMessage());
         }
     }
 
     /**
      * Sends a password reset 6-digit OTP email to the user.
-     *
-     * @param toEmail Email address of the user
-     * @param userName Name of the user
-     * @param otp 6-digit OTP code
-     * @throws MailException if sending the email fails
      */
     public void sendPasswordResetOtpEmail(String toEmail, String userName, String otp) throws MailException {
         if (toEmail == null || toEmail.isBlank() || otp == null || otp.isBlank()) {
@@ -99,20 +136,7 @@ public class EmailService {
         body.append("Best regards,\n");
         body.append("Attendance Management System");
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(getEffectiveFromAddress());
-            message.setTo(toEmail);
-            message.setSubject("Your Password Reset OTP - Attendance Management System");
-            message.setText(body.toString());
-
-            mailSender.send(message);
-            logger.info("Password reset OTP email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
-        } catch (MailException e) {
-            logger.error("Failed to send password reset OTP email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
-            logger.info("Dev/Test Mode - Password Reset OTP for {}: {}", toEmail, otp);
-            throw e;
-        }
+        sendEmailViaResend(toEmail, "Your Password Reset OTP - Attendance Management System", body.toString());
     }
 
     public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
@@ -120,7 +144,7 @@ public class EmailService {
     }
 
     /**
-     * Sends a Faculty account email verification link.
+     * Sends a Faculty/Student account email verification link.
      */
     public void sendEmailVerificationLink(String toEmail, String userName, String token) throws MailException {
         if (toEmail == null || toEmail.isBlank() || token == null || token.isBlank()) {
@@ -134,33 +158,20 @@ public class EmailService {
         String verificationLink = cleanBaseUrl + "/verify?token=" + token;
 
         StringBuilder body = new StringBuilder();
-        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Faculty Member").append(",\n\n");
+        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Member").append(",\n\n");
         body.append("Thank you for registering on the ATTENDX Portal!\n\n");
-        body.append("Please click the verification link below to verify your email and activate your Faculty account:\n\n");
+        body.append("Please click the verification link below to verify your email and activate your account:\n\n");
         body.append("    🔗 ").append(verificationLink).append("\n\n");
         body.append("This verification link is valid for 24 hours. Please verify your email before attempting to log in.\n\n");
         body.append("If you did not register for an ATTENDX account, please ignore this email.\n\n");
         body.append("Best regards,\n");
         body.append("ATTENDX Support Team");
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(getEffectiveFromAddress());
-            message.setTo(toEmail);
-            message.setSubject("Verify Your Faculty Account Email - ATTENDX");
-            message.setText(body.toString());
-
-            mailSender.send(message);
-            logger.info("Verification email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
-        } catch (MailException e) {
-            logger.error("Failed to send verification email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
-            logger.info("Dev/Test Mode - Verification Link for {}: {}", toEmail, verificationLink);
-            throw e;
-        }
+        sendEmailViaResend(toEmail, "Verify Your Account Email - ATTENDX", body.toString());
     }
 
     /**
-     * Sends a 6-digit OTP verification email for Faculty account registration.
+     * Sends a 6-digit OTP verification email for account registration.
      */
     public void sendFacultyOtpEmail(String toEmail, String userName, String otp) throws MailException {
         if (toEmail == null || toEmail.isBlank() || otp == null || otp.isBlank()) {
@@ -168,28 +179,15 @@ public class EmailService {
         }
 
         StringBuilder body = new StringBuilder();
-        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Faculty Member").append(",\n\n");
+        body.append("Dear ").append(userName != null && !userName.isBlank() ? userName : "Member").append(",\n\n");
         body.append("Thank you for registering on the ATTENDX Portal!\n\n");
         body.append("Your 6-digit Email Verification OTP is:\n\n");
         body.append("    🔑 ").append(otp).append("\n\n");
-        body.append("This OTP is valid for 10 minutes. Please enter this OTP to activate your Faculty account.\n\n");
+        body.append("This OTP is valid for 10 minutes. Please enter this OTP to activate your account.\n\n");
         body.append("If you did not register for an ATTENDX account, please ignore this email.\n\n");
         body.append("Best regards,\n");
         body.append("ATTENDX Support Team");
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(getEffectiveFromAddress());
-            message.setTo(toEmail);
-            message.setSubject("Your Faculty Verification OTP - ATTENDX");
-            message.setText(body.toString());
-
-            mailSender.send(message);
-            logger.info("Faculty verification OTP email successfully sent to {} from {}", toEmail, getEffectiveFromAddress());
-        } catch (MailException e) {
-            logger.error("Failed to send Faculty verification OTP email to {} from {}: {}", toEmail, getEffectiveFromAddress(), e.getMessage());
-            logger.info("Dev/Test Mode - Faculty Verification OTP for {}: {}", toEmail, otp);
-            throw e;
-        }
+        sendEmailViaResend(toEmail, "Your Verification OTP - ATTENDX", body.toString());
     }
 }
