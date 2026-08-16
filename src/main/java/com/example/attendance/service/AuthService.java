@@ -108,14 +108,18 @@ public class AuthService {
             throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
         }
 
-        // Generate email verification token for new faculty accounts
+        // Generate email verification token and 6-digit OTP for new accounts
         String verificationToken = java.util.UUID.randomUUID().toString();
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+
         user.setVerified(false);
         user.setVerificationToken(verificationToken);
         user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
+        user.setOtp(otp);
+        user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
-        // Send verification email with the generated token
-        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
+        // Send verification email with the generated token and OTP
+        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken, otp);
 
         return "User registered successfully! Please check your email to verify your account.";
     }
@@ -209,11 +213,15 @@ public class AuthService {
         }
 
         String newToken = java.util.UUID.randomUUID().toString();
+        String newOtp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+
         user.setVerificationToken(newToken);
         user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
+        user.setOtp(newOtp);
+        user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
 
-        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), newToken);
+        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), newToken, newOtp);
         return "Verification link sent successfully to " + user.getEmail();
     }
 
