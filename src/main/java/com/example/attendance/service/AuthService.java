@@ -14,6 +14,7 @@ import com.example.attendance.repository.AttendanceRecordRepository;
 import com.example.attendance.repository.ClassSessionRepository;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
