@@ -497,15 +497,6 @@
                     throw new Error(regResText || 'Registration failed');
                 }
 
-                if (regResText.includes('token is:')) {
-                    const token = regResText.split('token is:')[1].trim();
-                    showAlert('Account created! Email server unavailable, redirecting to verify...', true);
-                    setTimeout(() => {
-                        window.location.href = '/verify.html?token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
-                    }, 1500);
-                    return;
-                }
-
                 showAlert('Account registered successfully! Checking email verification...', true);
                 
                 try {

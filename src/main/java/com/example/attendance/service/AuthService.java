@@ -114,19 +114,9 @@ public class AuthService {
         user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
         // Send verification email with the generated token
-        boolean emailSent = true;
-        try {
-            emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
-        } catch (Exception e) {
-            emailSent = false;
-            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
-        }
+        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken);
 
-        if (emailSent) {
-            return "User registered successfully with role: " + role.name() + ". Please check your email to verify your account.";
-        } else {
-            return "User registered successfully with role: " + role.name() + " (SMTP error). Your verification token is: " + verificationToken;
-        }
+        return "User registered successfully! Please check your email to verify your account.";
     }
 
     public String verifyOtp(String emailOrUsername, String otp) {
@@ -199,13 +189,8 @@ public class AuthService {
         user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusMinutes(10));
         userRepository.save(user);
 
-        try {
-            emailService.sendFacultyOtpEmail(user.getEmail(), user.getName(), newOtp);
-            return "A new 6-digit OTP has been sent to " + user.getEmail() + ".";
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification OTP to {}: {}", user.getEmail(), e.getMessage());
-            return "New OTP generated (SMTP Error). Your verification OTP is: " + newOtp;
-        }
+        emailService.sendFacultyOtpEmail(user.getEmail(), user.getName(), newOtp);
+        return "A new 6-digit OTP has been sent to " + user.getEmail() + ".";
     }
 
     public String resendVerification(String emailOrUsername) {
@@ -227,13 +212,8 @@ public class AuthService {
         user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
         userRepository.save(user);
 
-        try {
-            emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), newToken);
-            return "Verification link sent successfully to " + user.getEmail();
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(AuthService.class).error("Failed to resend verification email to {}: {}", user.getEmail(), e.getMessage());
-            return "Verification link generated (SMTP Error). Your verification token is: " + newToken;
-        }
+        emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), newToken);
+        return "Verification link sent successfully to " + user.getEmail();
     }
 
     public String requestPin(com.example.attendance.model.RequestPinRequest request) {
