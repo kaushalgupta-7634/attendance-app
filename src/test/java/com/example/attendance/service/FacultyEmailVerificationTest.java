@@ -71,6 +71,10 @@ public class FacultyEmailVerificationTest {
 
         authService.register(request);
 
+        // Simulate email verification link click to activate the account
+        User registeredUser = userRepository.findByUsernameIgnoreCase("dr_gupta").orElseThrow();
+        authService.verifyEmail(registeredUser.getVerificationToken());
+
         com.example.attendance.model.LoginRequest loginRequest = new com.example.attendance.model.LoginRequest();
         loginRequest.setUsername("dr_gupta");
         loginRequest.setPassword("password123");
