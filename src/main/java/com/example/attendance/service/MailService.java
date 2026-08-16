@@ -3,17 +3,19 @@ package com.example.attendance.service;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
 
 /**
  * Simple wrapper around Spring's JavaMailSender to send plain text emails.
  * All configuration (host, port, credentials, etc.) is taken from application.properties.
  */
 @Service
-@RequiredArgsConstructor
 public class MailService {
 
     private final JavaMailSender mailSender;
+
+    public MailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     /**
      * Sends a verification email.
