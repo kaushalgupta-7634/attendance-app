@@ -242,7 +242,8 @@
                         statusBox.className = 'status-box success';
                         statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in.';
                         document.getElementById('otpForm').style.display = 'none';
-                        document.getElementById('actionArea').innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
+                        const targetUser = emailParam || '';
+                        document.getElementById('actionArea').innerHTML = '<a href="/login.html?username=' + encodeURIComponent(targetUser) + '" class="btn-primary">Sign In to Dashboard</a>';
                     } else {
                         statusBox.className = 'status-box error';
                         statusBox.textContent = text || 'Verification failed, request new OTP';
@@ -292,7 +293,7 @@
                     statusBox.className = 'status-box success';
                     statusBox.innerHTML = '✅ <strong>Email Verified Successfully!</strong><br>Your Faculty account is now active. You can now sign in to your dashboard.';
                     document.getElementById('otpForm').style.display = 'none';
-                    document.getElementById('actionArea').innerHTML = '<a href="/login.html" class="btn-primary">Sign In to Dashboard</a>';
+                    document.getElementById('actionArea').innerHTML = '<a href="/login.html?username=' + encodeURIComponent(email) + '" class="btn-primary">Sign In to Dashboard</a>';
                 } else {
                     statusBox.className = 'status-box error';
                     statusBox.textContent = displayMsg;
