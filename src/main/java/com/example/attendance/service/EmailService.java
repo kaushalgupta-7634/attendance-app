@@ -26,8 +26,8 @@ public class EmailService {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    @Value("${resend.api.key:}")
-    private String resendApiKey;
+    @Value("${brevo.api.key:}")
+    private String brevoApiKey;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -41,25 +41,27 @@ public class EmailService {
     }
 
     /**
-     * Generic method to send emails via Resend REST API over HTTP.
+     * Generic method to send emails via Brevo REST API over HTTP.
      * Prevents SMTP port blocks on platforms like Railway.
      */
-    private void sendEmailViaResend(String toEmail, String subject, String body) throws MailException {
+    private void sendEmailViaBrevo(String toEmail, String subject, String body) throws MailException {
         try {
-            String apiKey = (resendApiKey != null && !resendApiKey.isBlank()) ? resendApiKey.trim() : System.getenv("RESEND_API_KEY");
+            String apiKey = (brevoApiKey != null && !brevoApiKey.isBlank()) ? brevoApiKey.trim() : System.getenv("BREVO_API_KEY");
             if (apiKey == null || apiKey.isBlank()) {
-                logger.warn("Resend API Key is not configured. Please set RESEND_API_KEY environment variable.");
-                throw new MailSendException("Resend API Key is not configured. Email cannot be sent.");
+                logger.warn("Brevo API Key is not configured. Please set BREVO_API_KEY environment variable.");
+                throw new MailSendException("Brevo API Key is not configured. Email cannot be sent.");
             }
 
             // Clean inputs for JSON encoding
             String cleanTo = toEmail.trim();
             String cleanSubject = subject.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
             String cleanBody = body.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+            String senderEmail = getEffectiveFromAddress();
 
-            // Construct JSON request body
+            // Construct JSON request body for Brevo
             String jsonPayload = String.format(
-                "{\"from\":\"ATTENDX <onboarding@resend.dev>\",\"to\":\"%s\",\"subject\":\"%s\",\"text\":\"%s\"}",
+                "{\"sender\":{\"name\":\"ATTENDX\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"subject\":\"%s\",\"textContent\":\"%s\"}",
+                senderEmail,
                 cleanTo,
                 cleanSubject,
                 cleanBody
@@ -67,26 +69,27 @@ public class EmailService {
 
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create("https://api.resend.com/emails"))
-                    .header("Authorization", "Bearer " + apiKey)
+                    .uri(java.net.URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .header("api-key", apiKey)
                     .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
             java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                logger.info("Email successfully sent via Resend to {}", toEmail);
+                logger.info("Email successfully sent via Brevo to {}", toEmail);
             } else {
-                logger.error("Resend API failed with status {}: {}", response.statusCode(), response.body());
-                throw new MailSendException("Resend API error: " + response.body());
+                logger.error("Brevo API failed with status {}: {}", response.statusCode(), response.body());
+                throw new MailSendException("Brevo API error: " + response.body());
             }
         } catch (Exception e) {
-            logger.error("Failed to send email to {} via Resend: {}", toEmail, e.getMessage());
+            logger.error("Failed to send email to {} via Brevo: {}", toEmail, e.getMessage());
             if (e instanceof MailException) {
                 throw (MailException) e;
             }
-            throw new MailSendException("Failed to send email via Resend HTTP API", e);
+            throw new MailSendException("Failed to send email via Brevo HTTP API", e);
         }
     }
 
@@ -112,7 +115,7 @@ public class EmailService {
         body.append("Attendance Management System");
 
         try {
-            sendEmailViaResend(toEmail, "Warning: Low Attendance Alert", body.toString());
+            sendEmailViaBrevo(toEmail, "Warning: Low Attendance Alert", body.toString());
         } catch (MailException e) {
             logger.error("Failed to send low attendance alert email: {}", e.getMessage());
         }
@@ -136,7 +139,7 @@ public class EmailService {
         body.append("Best regards,\n");
         body.append("Attendance Management System");
 
-        sendEmailViaResend(toEmail, "Your Password Reset OTP - Attendance Management System", body.toString());
+        sendEmailViaBrevo(toEmail, "Your Password Reset OTP - Attendance Management System", body.toString());
     }
 
     public void sendPasswordResetEmail(String toEmail, String userName, String resetToken) throws MailException {
@@ -167,7 +170,7 @@ public class EmailService {
         body.append("Best regards,\n");
         body.append("ATTENDX Support Team");
 
-        sendEmailViaResend(toEmail, "Verify Your Account Email - ATTENDX", body.toString());
+        sendEmailViaBrevo(toEmail, "Verify Your Account Email - ATTENDX", body.toString());
     }
 
     /**
@@ -188,6 +191,6 @@ public class EmailService {
         body.append("Best regards,\n");
         body.append("ATTENDX Support Team");
 
-        sendEmailViaResend(toEmail, "Your Verification OTP - ATTENDX", body.toString());
+        sendEmailViaBrevo(toEmail, "Your Verification OTP - ATTENDX", body.toString());
     }
 }
