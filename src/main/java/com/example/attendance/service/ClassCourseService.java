@@ -92,6 +92,18 @@ public class ClassCourseService {
             throw new IllegalArgumentException("Student is already enrolled in class '" + classCourse.getClassName() + "' (" + classCode + ").");
         }
 
+        // Strict Class/Department check to ensure student joins the correct department classes
+        if (student.getClassName() != null && !student.getClassName().isBlank()
+                && classCourse.getClassName() != null && !classCourse.getClassName().isBlank()) {
+            String studentClass = student.getClassName().trim().toLowerCase();
+            String courseClass = classCourse.getClassName().trim().toLowerCase();
+
+            if (!courseClass.contains(studentClass) && !studentClass.contains(courseClass)) {
+                throw new IllegalArgumentException("Access Denied: You belong to the '" + student.getClassName() 
+                        + "' department, but this course is for '" + classCourse.getClassName() + "'.");
+            }
+        }
+
         Enrollment enrollment = new Enrollment(student, classCourse, LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         return enrollmentRepository.save(enrollment);
     }
