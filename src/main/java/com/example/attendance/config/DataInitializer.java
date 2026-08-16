@@ -79,12 +79,14 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
+                user.setVerified(true);
                 user = userRepository.save(user);
                 logger.info("CREATED ADMIN USER -> username='{}'", username);
             } else {
                 user.setPassword(encodedPassword);
                 user.setRole(Role.ADMIN);
                 user.setEnabled(true);
+                user.setVerified(true);
                 user = userRepository.save(user);
                 logger.info("UPDATED ADMIN USER -> username='{}'", username);
             }

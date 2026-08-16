@@ -57,6 +57,10 @@ public class AuthService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + cleanUsername));
 
+        if (user.getRole() != Role.ADMIN && !Boolean.TRUE.equals(user.getVerified())) {
+            throw new IllegalArgumentException("Your email address is not verified. Please verify your email first.");
+        }
+
         String newSessionId = java.util.UUID.randomUUID().toString();
         user.setCurrentSessionId(newSessionId);
         user = userRepository.save(user);
