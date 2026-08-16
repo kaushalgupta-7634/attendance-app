@@ -319,11 +319,27 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Always ensure login inputs are clean and not pre-filled with stale credentials
+            const urlParams = new URLSearchParams(window.location.search);
+            const usernameParam = urlParams.get('username');
+            
             const uInput = document.getElementById('loginUsername');
             const pInput = document.getElementById('loginPassword');
-            if (uInput) uInput.value = '';
-            if (pInput) pInput.value = '';
+            
+            if (usernameParam) {
+                // Slightly delay to override browser autofill of admin credentials
+                setTimeout(() => {
+                    if (uInput) {
+                        uInput.value = usernameParam;
+                        if (pInput) {
+                            pInput.value = '';
+                            pInput.focus();
+                        }
+                    }
+                }, 100);
+            } else {
+                if (uInput) uInput.value = '';
+                if (pInput) pInput.value = '';
+            }
             
             // Remove stale remembered username cookies
             localStorage.removeItem('username');
