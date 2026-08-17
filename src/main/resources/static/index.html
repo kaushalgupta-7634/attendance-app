@@ -710,9 +710,8 @@
     <main id="main-content">
         <section class="hero">
             <div class="hero-pill">Academic Attendance Portal</div>
-            <!-- Title aligned with H1 for 100% SEO overlap -->
             <h1>ATTENDX - Smart Geo-Fenced Attendance Platform</h1>
-            <p>You can easily optimize your academic tracking. The **ATTENDX smart geo-fenced attendance platform** provides a secure, location-verified student tracking system. It features dynamic rotating QR codes, verification passcodes, class roster management, and assignment distribution.</p>
+            <p>Say goodbye to paper rosters and attendance fraud. The **ATTENDX smart geo-fenced attendance platform** verifies student presence in real time using secure, location-locked coordinates and dynamic rotating QR tokens.</p>
 
             <div class="cta-group">
                 <a href="/teacher-dashboard.html" class="btn-primary">
@@ -749,10 +748,9 @@
                 </ul>
             </nav>
 
-            <!-- Key Takeaways for AI summary engines -->
             <div class="takeaways-box" id="about-attendx">
-                <h3>Key Takeaways (TL;DR)</h3>
-                <p>Furthermore, managing classroom attendance is simplified. The system uses your location GPS coordinate thresholds and 15-second rotating QR codes to stop check-in fraud. Therefore, you do not have to worry about proxies or friend sign-ins.</p>
+                <h3>Quick Overview (TL;DR)</h3>
+                <p>ATTENDX replaces slow, manual roll calls with automated coordinate verification. By combining precise GPS geolocation with 15-second rotating QR codes, the platform eliminates proxy attendance entirely—saving valuable lecture time and updating rosters instantly.</p>
             </div>
         </div>
 
@@ -834,7 +832,7 @@
         <section class="content-container">
             
             <h2 class="section-header" id="comparison-metrics">Traditional Attendance vs. ATTENDX</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem;">To help you understand why location-verified check-in matters, we have summarized the differences. Traditional classroom rosters suffer from manual entry errors and proxy check-ins. In contrast, ATTENDX automates the flow.</p>
+            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Traditional paper sheets are slow and easy to cheat. ATTENDX automates the entire verification process, providing a secure check-in in under 15 seconds.</p>
             
             <table class="data-table">
                 <thead>
@@ -868,17 +866,17 @@
                 </tbody>
             </table>
 
-            <h2 class="section-header" id="how-it-works">How It Works - Step by Step</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1rem;">If you are wondering how you should initiate the attendance flow, follow these steps:</p>
+            <h2 class="section-header" id="how-it-works">How the Verification Process Works</h2>
+            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Marking attendance is simple for both instructors and students. Here is the step-by-step workflow:</p>
             <ol class="step-list">
                 <li><strong>Faculty Initiation:</strong> The instructor signs into the dashboard, launches a class session, and displays the dynamic checking QR code.</li>
                 <li><strong>Student Device scan:</strong> Students open the portal on their mobile device and scan the displayed checking QR token.</li>
                 <li><strong>Proximity Coordinate calculation:</strong> The system automatically extracts coordinates using the browser location API and cross-references them.</li>
-                <li><strong>Roster entry updated:</strong> Your profile is updated in real-time. Consequently, the faculty member can download reports instantly.</li>
+                <li><strong>Roster entry updated:</strong> Roster database updates in real-time, allowing the faculty member to download reports instantly.</li>
             </ol>
 
-            <h2 class="section-header" id="technical-terms">Core Technical Glossary</h2>
-            <p style="color: var(--text-sub); line-height: 1.6;">Below are technical terms defined to clarify the underlying security mechanics:</p>
+            <h2 class="section-header" id="technical-terms">Core Technologies Defined</h2>
+            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Behind the scenes, ATTENDX uses advanced security standards to ensure check-in integrity. Here is a breakdown of the key terminology:</p>
             <dl class="def-list">
                 <dt>Geo-fencing Radius</dt>
                 <dd>A virtual boundary mapped to latitude and longitude coordinates. The student's device coordinates must match this coordinate radius.</dd>
@@ -888,8 +886,8 @@
                 <dd>JSON Web Tokens that hold secure verified payloads (Student, Instructor, Admin roles) to authenticate backend API actions.</dd>
             </dl>
 
-            <h2 class="section-header" id="api-integration">API JSON Schema Example</h2>
-            <p style="color: var(--text-sub); line-height: 1.6;">In addition to standard UI interfaces, developers can inspect the JSON payload schema for programmatic validation integration:</p>
+            <h2 class="section-header" id="api-integration">Developer API Payload Example</h2>
+            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">For custom integrations, developers can query our REST API directly. Here is a sample JSON payload sent during a check-in request:</p>
             
             <div class="code-box">
                 <pre><code>{
@@ -903,8 +901,8 @@
             </div>
 
             <!-- FAQ Section with details/summary for AEO/GEO scoring -->
-            <h2 class="section-header" id="faq-section">Frequently Asked Questions (FAQ)</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem;">Below are questions commonly asked by students and administrative stakeholders:</p>
+            <h2 class="section-header" id="faq-section">Frequently Asked Questions</h2>
+            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Have questions about location privacy or device settings? Find quick answers to common queries below:</p>
             
             <div class="faq-item">
                 <details>
