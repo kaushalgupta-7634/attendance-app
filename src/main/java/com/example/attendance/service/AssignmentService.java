@@ -249,6 +249,11 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assignment not found with ID: " + assignmentId));
 
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(now)) {
+            throw new IllegalStateException("Assignment submission date has expired. Downloads are locked.");
+        }
+
         try {
             Path filePath = Paths.get(assignment.getPdfFilePath()).toAbsolutePath().normalize();
             if (!filePath.startsWith(this.uploadDir)) {

@@ -1434,7 +1434,10 @@
                         <p style="color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.4;">${escapeHtml(a.description) || 'No additional instructions provided.'}</p>
                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                             ${dueDateText}
-                            <a href="/assignments/download/${a.id}" target="_blank" class="btn-action" style="width: auto; padding: 0.4rem 0.8rem; margin: 0; text-decoration: none; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669);">📥 Download / View PDF</a>
+                            ${a.expired 
+                                ? `<button class="btn-action" style="width: auto; padding: 0.4rem 0.8rem; margin: 0; font-size: 0.8rem; background: rgba(71, 85, 105, 0.4); border: 1px solid #475569; color: #94a3b8; cursor: not-allowed;" disabled>🔒 Expired / Locked</button>`
+                                : `<a href="/assignments/download/${a.id}" target="_blank" class="btn-action" style="width: auto; padding: 0.4rem 0.8rem; margin: 0; text-decoration: none; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669);">📥 Download / View PDF</a>`
+                            }
                         </div>
                     </div>
                 `;
