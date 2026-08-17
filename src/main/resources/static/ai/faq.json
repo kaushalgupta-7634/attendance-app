@@ -1,0 +1,20 @@
+{
+  "faq": [
+    {
+      "question": "What is ATTENDX?",
+      "answer": "ATTENDX is an automated classroom presence validation suite. It verifies students are physically inside the classroom by checking proximity coordinates and matching time-based rotating QR codes."
+    },
+    {
+      "question": "How does GPS location verification prevent fraud?",
+      "answer": "Traditional attendance sheets can be signed by proxies. ATTENDX requires the student's mobile device GPS coordinates to match the designated coordinates of the classroom within a narrow radius, ensuring physical presence."
+    },
+    {
+      "question": "Does it support local Wi-Fi validation?",
+      "answer": "Yes, ATTENDX can cross-reference the campus Wi-Fi network's SSID with the classroom's router configuration, creating another tier of verification."
+    },
+    {
+      "question": "Is the attendance roster exportable?",
+      "answer": "Yes, faculty members can export historical or live attendance records directly to CSV spreadsheets and PDF formats."
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - ATTENDX Proximity Validation</title>
+    <meta name="description" content="Read the ATTENDX Privacy Policy to understand how student location coordinate verification and user profile metadata are secured.">
+    <link rel="canonical" href="https://attendance-app-production-b868.up.railway.app/privacy.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --border-card: #334155;
+            --accent-blue: #2563eb;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: #1e293b;
+            border-bottom: 1px solid var(--border-card);
+        }
+        .logo {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .logo-box {
+            width: 30px;
+            height: 30px;
+            background: var(--accent-blue);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 900;
+        }
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 2.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        h1 {
+            font-size: 2.25rem;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+        h2 {
+            font-size: 1.35rem;
+            color: #ffffff;
+            margin: 1.5rem 0 0.75rem;
+        }
+        p {
+            color: var(--text-sub);
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1.5rem;
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-card);
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">
+            <div class="logo-box">A</div>
+            ATTENDX
+        </a>
+    </nav>
+    <main class="container">
+        <h1>Privacy Policy</h1>
+        <p>Last updated: August 17, 2026</p>
+        <p>Your privacy is extremely important to us. This Privacy Policy explains how the ATTENDX system processes coordinates, account profiles, and logging parameters.</p>
+        
+        <h2>1. Geo-Location & Proximity Data</h2>
+        <p>ATTENDX uses your device's GPS coordinates to verify that you are physically present inside the designated classroom during active checking sessions. We process this mathematical calculation (distance to target) dynamically on the server. We **never** store historical trace paths, nor do we track your device location when you are not actively signing in.</p>
+
+        <h2>2. Data Security & Retention</h2>
+        <p>User accounts, email profiles, and roster data are secured behind standard JSON Web Token (JWT) cryptographic signatures and industry-standard password hashing mechanisms. We retain check-in history records solely for academic evaluation by the designated faculty instruction team.</p>
+
+        <a href="/" class="back-link">&larr; Back to Home</a>
+    </main>
+    <footer>
+        <p>&copy; 2026 ATTENDX System. All rights reserved.</p>
+    </footer>
+</body>
+</html>

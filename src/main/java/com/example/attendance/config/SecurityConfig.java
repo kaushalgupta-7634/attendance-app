@@ -67,9 +67,24 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https: data:; connect-src 'self' https:; frame-ancestors 'none';")
+                        )
+                        .referrerPolicy(referrer -> referrer
+                                .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER_WHEN_DOWNGRADE)
+                        )
+                        .permissionsPolicy(permissions -> permissions
+                                .policy("geolocation=*, camera=*, microphone=()")
+                        )
+                )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/admin-info").hasRole("ADMIN")
-                        .requestMatchers("/", "/index.html", "/login.html", "/verify.html", "/verify", "/verify-email", "/verify-otp", "/resend-otp", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/login.html", "/verify.html", "/verify", "/verify-email", "/verify-otp", "/resend-otp", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/favicon-32x32.png", "/apple-touch-icon.png", "/manifest.json", "/robots.txt", "/sitemap.xml", "/.well-known/**", "/ai/**", "/images/**", "/about.html", "/contact.html", "/privacy.html", "/terms.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );

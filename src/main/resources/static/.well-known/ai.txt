@@ -1,0 +1,15 @@
+# AI Agent Discovery File for ATTENDX
+User-agent: *
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin-dashboard.html
+Disallow: /teacher-dashboard.html
+Disallow: /student-scan.html
+Disallow: /verify.html
+
+# Summary & FAQs URLs for AI Crawlers
+Summary: https://attendance-app-production-b868.up.railway.app/ai/summary.json
+FAQ: https://attendance-app-production-b868.up.railway.app/ai/faq.json
+Contact: https://attendance-app-production-b868.up.railway.app/contact.html
+Privacy: https://attendance-app-production-b868.up.railway.app/privacy.html
+Terms: https://attendance-app-production-b868.up.railway.app/terms.html

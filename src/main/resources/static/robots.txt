@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /login.html
+Allow: /forgot-password.html
+Allow: /reset-password.html
+Allow: /about.html
+Allow: /contact.html
+Allow: /privacy.html
+Allow: /terms.html
+Disallow: /admin-dashboard.html
+Disallow: /teacher-dashboard.html
+Disallow: /student-scan.html
+Disallow: /verify.html
+Disallow: /api/
+Disallow: /auth/
+
+Sitemap: https://attendance-app-production-b868.up.railway.app/sitemap.xml
