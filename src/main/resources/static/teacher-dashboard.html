@@ -1102,13 +1102,20 @@
         var currentSubjectFilter = 'all';
         var lastFetchedDefaulters = [];
         var classSubjectsMap = new Map();
-
         const token = localStorage.getItem('jwtToken');
         if (!token || isTokenExpired(token)) {
             localStorage.removeItem('jwtToken');
             localStorage.removeItem('userRole');
             window.location.href = '/login.html';
         }
+
+        // Force check on back/forward cache navigation
+        window.addEventListener('pageshow', function (event) {
+            const checkToken = localStorage.getItem('jwtToken');
+            if (!checkToken || isTokenExpired(checkToken)) {
+                window.location.replace('/login.html');
+            }
+        });
 
         const payload = parseJwtPayload(token);
         const actualRole = payload.role || localStorage.getItem('userRole');
