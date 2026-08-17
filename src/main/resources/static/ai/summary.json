@@ -1,0 +1,18 @@
+{
+  "name": "ATTENDX",
+  "headline": "Smart Geo-Fenced Attendance & Class Management Platform",
+  "description": "ATTENDX is a secure educational platform designed to verify student presence using location geo-fencing and time-based rotating QR tokens, preventing classroom check-in fraud.",
+  "category": "Educational Technology / Classroom Attendance Systems",
+  "features": [
+    "Location proximity verification via GPS coordinates",
+    "Dynamic rotating QR code validation to prevent proxy attendance",
+    "Wi-Fi SSID matching verification support",
+    "Role-based authentication separation (Faculty, Student, Administrator)",
+    "Real-time roster and assignment distribution",
+    "Comprehensive CSV/PDF exports for faculty analytics"
+  ],
+  "technologies": ["Spring Boot", "Spring Security", "JWT", "PostgreSQL", "HTML5", "CSS3", "JavaScript"],
+  "developer": "kaushalgupta-7634",
+  "website": "https://attendance-app-production-b868.up.railway.app/",
+  "documentation": "https://attendance-app-production-b868.up.railway.app/swagger-ui.html"
+}
