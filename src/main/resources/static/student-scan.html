@@ -567,6 +567,14 @@
             window.location.href = '/login.html';
         }
 
+        // Force check on back/forward cache navigation
+        window.addEventListener('pageshow', function (event) {
+            const checkToken = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
+            if (!checkToken || isTokenExpired(checkToken)) {
+                window.location.replace('/login.html');
+            }
+        });
+
         const payload = parseJwtPayload(token);
         const actualRole = payload.role || localStorage.getItem('userRole') || getCookie('attendx_user_role');
 
