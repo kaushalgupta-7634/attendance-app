@@ -1109,6 +1109,28 @@
             window.location.href = '/login.html';
         }
 
+        // Global fetch interceptor to handle 401 Unauthorized (session invalidated/expired)
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch(...args);
+                if (response.status === 401 || response.status === 403) {
+                    const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : (args[0] && args[0].url));
+                    const isInternal = !url || url.startsWith('/') || url.startsWith(window.location.origin);
+                    if (isInternal) {
+                        localStorage.removeItem('jwtToken');
+                        localStorage.removeItem('userRole');
+                        document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                        document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                        window.location.replace('/login.html');
+                    }
+                }
+                return response;
+            } catch (err) {
+                throw err;
+            }
+        };
+
         // Force check on back/forward cache navigation
         window.addEventListener('pageshow', function (event) {
             const checkToken = localStorage.getItem('jwtToken');
