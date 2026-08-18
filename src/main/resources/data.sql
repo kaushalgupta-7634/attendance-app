@@ -1,16 +1,16 @@
 -- Seed Test Data (1 Teacher + 5 Test Students + 1 Class Course + Enrollments + 1 Active Class Session)
 
 -- 1. Seed Teacher (username: teacher1, password: password123)
-MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled) KEY(id) VALUES 
-(1, 'Prof. Alan Turing', 'teacher1', 'teacher1@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'TEACHER', 0, 0, true);
+MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled, verified) KEY(id) VALUES 
+(1, 'Prof. Alan Turing', 'teacher1', 'teacher1@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'TEACHER', 0, 0, true, true);
 
 -- 2. Seed 5 Test Students (username: student1..student5, password: password123)
-MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled) KEY(id) VALUES 
-(2, 'Alice Smith', 'student1', 'alice@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
-(3, 'Bob Johnson', 'student2', 'bob@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
-(4, 'Charlie Brown', 'student3', 'charlie@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
-(5, 'Diana Prince', 'student4', 'diana@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true),
-(6, 'Evan Wright', 'student5', 'evan@example.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0YM1b62Is19j5u', 'STUDENT', 0, 0, true);
+MERGE INTO users (id, name, username, email, password, role, pin_attempt_count, pin_request_count, enabled, verified) KEY(id) VALUES 
+(2, 'Alice Smith', 'student1', 'alice@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'STUDENT', 0, 0, true, true),
+(3, 'Bob Johnson', 'student2', 'bob@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'STUDENT', 0, 0, true, true),
+(4, 'Charlie Brown', 'student3', 'charlie@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'STUDENT', 0, 0, true, true),
+(5, 'Diana Prince', 'student4', 'diana@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'STUDENT', 0, 0, true, true),
+(6, 'Evan Wright', 'student5', 'evan@example.com', '$2a$10$jiTyNSZDkUM4PM1exZzrUOOmWbi7Ap4byci6anypzR0Dgu0xyy/pW', 'STUDENT', 0, 0, true, true);
 
 -- 3. Seed Class Course (classCode: CS101-A)
 MERGE INTO class_courses (id, teacher_id, class_name, subject, class_code) KEY(id) VALUES
@@ -29,4 +29,11 @@ MERGE INTO class_sessions (id, teacher_id, class_course_id, class_name, subject,
 MERGE INTO attendance_records (id, session_id, student_id, marked_at, status, manually_overridden) KEY(id) VALUES
 (1, 1, 2, '2026-08-14 10:00:00', 'PRESENT', false),
 (2, 1, 3, '2026-08-14 10:05:00', 'PRESENT', false);
+
+-- 7. Advance Identity Sequences for H2
+ALTER TABLE users ALTER COLUMN id RESTART WITH 10;
+ALTER TABLE class_courses ALTER COLUMN id RESTART WITH 10;
+ALTER TABLE class_sessions ALTER COLUMN id RESTART WITH 10;
+ALTER TABLE attendance_records ALTER COLUMN id RESTART WITH 10;
+ALTER TABLE enrollments ALTER COLUMN id RESTART WITH 10;
 
