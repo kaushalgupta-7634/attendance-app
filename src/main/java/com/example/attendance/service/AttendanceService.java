@@ -138,7 +138,8 @@ public class AttendanceService {
         }
 
         // Step (c): Strict Geofencing Enforcement for anti-proxy protection (QR scan & Passcode/Token Number)
-        boolean isTestingAnywhereMode = session.getRadiusMeters() != null && session.getRadiusMeters() >= 99999;
+        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && session.getRadiusMeters() >= 99999)
+                || Boolean.TRUE.equals(request.isBypassLocation());
 
         if (!isTestingAnywhereMode) {
             boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
@@ -242,6 +243,10 @@ public class AttendanceService {
         record.setWifiMismatchWarning(wifiMismatch);
         record.setDeviceId(deviceId);
         record.setIpAddress(clientIp);
+        if (Boolean.TRUE.equals(request.isBypassLocation())) {
+            record.setManuallyOverridden(true);
+            record.setOverrideReason("Location check bypassed by student (Distance Limit Bypass)");
+        }
 
         return attendanceRecordRepository.save(record);
     }
