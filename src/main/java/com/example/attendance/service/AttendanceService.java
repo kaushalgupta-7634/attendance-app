@@ -155,10 +155,19 @@ public class AttendanceService {
             isLocalDev = false;
         }
 
+        double classLat = session.getClassroomLat() != null ? session.getClassroomLat() : 0.0;
+        double classLng = session.getClassroomLng() != null ? session.getClassroomLng() : 0.0;
+        boolean isIpFallbackCoords = 
+                (Math.abs(classLat - 29.4667) < 0.01 && Math.abs(classLng - 77.6833) < 0.01)
+                || (Math.abs(classLat - 30.6833) < 0.01 && Math.abs(classLng - 75.1000) < 0.01);
+
         if (isLocalDev) {
             logger.info("Local development environment detected. Bypassing geofencing location check.");
         }
-        boolean isTestingAnywhereMode = isLocalDev
+        if (isIpFallbackCoords) {
+            logger.info("Classroom location matches IP fallback coordinates ({}, {}). Bypassing geofencing location check.", classLat, classLng);
+        }
+        boolean isTestingAnywhereMode = isLocalDev || isIpFallbackCoords
                 || (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0))
                 || Boolean.TRUE.equals(request.isBypassLocation());
 
