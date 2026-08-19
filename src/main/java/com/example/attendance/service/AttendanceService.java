@@ -167,7 +167,7 @@ public class AttendanceService {
         if (isIpFallbackCoords) {
             logger.info("Classroom location matches IP fallback coordinates ({}, {}). Bypassing geofencing location check.", classLat, classLng);
         }
-        boolean isTestingAnywhereMode = isLocalDev || isIpFallbackCoords
+        boolean isTestingAnywhereMode = isIpFallbackCoords
                 || (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
         if (!isTestingAnywhereMode) {
