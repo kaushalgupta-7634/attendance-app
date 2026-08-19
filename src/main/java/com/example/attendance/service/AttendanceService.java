@@ -175,7 +175,7 @@ public class AttendanceService {
                     && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
 
             if (!hasValidClassroomCoords) {
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! Classroom GPS location was not captured by teacher for this session. Please ask your teacher to allow location on their browser and re-launch session, or enable 'Testing / Anywhere Mode'.");
+                throw new IllegalArgumentException("Attendance rejected: Distance limit! Classroom GPS coordinates are outdated. Please ask your teacher to Refresh GPS or set classroom location manually.");
             }
 
             double studentLat = request.getStudentLat();
