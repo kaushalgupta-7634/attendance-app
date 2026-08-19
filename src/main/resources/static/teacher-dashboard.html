@@ -458,7 +458,7 @@
                     </div>
                     <button type="button"
                         style="background: none; border: none; color: var(--accent-cyan); font-size: 0.8rem; cursor: pointer;"
-                        onclick="detectGPSLocation()">Refresh GPS</button>
+                        onclick="detectGPSLocation(true)">Refresh GPS</button>
                 </div>
 
                 <form id="startSessionForm" onsubmit="handleStartSession(event)">
@@ -507,7 +507,7 @@
                             <div id="teacherGpsBadge"
                                 style="font-size: 0.825rem; font-weight: 600; color: #7dd3fc; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
                                 <span>📍 Acquiring Classroom GPS Location...</span>
-                                <button type="button" onclick="detectGPSLocation()"
+                                <button type="button" onclick="detectGPSLocation(true)"
                                     style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh
                                     GPS</button>
                             </div>
@@ -1210,7 +1210,11 @@
             if (lngEl) lngEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
         });
 
-        function detectGPSLocation() {
+        function detectGPSLocation(clearCache = false) {
+            if (clearCache) {
+                localStorage.removeItem('last_classroom_lat');
+                localStorage.removeItem('last_classroom_lng');
+            }
             const latInput = document.getElementById('classroomLat');
             const lngInput = document.getElementById('classroomLng');
             const gpsBadge = document.getElementById('teacherGpsBadge');
@@ -1230,7 +1234,7 @@
                     gpsBadge.style.color = '#86efac';
                     gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
                     gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
-                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
+                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
                 }
             };
 
@@ -1260,7 +1264,7 @@
                         gpsBadge.style.color = '#fcd34d';
                         gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
                         gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                        gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
+                        gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
                     }
                 }
             };
