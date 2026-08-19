@@ -1250,12 +1250,18 @@
             };
 
             const renderGpsErrorBadge = async () => {
-                const ipOk = await fetchIpLocationFallback();
-                if (!ipOk && gpsBadge) {
-                    gpsBadge.style.color = '#fcd34d';
-                    gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-                    gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                    gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
+                const savedLat = localStorage.getItem('last_classroom_lat');
+                const savedLng = localStorage.getItem('last_classroom_lng');
+                if (savedLat && savedLng) {
+                    applyPosition(parseFloat(savedLat), parseFloat(savedLng), 'Saved Location');
+                } else {
+                    const ipOk = await fetchIpLocationFallback();
+                    if (!ipOk && gpsBadge) {
+                        gpsBadge.style.color = '#fcd34d';
+                        gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                        gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation()" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
+                    }
                 }
             };
 
@@ -1559,6 +1565,12 @@
 
                 const session = await res.json();
                 activeSessionId = session.id;
+
+                // Save successfully started session coordinates to localStorage
+                if (payload.classroomLat && payload.classroomLng) {
+                    localStorage.setItem('last_classroom_lat', payload.classroomLat);
+                    localStorage.setItem('last_classroom_lng', payload.classroomLng);
+                }
 
                 if (session.active) {
                     document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
