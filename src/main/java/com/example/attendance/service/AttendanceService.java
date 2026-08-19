@@ -168,8 +168,7 @@ public class AttendanceService {
             logger.info("Classroom location matches IP fallback coordinates ({}, {}). Bypassing geofencing location check.", classLat, classLng);
         }
         boolean isTestingAnywhereMode = isLocalDev || isIpFallbackCoords
-                || (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0))
-                || Boolean.TRUE.equals(request.isBypassLocation());
+                || (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
         if (!isTestingAnywhereMode) {
             boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
@@ -179,8 +178,16 @@ public class AttendanceService {
                 throw new IllegalArgumentException("Attendance rejected: Distance limit! Classroom GPS location was not captured by teacher for this session. Please ask your teacher to allow location on their browser and re-launch session, or enable 'Testing / Anywhere Mode'.");
             }
 
+            double studentLat = request.getStudentLat();
+            double studentLng = request.getStudentLng();
+            boolean isDefaultStudentCoords = Math.abs(studentLat - 12.9716) < 0.0001 && Math.abs(studentLng - 77.5946) < 0.0001;
+
+            if (isDefaultStudentCoords && !isRunningTest) {
+                throw new IllegalArgumentException("Attendance rejected: Distance limit! Student GPS location defaulted to Bangalore coordinates (12.9716, 77.5946). Please allow location permission in your browser or click 'Bypass Distance Limit'.");
+            }
+
             double distanceMeters = calculateHaversineMeters(
-                    request.getStudentLat(), request.getStudentLng(),
+                    studentLat, studentLng,
                     session.getClassroomLat(), session.getClassroomLng()
             );
 
