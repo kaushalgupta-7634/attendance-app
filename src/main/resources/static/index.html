@@ -666,6 +666,185 @@
         footer a:hover {
             text-decoration: underline;
         }
+
+        /* Collapsible System Styles */
+        .collapsible-system {
+            max-width: 960px;
+            margin: 2.5rem auto;
+            padding: 0 5%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .collapsible-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collapsible-item:hover {
+            border-color: #4b5563;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .collapsible-item.is-active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 30px rgba(37, 99, 235, 0.15);
+        }
+
+        .collapsible-trigger {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            text-align: left;
+            color: #ffffff;
+            font-family: inherit;
+            outline: none;
+            user-select: none;
+        }
+
+        .collapsible-trigger:focus-visible {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .trigger-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .trigger-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            background: rgba(37, 99, 235, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 8px;
+            color: #60a5fa;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collapsible-item.is-active .trigger-icon {
+            background: var(--accent-blue);
+            color: #ffffff;
+            border-color: var(--accent-blue);
+        }
+
+        .trigger-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            transition: color 0.3s ease;
+        }
+
+        .collapsible-item.is-active .trigger-title {
+            color: #ffffff;
+        }
+
+        .trigger-chevron {
+            color: var(--text-sub);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapsible-item.is-active .trigger-chevron {
+            transform: rotate(180deg);
+            color: #ffffff;
+        }
+
+        /* Modern Native CSS Grid Height Transition */
+        .collapsible-panel {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collapsible-panel.is-expanded {
+            grid-template-rows: 1fr;
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            min-height: 0;
+            transition: visibility 0.35s step-end;
+            visibility: hidden;
+        }
+
+        .collapsible-panel.is-expanded .collapsible-content {
+            visibility: visible;
+            transition: visibility 0.35s step-start;
+        }
+
+        /* Inner container padding */
+        .collapsible-inner {
+            padding: 0.5rem 1.5rem 1.75rem;
+        }
+
+        /* Normalize internal section styles to fit perfectly inside panels */
+        .collapsible-inner .features-grid {
+            padding: 0.5rem 0 1rem;
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .collapsible-inner .data-table {
+            margin: 0.5rem 0 1rem;
+        }
+
+        .collapsible-inner .step-list {
+            margin: 0.5rem 0 1rem;
+        }
+
+        .collapsible-inner .def-list {
+            margin: 0.5rem 0 1rem;
+        }
+
+        .collapsible-inner .code-box {
+            margin: 0.5rem 0 1rem;
+        }
+
+        .collapsible-inner .faq-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .collapsible-inner .section-header {
+            display: none; /* Hide individual internal section headers as trigger buttons display them now */
+        }
+
+        .collapsible-inner p[style*="text-align: center"] {
+            text-align: left !important;
+            margin: 0.25rem 0 1.25rem !important;
+            max-width: 100% !important;
+        }
+
+        /* Disable sizing animations for users who prefer reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .collapsible-item,
+            .trigger-icon,
+            .trigger-chevron,
+            .collapsible-panel {
+                transition: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -738,143 +917,265 @@
             </div>
         </div>
 
-        <!-- H2 Heading to fix structural gaps -->
-        <h2 class="section-header" id="core-features">Core Features of the ATTENDX System</h2>
-
-        <section class="features-grid">
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                    </svg>
-                </div>
-                <h3>Location Proximity Check</h3>
-                <p>Calculates student distance relative to classroom GPS coordinates using the Haversine formula to verify physical attendance during active class sessions.</p>
-            </article>
-
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7zM14 14h3v3h-3z" />
-                    </svg>
-                </div>
-                <h3>Dynamic QR Code Security</h3>
-                <p>15-second encrypted rotating QR tokens prevent unauthorized remote scans and photo-sharing attempts by validating check-in timing.</p>
-            </article>
-
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                        <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                        <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                        <line x1="12" y1="20" x2="12.01" y2="20" />
-                    </svg>
-                </div>
-                <h3>Campus Network Matching</h3>
-                <p>Optional Wi-Fi SSID matching validates student connection against classroom access points, adding another verification layer.</p>
-            </article>
-
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                </div>
-                <h3>Course & Assignment System</h3>
-                <p>Faculty can post PDF assignments and course handouts for enrolled students to view and download securely.</p>
-            </article>
-
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <line x1="18" y1="20" x2="18" y2="10" />
-                        <line x1="12" y1="20" x2="12" y2="4" />
-                        <line x1="6" y1="20" x2="6" y2="14" />
-                    </svg>
-                </div>
-                <h3>Attendance Records & Export</h3>
-                <p>Tracks live session attendance records with manual status overrides and CSV spreadsheet report exports for easy recordkeeping.</p>
-            </article>
-
-            <article class="feature-card">
-                <div class="feature-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                </div>
-                <h3>Role-Based Authentication</h3>
-                <p>JWT security guarantees role access separation between Faculty, Students, and Administrators for secure dashboard navigation.</p>
-            </article>
-        </section>
-
-        <!-- Rich Content: Data Table, Steps, Code Blocks, FAQs -->
-        <section class="content-container">
+        <!-- Collapsible Button System -->
+        <div class="collapsible-system">
             
-            <h2 class="section-header" id="comparison-metrics">Traditional Attendance vs. ATTENDX</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Traditional paper sheets are slow and easy to cheat. ATTENDX automates the entire verification process, providing a secure check-in in under 15 seconds.</p>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Parameter Feature</th>
-                        <th>Traditional Sign-In sheets</th>
-                        <th>ATTENDX Verification</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Verification Type</strong></td>
-                        <td>Paper signature or manual roll call</td>
-                        <td>Location coordinates GPS & rotating QR code</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Administrative Overhead</strong></td>
-                        <td>High (10-15 mins of class time)</td>
-                        <td>Low (under 15 seconds per student check-in)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Proxy Protection</strong></td>
-                        <td>Zero (friends write signatures easily)</td>
-                        <td>Total (secured by location and dynamic tokens)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Data Sync & Export</strong></td>
-                        <td>Manual typing or spreadsheet entries</td>
-                        <td>Instant SQL sync & CSV downloads</td>
-                    </tr>
-                </tbody>
-            </table>
+            <!-- ITEM 1: Core Features -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-features">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="9" />
+                                <rect x="14" y="3" width="7" height="5" />
+                                <rect x="14" y="12" width="7" height="9" />
+                                <rect x="3" y="16" width="7" height="5" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">Core Features</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-features" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="core-features">Core Features of the ATTENDX System</h2>
+                            <section class="features-grid">
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                    </div>
+                                    <h3>Location Proximity Check</h3>
+                                    <p>Calculates student distance relative to classroom GPS coordinates using the Haversine formula to verify physical attendance during active class sessions.</p>
+                                </article>
 
-            <h2 class="section-header" id="how-it-works">How the Verification Process Works</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Marking attendance is simple for both instructors and students. Here is the step-by-step workflow:</p>
-            <ol class="step-list">
-                <li><strong>Faculty Initiation:</strong> The instructor signs into the dashboard, launches a class session, and displays the dynamic checking QR code.</li>
-                <li><strong>Student Device scan:</strong> Students open the portal on their mobile device and scan the displayed checking QR token.</li>
-                <li><strong>Proximity Coordinate calculation:</strong> The system automatically extracts coordinates using the browser location API and cross-references them.</li>
-                <li><strong>Roster entry updated:</strong> Roster database updates in real-time, allowing the faculty member to download reports instantly.</li>
-            </ol>
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                            <path d="M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7zM14 14h3v3h-3z" />
+                                        </svg>
+                                    </div>
+                                    <h3>Dynamic QR Code Security</h3>
+                                    <p>15-second encrypted rotating QR tokens prevent unauthorized remote scans and photo-sharing attempts by validating check-in timing.</p>
+                                </article>
 
-            <h2 class="section-header" id="technical-terms">Core Technologies Defined</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Behind the scenes, ATTENDX uses advanced security standards to ensure check-in integrity. Here is a breakdown of the key terminology:</p>
-            <dl class="def-list">
-                <dt>Geo-fencing Radius</dt>
-                <dd>A virtual boundary mapped to latitude and longitude coordinates. The student's device coordinates must match this coordinate radius.</dd>
-                <dt>Rotating QR Token</dt>
-                <dd>A time-sensitive cryptographically encoded check-in code. It refreshes every 15 seconds, rendering static screenshots useless.</dd>
-                <dt>JWT Token Claims</dt>
-                <dd>JSON Web Tokens that hold secure verified payloads (Student, Instructor, Admin roles) to authenticate backend API actions.</dd>
-            </dl>
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                                            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                                            <line x1="12" y1="20" x2="12.01" y2="20" />
+                                        </svg>
+                                    </div>
+                                    <h3>Campus Network Matching</h3>
+                                    <p>Optional Wi-Fi SSID matching validates student connection against classroom access points, adding another verification layer.</p>
+                                </article>
 
-            <h2 class="section-header" id="api-integration">Developer API Payload Example</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">For custom integrations, developers can query our REST API directly. Here is a sample JSON payload sent during a check-in request:</p>
-            
-            <div class="code-box">
-                <pre><code>{
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                    </div>
+                                    <h3>Course & Assignment System</h3>
+                                    <p>Faculty can post PDF assignments and course handouts for enrolled students to view and download securely.</p>
+                                </article>
+
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <line x1="18" y1="20" x2="18" y2="10" />
+                                            <line x1="12" y1="20" x2="12" y2="4" />
+                                            <line x1="6" y1="20" x2="6" y2="14" />
+                                        </svg>
+                                    </div>
+                                    <h3>Attendance Records & Export</h3>
+                                    <p>Tracks live session attendance records with manual status overrides and CSV spreadsheet report exports for easy recordkeeping.</p>
+                                </article>
+
+                                <article class="feature-card">
+                                    <div class="feature-icon">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" aria-hidden="true">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </div>
+                                    <h3>Role-Based Authentication</h3>
+                                    <p>JWT security guarantees role access separation between Faculty, Students, and Administrators for secure dashboard navigation.</p>
+                                </article>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEM 2: Traditional vs ATTENDX -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-comparison">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">Traditional vs ATTENDX</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-comparison" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="comparison-metrics">Traditional Attendance vs. ATTENDX</h2>
+                            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Traditional paper sheets are slow and easy to cheat. ATTENDX automates the entire verification process, providing a secure check-in in under 15 seconds.</p>
+                            
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter Feature</th>
+                                        <th>Traditional Sign-In sheets</th>
+                                        <th>ATTENDX Verification</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Verification Type</strong></td>
+                                        <td>Paper signature or manual roll call</td>
+                                        <td>Location coordinates GPS & rotating QR code</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Administrative Overhead</strong></td>
+                                        <td>High (10-15 mins of class time)</td>
+                                        <td>Low (under 15 seconds per student check-in)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Proxy Protection</strong></td>
+                                        <td>Zero (friends write signatures easily)</td>
+                                        <td>Total (secured by location and dynamic tokens)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Data Sync & Export</strong></td>
+                                        <td>Manual typing or spreadsheet entries</td>
+                                        <td>Instant SQL sync & CSV downloads</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEM 3: Workflow -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-workflow">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 11 12 14 22 4" />
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">How It Works (Workflow)</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-workflow" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="how-it-works">How the Verification Process Works</h2>
+                            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Marking attendance is simple for both instructors and students. Here is the step-by-step workflow:</p>
+                            <ol class="step-list">
+                                <li><strong>Faculty Initiation:</strong> The instructor signs into the dashboard, launches a class session, and displays the dynamic checking QR code.</li>
+                                <li><strong>Student Device scan:</strong> Students open the portal on their mobile device and scan the displayed checking QR token.</li>
+                                <li><strong>Proximity Coordinate calculation:</strong> The system automatically extracts coordinates using the browser location API and cross-references them.</li>
+                                <li><strong>Roster entry updated:</strong> Roster database updates in real-time, allowing the faculty member to download reports instantly.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEM 4: Core Glossary -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-glossary">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5v-14z" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">Core Glossary</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-glossary" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="technical-terms">Core Technologies Defined</h2>
+                            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Behind the scenes, ATTENDX uses advanced security standards to ensure check-in integrity. Here is a breakdown of the key terminology:</p>
+                            <dl class="def-list">
+                                <dt>Geo-fencing Radius</dt>
+                                <dd>A virtual boundary mapped to latitude and longitude coordinates. The student's device coordinates must match this coordinate radius.</dd>
+                                <dt>Rotating QR Token</dt>
+                                <dd>A time-sensitive cryptographically encoded check-in code. It refreshes every 15 seconds, rendering static screenshots useless.</dd>
+                                <dt>JWT Token Claims</dt>
+                                <dd>JSON Web Tokens that hold secure verified payloads (Student, Instructor, Admin roles) to authenticate backend API actions.</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEM 5: Developer API -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-api">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6" />
+                                <polyline points="8 6 2 12 8 18" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">Developer API</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-api" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="api-integration">Developer API Payload Example</h2>
+                            <p style="color: var(--text-sub); line-height: 1.6; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">For custom integrations, developers can query our REST API directly. Here is a sample JSON payload sent during a check-in request:</p>
+                            
+                            <div class="code-box">
+                                <pre><code>{
   "classSessionId": 8092,
   "studentId": "STU5549",
   "latitude": 12.9716,
@@ -882,40 +1183,71 @@
   "deviceTimestamp": "2026-08-17T20:30:00Z",
   "verificationToken": "6f8a846c9e0d1656b2f6ef1e"
 }</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- FAQ Section with details/summary for AEO/GEO scoring -->
-            <h2 class="section-header" id="faq-section">Frequently Asked Questions</h2>
-            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Have questions about location privacy or device settings? Find quick answers to common queries below:</p>
-            
-            <div class="faq-item">
-                <details>
-                    <summary>What is ATTENDX? <span aria-hidden="true"></span></summary>
-                    <p>ATTENDX is an automated classroom presence validation suite. It verifies students are physically inside the classroom by checking proximity coordinates and matching time-based rotating QR codes.</p>
-                </details>
-            </div>
-            
-            <div class="faq-item">
-                <details>
-                    <summary>How does GPS location verification prevent fraud? <span aria-hidden="true"></span></summary>
-                    <p>Traditional attendance sheets can be signed by proxies. ATTENDX requires the student's mobile device GPS coordinates to match the designated coordinates of the classroom within a narrow radius, ensuring physical presence.</p>
-                </details>
-            </div>
-            
-            <div class="faq-item">
-                <details>
-                    <summary>Does it support local Wi-Fi validation? <span aria-hidden="true"></span></summary>
-                    <p>Yes, ATTENDX can cross-reference the campus Wi-Fi network's SSID with the classroom's router configuration, creating another tier of verification.</p>
-                </details>
-            </div>
-            
-            <div class="faq-item">
-                <details>
-                    <summary>What prevents students from sharing screenshots of QR codes? <span aria-hidden="true"></span></summary>
-                    <p>The classroom screen displays a rotating QR code that changes every 15 seconds. Since each token is dynamically generated and location-tied, static photos or remote scans are rendered invalid.</p>
-                </details>
+            <!-- ITEM 6: Frequently Asked Questions -->
+            <div class="collapsible-item">
+                <button class="collapsible-trigger" aria-expanded="false" aria-controls="section-faq">
+                    <span class="trigger-left">
+                        <span class="trigger-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </span>
+                        <span class="trigger-title">Frequently Asked Questions</span>
+                    </span>
+                    <span class="trigger-chevron" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div id="section-faq" class="collapsible-panel" role="region">
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner">
+                            <h2 class="section-header" id="faq-section">Frequently Asked Questions</h2>
+                            <p style="color: var(--text-sub); line-height: 1.6; margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin: 0 auto 1.5rem;">Have questions about location privacy or device settings? Find quick answers to common queries below:</p>
+                            
+                            <div class="faq-item">
+                                <details>
+                                    <summary>What is ATTENDX? <span aria-hidden="true"></span></summary>
+                                    <p>ATTENDX is an automated classroom presence validation suite. It verifies students are physically inside the classroom by checking proximity coordinates and matching time-based rotating QR codes.</p>
+                                </details>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <details>
+                                    <summary>How does GPS location verification prevent fraud? <span aria-hidden="true"></span></summary>
+                                    <p>Traditional attendance sheets can be signed by proxies. ATTENDX requires the student's mobile device GPS coordinates to match the designated coordinates of the classroom within a narrow radius, ensuring physical presence.</p>
+                                </details>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <details>
+                                    <summary>Does it support local Wi-Fi validation? <span aria-hidden="true"></span></summary>
+                                    <p>Yes, ATTENDX can cross-reference the campus Wi-Fi network's SSID with the classroom's router configuration, creating another tier of verification.</p>
+                                </details>
+                            </div>
+                            
+                            <div class="faq-item">
+                                <details>
+                                    <summary>What prevents students from sharing screenshots of QR codes? <span aria-hidden="true"></span></summary>
+                                    <p>The classroom screen displays a rotating QR code that changes every 15 seconds. Since each token is dynamically generated and location-tied, static photos or remote scans are rendered invalid.</p>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+        </div>
+
+        <!-- Citation and EEAT metadata at the bottom -->
+        <section class="content-container">
             <!-- E-E-A-T trust signals: date, author credentials, citation studies -->
             <div class="meta-eeat">
                 <div>Published: <time datetime="2026-08-17">August 17, 2026</time></div>
@@ -1009,6 +1341,69 @@
 
         fetchSystemInfo();
         setInterval(fetchSystemInfo, 10000);
+
+        // Collapsible system logic
+        function toggleCollapsible(item, trigger, panel) {
+            const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+            
+            // Toggle attributes
+            trigger.setAttribute('aria-expanded', !isExpanded);
+            
+            if (!isExpanded) {
+                // Expand panel
+                item.classList.add('is-active');
+                panel.classList.add('is-expanded');
+            } else {
+                // Collapse panel
+                item.classList.remove('is-active');
+                panel.classList.remove('is-expanded');
+            }
+        }
+
+        document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+            const panelId = trigger.getAttribute('aria-controls');
+            const panel = document.getElementById(panelId);
+            const item = trigger.closest('.collapsible-item');
+            
+            if (panel && item) {
+                trigger.addEventListener('click', () => {
+                    toggleCollapsible(item, trigger, panel);
+                });
+            }
+        });
+
+        // Table of Contents Integration
+        document.querySelectorAll('.toc-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetId = link.getAttribute('href');
+                let targetPanelId = '';
+                
+                // Map TOC hrefs to our collapsible panels
+                if (targetId === '#core-features') targetPanelId = 'section-features';
+                else if (targetId === '#comparison-metrics') targetPanelId = 'section-comparison';
+                else if (targetId === '#how-it-works') targetPanelId = 'section-workflow';
+                else if (targetId === '#technical-terms') targetPanelId = 'section-glossary';
+                else if (targetId === '#api-integration') targetPanelId = 'section-api';
+                else if (targetId === '#faq-section') targetPanelId = 'section-faq';
+                
+                if (targetPanelId) {
+                    e.preventDefault();
+                    const panel = document.getElementById(targetPanelId);
+                    const item = panel.closest('.collapsible-item');
+                    const trigger = item.querySelector('.collapsible-trigger');
+                    
+                    // If the item is collapsed, expand it!
+                    if (trigger.getAttribute('aria-expanded') !== 'true') {
+                        toggleCollapsible(item, trigger, panel);
+                    }
+                    
+                    // Smoothly scroll to the collapsible item after transition starts
+                    setTimeout(() => {
+                        item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                }
+            });
+        });
     </script>
 </body>
 
