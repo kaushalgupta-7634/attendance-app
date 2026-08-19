@@ -558,8 +558,20 @@
                                 ------</div>
                         </div>
 
-                        <div class="qr-frame">
+                        <div class="qr-frame" onclick="openQrZoomModal()" title="Click to zoom in">
                             <img id="qrImageDisplay" class="qr-image" src="" alt="Live QR Code">
+                        </div>
+
+                        <div style="margin-top: -0.5rem; margin-bottom: 1rem; text-align: center;">
+                            <button type="button" onclick="openQrZoomModal()" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                Click to Zoom / Full Screen
+                            </button>
                         </div>
 
                         <div id="rotationTimerBadge" class="timer-badge">
@@ -1920,8 +1932,55 @@
             countdownTimer = setInterval(() => {
                 secondsLeft--;
                 if (secondsLeft < 0) secondsLeft = 15;
-                document.getElementById('countdown').textContent = secondsLeft;
+                const countdownEl = document.getElementById('countdown');
+                if (countdownEl) countdownEl.textContent = secondsLeft;
+                
+                // Update modal details if the Zoom Modal is visible
+                if (document.getElementById('qrZoomModal')?.style.display === 'flex') {
+                    updateModalTimer();
+                }
             }, 1000);
+        }
+
+        function openQrZoomModal() {
+            const modal = document.getElementById('qrZoomModal');
+            const mainImg = document.getElementById('qrImageDisplay');
+            const zoomImg = document.getElementById('qrZoomImage');
+            const mainPasscode = document.getElementById('activePasscodeDisplay');
+            const zoomPasscode = document.getElementById('zoomModalPasscode');
+            const activeClassName = document.getElementById('activeClassName')?.textContent || 'BCA (ACTIVE)';
+            
+            document.getElementById('zoomModalTitle').textContent = `Scan QR Code for ${activeClassName}`;
+
+            if (zoomImg && mainImg) zoomImg.src = mainImg.src;
+            if (zoomPasscode && mainPasscode) zoomPasscode.textContent = mainPasscode.textContent;
+            
+            if (modal) {
+                modal.style.display = 'flex';
+                updateModalTimer();
+            }
+        }
+
+        function closeQrZoomModal() {
+            const modal = document.getElementById('qrZoomModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function updateModalTimer() {
+            const modalTimer = document.getElementById('zoomModalTimerText');
+            if (modalTimer) {
+                modalTimer.textContent = `Rotating in ${secondsLeft}s`;
+            }
+            const mainPasscode = document.getElementById('activePasscodeDisplay');
+            const zoomPasscode = document.getElementById('zoomModalPasscode');
+            if (zoomPasscode && mainPasscode) {
+                zoomPasscode.textContent = mainPasscode.textContent;
+            }
+            const zoomImg = document.getElementById('qrZoomImage');
+            const mainImg = document.getElementById('qrImageDisplay');
+            if (zoomImg && mainImg && zoomImg.src !== mainImg.src) {
+                zoomImg.src = mainImg.src;
+            }
         }
 
         async function pollAttendance() {
@@ -3483,6 +3542,27 @@
             <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
                 <button class="btn-secondary" style="width: auto; padding: 0.5rem 1.25rem;"
                     onclick="closeStudentModal()">Close Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR ZOOM MODAL -->
+    <div id="qrZoomModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 99999; align-items: center; justify-content: center; flex-direction: column;">
+        <div style="position: absolute; top: 1.5rem; right: 1.5rem;">
+            <button onclick="closeQrZoomModal()" style="background: rgba(255, 255, 255, 0.1); border: none; color: #f8fafc; font-size: 1.5rem; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+        </div>
+        <div style="background: #ffffff; padding: 2rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); text-align: center; max-width: 90%; max-height: 90%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h2 id="zoomModalTitle" style="color: #0f172a; margin-top: 0; margin-bottom: 1.5rem; font-family: 'Inter', sans-serif; font-size: 1.8rem; font-weight: 700;">Scan QR Code to Mark Attendance</h2>
+            <img id="qrZoomImage" src="" alt="Zoomed QR Code" style="width: 500px; height: 500px; max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; display: block; margin: 0 auto;">
+            
+            <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #8b5cf6; border-radius: 12px; padding: 0.6rem 1.5rem;">
+                    <span style="font-size: 0.75rem; text-transform: uppercase; color: #6d28d9; font-weight: 700; display: block; text-align: left;">Passcode:</span>
+                    <span id="zoomModalPasscode" style="font-size: 2.2rem; font-weight: 800; color: #2563eb; letter-spacing: 0.1em; font-family: monospace;">------</span>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 12px; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; color: #065f46; font-weight: 600; font-size: 1.1rem;">
+                    <span id="zoomModalTimerText">Rotating in 15s</span>
+                </div>
             </div>
         </div>
     </div>
