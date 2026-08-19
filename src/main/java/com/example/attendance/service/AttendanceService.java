@@ -157,18 +157,11 @@ public class AttendanceService {
 
         double classLat = session.getClassroomLat() != null ? session.getClassroomLat() : 0.0;
         double classLng = session.getClassroomLng() != null ? session.getClassroomLng() : 0.0;
-        boolean isIpFallbackCoords = 
-                (Math.abs(classLat - 29.4667) < 0.01 && Math.abs(classLng - 77.6833) < 0.01)
-                || (Math.abs(classLat - 30.6833) < 0.01 && Math.abs(classLng - 75.1000) < 0.01);
 
         if (isLocalDev) {
             logger.info("Local development environment detected. Bypassing geofencing location check.");
         }
-        if (isIpFallbackCoords) {
-            logger.info("Classroom location matches IP fallback coordinates ({}, {}). Bypassing geofencing location check.", classLat, classLng);
-        }
-        boolean isTestingAnywhereMode = isIpFallbackCoords
-                || (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
+        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
         if (!isTestingAnywhereMode) {
             boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
@@ -192,15 +185,7 @@ public class AttendanceService {
             );
 
             if (distanceMeters > session.getRadiusMeters()) {
-                double distKm = distanceMeters / 1000.0;
-                String formattedDistance = distKm >= 1.0 
-                        ? String.format("%.1f km", distKm) 
-                        : String.format("%.1f meters", distanceMeters);
-
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! Location out of range. You are " 
-                        + formattedDistance + " away from classroom (" 
-                        + String.format("%.4f", session.getClassroomLat()) + ", " + String.format("%.4f", session.getClassroomLng()) 
-                        + "). Maximum allowed radius: " + (int) session.getRadiusMeters().doubleValue() + "m.");
+                throw new IllegalArgumentException("Attendance rejected: Distance limit! You are outside allowed classroom radius.");
             }
         }
 
