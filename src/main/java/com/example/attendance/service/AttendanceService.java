@@ -138,7 +138,7 @@ public class AttendanceService {
         }
 
         // Step (c): Strict Geofencing Enforcement for anti-proxy protection (QR scan & Passcode/Token Number)
-        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && session.getRadiusMeters() >= 99999)
+        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0))
                 || Boolean.TRUE.equals(request.isBypassLocation());
 
         if (!isTestingAnywhereMode) {
