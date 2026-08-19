@@ -14,9 +14,7 @@
     <!-- jsPDF & AutoTable for Professional PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    <!-- Leaflet.js Library for Interactive Map Widget -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
         :root {
             --bg-gradient: #0f172a;
@@ -496,14 +494,7 @@
                             <input type="datetime-local" id="endTime" class="form-input" required>
                         </div>
 
-                        <!-- Interactive Map Widget -->
-                        <div class="form-group full-width" style="margin-bottom: 0.5rem;">
-                            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>Interactive Map: Click precisely on your classroom to set coordinates</span>
-                                <span style="font-size: 0.75rem; color: var(--text-secondary);">Center can be dragged/zoomed</span>
-                            </label>
-                            <div id="locationMap" style="height: 250px; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 0.5rem; background: #0f172a; position: relative; z-index: 10;"></div>
-                        </div>
+
 
                         <!-- Visible Lat/Lng Inputs (Auto-Filled via GPS, Editable for adjustment) -->
                         <div class="form-group">
@@ -1051,11 +1042,6 @@
             if (tabId === 'session') {
                 document.getElementById('teacherTabSession')?.classList.add('active');
                 document.getElementById('teacherSectionSession')?.classList.add('active');
-                if (map) {
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 100);
-                }
             } else if (tabId === 'analytics') {
                 document.getElementById('teacherTabAnalytics')?.classList.add('active');
                 document.getElementById('teacherSectionAnalytics')?.classList.add('active');
@@ -1219,26 +1205,12 @@
 
         let currentLocationSource = 'unknown';
         
-        // Track if coordinates are manually edited and sync them with map marker
+        // Track if coordinates are manually edited
         document.addEventListener("DOMContentLoaded", () => {
             const latEl = document.getElementById('classroomLat');
             const lngEl = document.getElementById('classroomLng');
-            const updateFromInputs = () => {
-                const lat = parseFloat(latEl?.value);
-                const lng = parseFloat(lngEl?.value);
-                if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                    if (map && mapMarker) {
-                        mapMarker.setLatLng([lat, lng]);
-                        map.setView([lat, lng]);
-                    }
-                    currentLocationSource = 'Manual';
-                }
-            };
-            if (latEl) latEl.addEventListener('input', updateFromInputs);
-            if (lngEl) lngEl.addEventListener('input', updateFromInputs);
-
-            // Initialize Map Widget
-            initMap();
+            if (latEl) latEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
+            if (lngEl) lngEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
         });
 
         function detectGPSLocation(clearCache = false) {
@@ -1261,25 +1233,11 @@
                 currentLocationSource = sourceName;
                 if (latInput) latInput.value = lat;
                 if (lngInput) lngInput.value = lng;
-
-                // Update Leaflet map marker and center view
-                if (map && mapMarker) {
-                    mapMarker.setLatLng([lat, lng]);
-                    map.setView([lat, lng]);
-                }
-
                 if (gpsBadge) {
-                    if (sourceName === 'Network/IP') {
-                        gpsBadge.style.color = '#fcd34d';
-                        gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-                        gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                        gpsBadge.innerHTML = `<span>⚠️ Low accuracy (network-based) — please verify or use the map to set location precisely (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
-                    } else {
-                        gpsBadge.style.color = '#86efac';
-                        gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
-                        gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
-                        gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
-                    }
+                    gpsBadge.style.color = '#86efac';
+                    gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+                    gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
                 }
             };
 
@@ -1334,52 +1292,7 @@
             );
         }
 
-        let map;
-        let mapMarker;
 
-        function initMap() {
-            // Default center: India (28.6139, 77.2090)
-            let defaultLat = 28.6139;
-            let defaultLng = 77.2090;
-
-            const savedLat = localStorage.getItem('last_classroom_lat');
-            const savedLng = localStorage.getItem('last_classroom_lng');
-            if (savedLat && savedLng) {
-                defaultLat = parseFloat(savedLat);
-                defaultLng = parseFloat(savedLng);
-            }
-
-            try {
-                map = L.map('locationMap').setView([defaultLat, defaultLng], 13);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-
-                // Add marker
-                mapMarker = L.marker([defaultLat, defaultLng], { draggable: false }).addTo(map);
-
-                // Click event on map to update coordinates and move marker
-                map.on('click', function(e) {
-                    updateMapMarker(e.latlng.lat, e.latlng.lng, 'Map Click');
-                });
-            } catch (err) {
-                console.error('Error initializing map:', err);
-            }
-        }
-
-        function updateMapMarker(lat, lng, sourceName) {
-            if (map && mapMarker) {
-                mapMarker.setLatLng([lat, lng]);
-                map.setView([lat, lng]);
-            }
-            const latInput = document.getElementById('classroomLat');
-            const lngInput = document.getElementById('classroomLng');
-            if (latInput) latInput.value = lat.toFixed(6);
-            if (lngInput) lngInput.value = lng.toFixed(6);
-            currentLocationSource = sourceName;
-        }
 
         // Auto detect GPS, active session, and courses on page load
         detectGPSLocation();
