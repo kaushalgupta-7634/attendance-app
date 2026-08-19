@@ -42,6 +42,9 @@ class ManualOverrideTest {
     @Mock
     private EnrollmentRepository enrollmentRepository;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private ClassSessionService classSessionService;
 

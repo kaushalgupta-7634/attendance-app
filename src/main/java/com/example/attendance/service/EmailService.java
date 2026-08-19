@@ -48,8 +48,14 @@ public class EmailService {
         try {
             String apiKey = (brevoApiKey != null && !brevoApiKey.isBlank()) ? brevoApiKey.trim() : System.getenv("BREVO_API_KEY");
             if (apiKey == null || apiKey.isBlank()) {
-                logger.warn("Brevo API Key is not configured. Please set BREVO_API_KEY environment variable.");
-                throw new MailSendException("Brevo API Key is not configured. Email cannot be sent.");
+                logger.info("Brevo API Key is not configured. Falling back to JavaMailSender.");
+                org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+                message.setFrom(getEffectiveFromAddress());
+                message.setTo(toEmail);
+                message.setSubject(subject);
+                message.setText(body);
+                mailSender.send(message);
+                return;
             }
 
             // Clean inputs for JSON encoding
@@ -197,5 +203,30 @@ public class EmailService {
         body.append("ATTENDX Support Team");
 
         sendEmailViaBrevo(toEmail, "Your Verification OTP - ATTENDX", body.toString());
+    }
+
+    /**
+     * Sends an email notification to a student when a class session starts.
+     */
+    public void sendNewSessionNotification(String toEmail, String studentName, String className, String subject, String endTimeFormatted) {
+        if (toEmail == null || toEmail.isBlank()) {
+            return;
+        }
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(studentName != null && !studentName.isBlank() ? studentName : "Student").append(",\n\n");
+        body.append("A new active class session has been started for your course:\n\n");
+        body.append(" 🏫 Course: ").append(className).append("\n");
+        body.append(" 📚 Subject: ").append(subject).append("\n");
+        body.append(" ⏰ Session Ends: ").append(endTimeFormatted).append("\n\n");
+        body.append("Please log in to the ATTENDX portal and mark your attendance before the session ends.\n\n");
+        body.append("Best regards,\n");
+        body.append("ATTENDX System");
+
+        try {
+            sendEmailViaBrevo(toEmail, "ATTENDX: New Class Session Active - Mark Attendance", body.toString());
+        } catch (MailException e) {
+            logger.error("Failed to send new session alert email to {}: {}", toEmail, e.getMessage());
+        }
     }
 }

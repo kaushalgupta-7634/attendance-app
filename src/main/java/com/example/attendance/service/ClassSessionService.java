@@ -25,6 +25,7 @@ public class ClassSessionService {
     private final QrCodeService qrCodeService;
     private final ClassCourseRepository classCourseRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final EmailService emailService;
 
     @Value("${app.base-url:https://attendance-app-production-b868.up.railway.app}")
     private String baseUrl;
@@ -34,13 +35,15 @@ public class ClassSessionService {
                                UserRepository userRepository,
                                QrCodeService qrCodeService,
                                ClassCourseRepository classCourseRepository,
-                               EnrollmentRepository enrollmentRepository) {
+                               EnrollmentRepository enrollmentRepository,
+                               EmailService emailService) {
         this.classSessionRepository = classSessionRepository;
         this.attendanceRecordRepository = attendanceRecordRepository;
         this.userRepository = userRepository;
         this.qrCodeService = qrCodeService;
         this.classCourseRepository = classCourseRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.emailService = emailService;
     }
 
     private boolean matchesSearch(String target, String search) {
@@ -132,6 +135,9 @@ public class ClassSessionService {
 
         ClassSession savedSession = classSessionRepository.save(session);
         savedSession.setPasscode(qrCodeService.generateCurrentPasscode(savedSession.getId()));
+        if (savedSession.isActive()) {
+            notifyStudentsOfActiveSession(savedSession);
+        }
         return savedSession;
     }
 
@@ -201,7 +207,8 @@ public class ClassSessionService {
 
             session.setActive(true);
             session.setPasscode(qrCodeService.generateCurrentPasscode(session.getId()));
-            classSessionRepository.save(session);
+            ClassSession savedSession = classSessionRepository.save(session);
+            notifyStudentsOfActiveSession(savedSession);
             org.slf4j.LoggerFactory.getLogger(ClassSessionService.class).info(
                     "Auto-started scheduled ClassSession ID: {} ('{}', subject: '{}')",
                     session.getId(), session.getClassName(), session.getSubject()
@@ -707,6 +714,32 @@ public class ClassSessionService {
             session.setActive(false);
         }
         return classSessionRepository.save(session);
+    }
+
+    private void notifyStudentsOfActiveSession(ClassSession session) {
+        if (session.isActive() && session.getClassCourse() != null) {
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(session.getClassCourse());
+                    for (Enrollment enrollment : enrollments) {
+                        User student = enrollment.getStudent();
+                        if (student != null && student.getEmail() != null && !student.getEmail().isBlank()) {
+                            String formattedEndTime = session.getEndTime() != null ? 
+                                session.getEndTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")) : "N/A";
+                            emailService.sendNewSessionNotification(
+                                student.getEmail(),
+                                student.getName(),
+                                session.getClassName(),
+                                session.getSubject(),
+                                formattedEndTime
+                            );
+                        }
+                    }
+                } catch (Exception e) {
+                    org.slf4j.LoggerFactory.getLogger(ClassSessionService.class).error("Failed to send session start notifications: {}", e.getMessage());
+                }
+            });
+        }
     }
 }
 
