@@ -1200,6 +1200,16 @@
             }
         }
 
+        let currentLocationSource = 'unknown';
+        
+        // Track if coordinates are manually edited
+        document.addEventListener("DOMContentLoaded", () => {
+            const latEl = document.getElementById('classroomLat');
+            const lngEl = document.getElementById('classroomLng');
+            if (latEl) latEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
+            if (lngEl) lngEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
+        });
+
         function detectGPSLocation() {
             const latInput = document.getElementById('classroomLat');
             const lngInput = document.getElementById('classroomLng');
@@ -1213,6 +1223,7 @@
             }
 
             const applyPosition = (lat, lng, sourceName) => {
+                currentLocationSource = sourceName;
                 if (latInput) latInput.value = lat;
                 if (lngInput) lngInput.value = lng;
                 if (gpsBadge) {
@@ -1527,7 +1538,7 @@
                 endTime: document.getElementById('endTime').value,
                 classroomLat: latVal,
                 classroomLng: lngVal,
-                radiusMeters: isTestingMode ? 100000 : radiusVal,
+                radiusMeters: (isTestingMode || currentLocationSource === 'Network/IP') ? 100000 : radiusVal,
                 expectedWifiSsid: document.getElementById('expectedWifiSsid') ? document.getElementById('expectedWifiSsid').value.trim() : null
             };
 
