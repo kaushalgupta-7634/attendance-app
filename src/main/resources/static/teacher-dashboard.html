@@ -1538,7 +1538,7 @@
                 endTime: document.getElementById('endTime').value,
                 classroomLat: latVal,
                 classroomLng: lngVal,
-                radiusMeters: (isTestingMode || currentLocationSource === 'Network/IP') ? 100000 : radiusVal,
+                radiusMeters: isTestingMode ? 100000 : radiusVal,
                 expectedWifiSsid: document.getElementById('expectedWifiSsid') ? document.getElementById('expectedWifiSsid').value.trim() : null
             };
 
