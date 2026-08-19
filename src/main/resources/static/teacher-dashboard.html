@@ -493,6 +493,16 @@
                             <input type="datetime-local" id="endTime" class="form-input" required>
                         </div>
 
+                        <!-- Location / Campus Presets -->
+                        <div class="form-group full-width">
+                            <label class="form-label" for="locationPresetSelect">Location / Campus Preset</label>
+                            <select id="locationPresetSelect" class="form-input" onchange="onLocationPresetChange(this)">
+                                <option value="">-- Use Auto-Detected Location (GPS/IP) --</option>
+                                <option value="chandausi">Chandausi Campus (28.4685, 78.7884)</option>
+                                <option value="moradabad">Moradabad Campus (28.8386, 78.7733)</option>
+                            </select>
+                        </div>
+
                         <!-- Visible Lat/Lng Inputs (Auto-Filled via GPS, Editable for adjustment) -->
                         <div class="form-group">
                             <label class="form-label" for="classroomLat">Classroom Latitude</label>
@@ -1287,6 +1297,24 @@
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
+        }
+
+        function onLocationPresetChange(select) {
+            const latInput = document.getElementById('classroomLat');
+            const lngInput = document.getElementById('classroomLng');
+            const val = select.value;
+            if (val === 'chandausi') {
+                if (latInput) latInput.value = 28.4685;
+                if (lngInput) lngInput.value = 78.7884;
+                currentLocationSource = 'Manual';
+            } else if (val === 'moradabad') {
+                if (latInput) latInput.value = 28.8386;
+                if (lngInput) lngInput.value = 78.7733;
+                currentLocationSource = 'Manual';
+            } else {
+                // Trigger auto-detect
+                detectGPSLocation(true);
+            }
         }
 
         // Auto detect GPS, active session, and courses on page load
