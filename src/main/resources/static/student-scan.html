@@ -1006,7 +1006,7 @@
             return devId + '_' + getBrowserFingerprint();
         }
 
-        async function sendAttendanceSubmission(qrToken, bypassLocation = false) {
+        async function sendAttendanceSubmission(qrToken) {
             lastSubmittedToken = qrToken || "";
             showResult(true, "Submitting...", "Verifying session and location radius...");
 
@@ -1024,7 +1024,7 @@
                         qrToken: qrToken || "",
                         studentLat: currentLat,
                         studentLng: currentLng,
-                        bypassLocation: bypassLocation,
+                        bypassLocation: false,
                         studentWifiSsid: getSoftDetectedWifiSsid(),
                         deviceId: deviceId
                     })
@@ -1315,7 +1315,7 @@
             if (isAuthErr) {
                 msgElem.innerHTML = `${message}<br><br><button class="btn-action" style="background: #ef4444; margin-top: 0.5rem;" onclick="logout()">🔑 Log In Again</button>`;
             } else if (isDistanceErr) {
-                msgElem.innerHTML = `${message}<br><br><button class="btn-action" style="background: #f59e0b; margin-top: 0.5rem;" onclick="sendAttendanceSubmission(lastSubmittedToken, true)">⚡ Mark Attendance Anyway (Bypass Distance Limit)</button>`;
+                msgElem.innerHTML = `${message}<br><br><div style="font-size: 0.8rem; color: #fcd34d; font-weight: 500; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem; margin-top: 0.5rem;">ℹ️ Please ensure GPS/Location is allowed on your browser. If you still face issues, ask your instructor to manually mark your attendance or launch the session in Testing/Anywhere Mode.</div>`;
             } else {
                 msgElem.textContent = message;
             }
