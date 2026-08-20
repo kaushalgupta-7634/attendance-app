@@ -499,21 +499,24 @@
                         <!-- Visible Lat/Lng Inputs (Auto-Filled via GPS, Editable for adjustment) -->
                         <div class="form-group">
                             <label class="form-label" for="classroomLat">Classroom Latitude</label>
-                            <input type="number" step="any" id="classroomLat" class="form-input" value="0.0" required>
+                            <input type="number" step="any" id="classroomLat" class="form-input" value="" placeholder="Acquiring..." required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="classroomLng">Classroom Longitude</label>
-                            <input type="number" step="any" id="classroomLng" class="form-input" value="0.0" required>
+                            <input type="number" step="any" id="classroomLng" class="form-input" value="" placeholder="Acquiring..." required>
                         </div>
 
-                        <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                        <div class="form-group full-width" style="margin-bottom: 0.25rem;">
                             <div id="teacherGpsBadge"
                                 style="font-size: 0.825rem; font-weight: 600; color: #7dd3fc; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
                                 <span>📍 Acquiring Classroom GPS Location...</span>
                                 <button type="button" onclick="detectGPSLocation(true)"
-                                    style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh
-                                    GPS</button>
+                                    style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh Current Location</button>
                             </div>
+                        </div>
+                        <!-- Live GPS accuracy badge -->
+                        <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                            <div id="gpsAccuracyBadge" style="display:none; font-size: 0.8rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid transparent;"></div>
                         </div>
 
                         <div class="form-group full-width">
@@ -1226,13 +1229,10 @@
         });
 
         function detectGPSLocation(clearCache = false) {
-            if (clearCache) {
-                localStorage.removeItem('last_classroom_lat');
-                localStorage.removeItem('last_classroom_lng');
-            }
             const latInput = document.getElementById('classroomLat');
             const lngInput = document.getElementById('classroomLng');
             const gpsBadge = document.getElementById('teacherGpsBadge');
+            const accuracyBadge = document.getElementById('gpsAccuracyBadge');
 
             if (gpsBadge) {
                 gpsBadge.style.color = '#7dd3fc';
@@ -1240,71 +1240,61 @@
                 gpsBadge.style.borderColor = 'rgba(14, 165, 233, 0.3)';
                 gpsBadge.innerHTML = '<span>📍 Acquiring Classroom Location...</span>';
             }
+            if (accuracyBadge) accuracyBadge.style.display = 'none';
 
-            const applyPosition = (lat, lng, sourceName) => {
-                currentLocationSource = sourceName;
-                if (latInput) latInput.value = lat;
-                if (lngInput) lngInput.value = lng;
+            const applyPosition = (lat, lng, accuracy) => {
+                currentLocationSource = 'GPS';
+                if (latInput) latInput.value = lat.toFixed(7);
+                if (lngInput) lngInput.value = lng.toFixed(7);
+
                 if (gpsBadge) {
                     gpsBadge.style.color = '#86efac';
                     gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
                     gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
-                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired via ${sourceName} (${lat.toFixed(4)}, ${lng.toFixed(4)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Location</button>`;
+                    gpsBadge.innerHTML = `<span>📍 Classroom Location Acquired (${lat.toFixed(5)}, ${lng.toFixed(5)})</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #86efac; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Refresh Current Location</button>`;
                 }
-            };
 
-            const fetchIpLocationFallback = async () => {
-                try {
-                    const res = await fetch('https://ipapi.co/json/');
-                    if (!res.ok) throw new Error('IP API failed');
-                    const data = await res.json();
-                    if (data.latitude && data.longitude) {
-                        applyPosition(parseFloat(data.latitude), parseFloat(data.longitude), 'Network/IP');
-                        return true;
-                    }
-                } catch (e) {
-                    console.warn('IP Geolocation fallback error:', e);
-                }
-                return false;
-            };
-
-            const renderGpsErrorBadge = async () => {
-                const savedLat = localStorage.getItem('last_classroom_lat');
-                const savedLng = localStorage.getItem('last_classroom_lng');
-                if (savedLat && savedLng) {
-                    applyPosition(parseFloat(savedLat), parseFloat(savedLng), 'Saved Location');
-                } else {
-                    const ipOk = await fetchIpLocationFallback();
-                    if (!ipOk && gpsBadge) {
-                        gpsBadge.style.color = '#fcd34d';
-                        gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-                        gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                        gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or check "Testing / Anywhere Mode"</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry Location</button>';
+                if (accuracyBadge) {
+                    accuracyBadge.style.display = 'block';
+                    const acc = Math.round(accuracy);
+                    if (acc > 100) {
+                        accuracyBadge.style.color = '#fcd34d';
+                        accuracyBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                        accuracyBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        accuracyBadge.innerHTML = `⚠️ Accuracy: ±${acc}m — Low accuracy, ensure Wi-Fi is turned on`;
+                    } else {
+                        accuracyBadge.style.color = '#86efac';
+                        accuracyBadge.style.background = 'rgba(34, 197, 94, 0.1)';
+                        accuracyBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                        accuracyBadge.innerHTML = `✅ Accuracy: ±${acc}m`;
                     }
                 }
             };
 
             if (!navigator.geolocation) {
-                fetchIpLocationFallback().then(ok => {
-                    if (!ok) renderGpsErrorBadge();
-                });
+                if (gpsBadge) {
+                    gpsBadge.style.color = '#fca5a5';
+                    gpsBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    gpsBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    gpsBadge.innerHTML = '<span>❌ Geolocation is not supported by this browser. Please use a modern browser.</span>';
+                }
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => applyPosition(pos.coords.latitude, pos.coords.longitude, 'GPS'),
+                (pos) => applyPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
                 (err) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos2) => applyPosition(pos2.coords.latitude, pos2.coords.longitude, 'GPS'),
-                        () => renderGpsErrorBadge(),
-                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
-                    );
+                    console.warn('GPS error:', err);
+                    if (gpsBadge) {
+                        gpsBadge.style.color = '#fcd34d';
+                        gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                        gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        gpsBadge.innerHTML = '<span>⚠️ Location Permission Blocked: Click 🔒 lock icon in browser address bar to ALLOW location, or enable Testing Mode below.</span><button type="button" onclick="detectGPSLocation(true)" style="background: transparent; border: none; color: #fcd34d; text-decoration: underline; cursor: pointer; font-size: 0.8rem; margin-left: 8px;">Retry</button>';
+                    }
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
-
-
 
         // Auto detect GPS, active session, and courses on page load
         detectGPSLocation();
@@ -1526,36 +1516,25 @@
             let radiusVal = parseFloat(document.getElementById('radiusMeters').value) || 500;
             const isTestingMode = document.getElementById('testingModeCheckbox')?.checked || false;
 
-            if (!isTestingMode && radiusVal < 99999 && (latVal === 0.0 || lngVal === 0.0)) {
+            if (!isTestingMode && (latVal === 0.0 || lngVal === 0.0 || isNaN(latVal) || isNaN(lngVal))) {
                 btn.textContent = 'Acquiring GPS location...';
                 try {
                     const pos = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 });
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
                     });
                     latVal = pos.coords.latitude;
                     lngVal = pos.coords.longitude;
-                    document.getElementById('classroomLat').value = latVal;
-                    document.getElementById('classroomLng').value = lngVal;
+                    document.getElementById('classroomLat').value = latVal.toFixed(7);
+                    document.getElementById('classroomLng').value = lngVal.toFixed(7);
                 } catch (gpsErr) {
-                    console.warn("GPS acquire failed, trying IP fallback or anywhere mode:", gpsErr);
-                    try {
-                        const ipRes = await fetch('https://ipapi.co/json/');
-                        if (ipRes.ok) {
-                            const ipData = await ipRes.json();
-                            if (ipData.latitude && ipData.longitude) {
-                                latVal = parseFloat(ipData.latitude);
-                                lngVal = parseFloat(ipData.longitude);
-                                document.getElementById('classroomLat').value = latVal;
-                                document.getElementById('classroomLng').value = lngVal;
-                            }
-                        }
-                    } catch (e) {}
-
-                    if (latVal === 0.0 || lngVal === 0.0) {
-                        radiusVal = 100000;
-                    }
+                    console.warn('GPS acquire failed during session start:', gpsErr);
+                    alert('❌ Cannot launch session: GPS location is required but permission was denied or failed.\n\nPlease:\n1. Click the 🔒 lock icon in the address bar and ALLOW location.\n2. Click "Refresh Current Location" and wait for GPS to lock.\n3. Alternatively, enable "Testing / Anywhere Mode" to bypass location checking.');
+                    btn.disabled = false;
+                    btn.textContent = 'Launch Active Session';
+                    return;
                 }
             }
+
 
             const payload = {
                 classCourseId: selectedClassCourseId ? parseInt(selectedClassCourseId) : null,

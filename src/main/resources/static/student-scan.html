@@ -370,7 +370,12 @@
                     Or enter 6-Digit Token Number (shown on teacher screen, rotates every 30s):
                 </p>
                 <input type="text" id="manualTokenInput" class="form-input" placeholder="e.g. 849201" maxlength="20">
-                <button class="btn-action btn-secondary-action" onclick="submitManualToken()">Submit Token Number</button>
+                <button id="manualTokenSubmitBtn" class="btn-action btn-secondary-action" onclick="submitManualToken()">Submit Token Number</button>
+            </div>
+            <!-- GPS blocked hint banner -->
+            <div id="locationBlockedHint" style="display:none; margin-top:0.75rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.82rem; color: #fcd34d; font-weight: 600; text-align: center;">
+                📍 GPS location is required to mark attendance.<br>
+                <span style="font-weight:400;">Click the 🔒 lock icon in the address bar → Allow Location → then tap <strong>Retry GPS</strong>.</span>
             </div>
         </div>
     </div>
@@ -618,12 +623,26 @@
             }
         }).catch(err => console.log("Profile fetch failed:", err));
 
-        let currentLat = 12.9716;
-        let currentLng = 77.5946;
+        let currentLat = null;
+        let currentLng = null;
+        let locationReady = false;
         let html5QrCode = null;
         let isScanning = false;
 
+        function updateSubmitButtonState() {
+            const blocked = !locationReady;
+            const quickBtn = document.querySelector('.btn-quick');
+            const scanBtn = document.getElementById('scanToggleBtn');
+            const manualBtn = document.getElementById('manualTokenSubmitBtn');
+            const hintEl = document.getElementById('locationBlockedHint');
+            if (quickBtn) quickBtn.disabled = blocked;
+            if (scanBtn) scanBtn.disabled = blocked;
+            if (manualBtn) manualBtn.disabled = blocked;
+            if (hintEl) hintEl.style.display = blocked ? 'block' : 'none';
+        }
+
         // Auto request Location & load enrolled courses on page load
+        updateSubmitButtonState(); // Disable submit buttons until GPS acquired
         fetchLocation();
         loadStudentEnrolledCourses();
 
@@ -742,47 +761,42 @@
         function fetchLocation() {
             const dot = document.getElementById('geoDot');
             const text = document.getElementById('geoStatusText');
-            
+
             dot.className = 'dot';
-            text.textContent = 'Acquiring GPS location...';
-
-            const applyStudentPos = (lat, lng, sourceName) => {
-                currentLat = lat;
-                currentLng = lng;
-                dot.className = 'dot active';
-                text.textContent = `Location Acquired via ${sourceName} (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
-            };
-
-            const fetchStudentIpFallback = async () => {
-                return false;
-            };
+            text.textContent = 'Acquiring high-accuracy GPS...';
+            locationReady = false;
+            updateSubmitButtonState();
 
             if (!navigator.geolocation) {
-                fetchStudentIpFallback().then(ok => {
-                    if (!ok) {
-                        dot.className = 'dot';
-                        text.textContent = '⚠️ Location Unsupported on browser';
-                    }
-                });
+                dot.className = 'dot';
+                text.textContent = '\u26a0\ufe0f GPS not supported by this browser. Location required.';
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => applyStudentPos(pos.coords.latitude, pos.coords.longitude, 'GPS'),
-                (err) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos2) => applyStudentPos(pos2.coords.latitude, pos2.coords.longitude, 'GPS'),
-                        async () => {
-                            const ok = await fetchStudentIpFallback();
-                            if (!ok) {
-                                dot.className = 'dot';
-                                text.textContent = '⚠️ Location Access Blocked: Please allow location in browser';
-                            }
-                        },
-                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
-                    );
+                (pos) => {
+                    currentLat = pos.coords.latitude;
+                    currentLng = pos.coords.longitude;
+                    const acc = Math.round(pos.coords.accuracy);
+                    locationReady = true;
+                    updateSubmitButtonState();
+                    dot.className = 'dot active';
+                    if (acc > 100) {
+                        text.innerHTML = `\u26a0\ufe0f GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) &mdash; <span style="color:#fcd34d">Accuracy: &plusmn;${acc}m &mdash; Low accuracy, ensure Wi-Fi is on</span>`;
+                    } else {
+                        text.textContent = `\u2705 GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) \u2014 Accuracy: \u00b1${acc}m`;
+                    }
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                (err) => {
+                    console.warn('GPS error:', err);
+                    locationReady = false;
+                    currentLat = null;
+                    currentLng = null;
+                    updateSubmitButtonState();
+                    dot.className = 'dot';
+                    text.textContent = '\u26a0\ufe0f Location Access Blocked \u2014 Click \uD83D\uDD12 in browser address bar to ALLOW, then tap Retry GPS';
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
 
@@ -923,6 +937,10 @@
         let lastSubmittedToken = "";
 
         function submitManualToken() {
+            if (!locationReady) {
+                showResult(false, 'GPS Location Required', 'Please allow location access in your browser and wait for GPS to lock before submitting a token.');
+                return;
+            }
             const input = document.getElementById('manualTokenInput').value.trim();
             sendAttendanceSubmission(input, false);
         }
@@ -996,6 +1014,10 @@
         }
 
         async function sendAttendanceSubmission(qrToken) {
+            if (!locationReady || currentLat === null || currentLng === null) {
+                showResult(false, 'GPS Location Required', 'Please allow location access in your browser and wait for GPS to acquire your position before submitting attendance.');
+                return;
+            }
             lastSubmittedToken = qrToken || "";
             showResult(true, "Submitting...", "Verifying session and location radius...");
 
@@ -1029,7 +1051,13 @@
                 }
 
                 if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
+                    // HTTP 403 from geofence returns a distance message — show it, do NOT redirect to login
+                    if (res.status === 403) {
+                        const errMsg = data.message || 'Out of classroom radius.';
+                        showResult(false, '📍 Out of Classroom Range', errMsg);
+                        return;
+                    }
+                    if (res.status === 401) {
                         if (qrToken) {
                             sessionStorage.setItem('pendingQrToken', qrToken);
                             setCookie('pendingQrToken', qrToken, 1);
