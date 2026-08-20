@@ -496,14 +496,14 @@
 
 
 
-                        <!-- Visible Lat/Lng Inputs (Auto-Filled via GPS, Editable for adjustment) -->
+                        <!-- GPS-Only Lat/Lng Inputs (Read-only, Auto-Filled via GPS) -->
                         <div class="form-group">
-                            <label class="form-label" for="classroomLat">Classroom Latitude</label>
-                            <input type="number" step="any" id="classroomLat" class="form-input" value="" placeholder="Acquiring..." required>
+                            <label class="form-label" for="classroomLat">Classroom Latitude <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Auto GPS)</span></label>
+                            <input type="number" step="any" id="classroomLat" class="form-input" value="" placeholder="Acquiring GPS..." readonly style="cursor:not-allowed;opacity:0.75;" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="classroomLng">Classroom Longitude</label>
-                            <input type="number" step="any" id="classroomLng" class="form-input" value="" placeholder="Acquiring..." required>
+                            <label class="form-label" for="classroomLng">Classroom Longitude <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Auto GPS)</span></label>
+                            <input type="number" step="any" id="classroomLng" class="form-input" value="" placeholder="Acquiring GPS..." readonly style="cursor:not-allowed;opacity:0.75;" required>
                         </div>
 
                         <div class="form-group full-width" style="margin-bottom: 0.25rem;">
@@ -1218,15 +1218,7 @@
             }
         }
 
-        let currentLocationSource = 'unknown';
-        
-        // Track if coordinates are manually edited
-        document.addEventListener("DOMContentLoaded", () => {
-            const latEl = document.getElementById('classroomLat');
-            const lngEl = document.getElementById('classroomLng');
-            if (latEl) latEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
-            if (lngEl) lngEl.addEventListener('input', () => { currentLocationSource = 'Manual'; });
-        });
+        let currentLocationSource = 'GPS';
 
         function detectGPSLocation(clearCache = false) {
             const latInput = document.getElementById('classroomLat');
@@ -1503,6 +1495,15 @@
             }
         }
 
+        // Haversine distance helper for frontend coordinate validation
+        function haversineMeters(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
         async function handleStartSession(e) {
             e.preventDefault();
             const btn = document.getElementById('startBtn');
@@ -1526,6 +1527,7 @@
                     lngVal = pos.coords.longitude;
                     document.getElementById('classroomLat').value = latVal.toFixed(7);
                     document.getElementById('classroomLng').value = lngVal.toFixed(7);
+                    currentLocationSource = 'GPS';
                 } catch (gpsErr) {
                     console.warn('GPS acquire failed during session start:', gpsErr);
                     alert('❌ Cannot launch session: GPS location is required but permission was denied or failed.\n\nPlease:\n1. Click the 🔒 lock icon in the address bar and ALLOW location.\n2. Click "Refresh Current Location" and wait for GPS to lock.\n3. Alternatively, enable "Testing / Anywhere Mode" to bypass location checking.');
@@ -1534,6 +1536,7 @@
                     return;
                 }
             }
+
 
 
             const payload = {
