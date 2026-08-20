@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="ATTENDX - Email OTP Verification Portal">
     <title>ATTENDX - Email Verification</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +25,7 @@
             --success-border: #10b981;
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -40,6 +40,8 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         .verify-container {
@@ -177,6 +179,29 @@
             font-size: 1.5rem;
             font-weight: 700;
             text-align: center;
+        }
+
+        /* ─── MOBILE RESPONSIVENESS (< 768px) ─── */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .verify-container {
+                width: 100%;
+                max-width: 100%;
+                padding: 1.5rem 1rem;
+                border-radius: 14px;
+            }
+
+            .form-input, .btn-primary, .btn-secondary, button, input {
+                min-height: 44px;
+                width: 100%;
+            }
+
+            .brand-title {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>

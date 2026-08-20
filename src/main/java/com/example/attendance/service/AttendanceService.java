@@ -136,8 +136,9 @@ public class AttendanceService {
         // Step (b): Verify current time is within session's startTime/endTime
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         if (now.isBefore(session.getStartTime()) || now.isAfter(session.getEndTime())) {
-            throw new IllegalArgumentException("Attendance rejected: Session closed. Session time: " 
-                    + session.getStartTime() + " to " + session.getEndTime() + ".");
+            throw new IllegalArgumentException("SESSION_CLOSED: Session time window has ended. " 
+                    + "Session was active from " + session.getStartTime().toLocalTime()
+                    + " to " + session.getEndTime().toLocalTime() + ". Please contact your teacher.");
         }
 
         // Step (c): Hybrid GPS + Wi-Fi Geofencing Enforcement
@@ -192,13 +193,13 @@ public class AttendanceService {
 
             // --- Hybrid decision ---
             if (!gpsPass && !wifiPass) {
-                // Build a detailed rejection message
-                StringBuilder rejectMsg = new StringBuilder("Out of Classroom Range.");
+                // Build a GEOFENCE:-prefixed rejection message so the controller returns HTTP 403
+                StringBuilder rejectMsg = new StringBuilder("GEOFENCE: Out of Classroom Range.");
                 if (hasValidClassroomCoords && distanceMeters != Double.MAX_VALUE) {
                     rejectMsg.append(" GPS distance: ").append((int) distanceMeters)
                              .append("m (allowed: ").append(session.getRadiusMeters().intValue()).append("m).");
                 } else {
-                    rejectMsg.append(" GPS coordinates not set for this session.");
+                    rejectMsg.append(" Classroom GPS coordinates not configured for this session.");
                 }
                 if (expectedWifiForCheck != null && !expectedWifiForCheck.isEmpty()) {
                     rejectMsg.append(" Wi-Fi SSID mismatch");
@@ -208,9 +209,9 @@ public class AttendanceService {
                     } else {
                         rejectMsg.append(" (no Wi-Fi SSID reported by student)");
                     }
-                    rejectMsg.append(". Both GPS and Wi-Fi checks failed.");
+                    rejectMsg.append(". Both GPS and Wi-Fi checks failed — you must be physically present.");
                 } else {
-                    rejectMsg.append(" No Wi-Fi fallback configured for this session.");
+                    rejectMsg.append(" No Wi-Fi fallback configured. Ensure you are physically within the classroom.");
                 }
                 throw new IllegalArgumentException(rejectMsg.toString());
             }
