@@ -503,39 +503,51 @@
                         </div>
 
 
-                        <!-- GPS-Only Lat/Lng Inputs (Read-only, Auto-Filled via GPS) -->
+                        <!-- GPS + Manual Lat/Lng Inputs -->
                         <div class="form-group">
                             <label class="form-label" for="classroomLat">
-                                Classroom Latitude <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Pick
-                                    Location)</span>
+                                Classroom Latitude
+                                <span style="font-size:0.75rem;color:#64748b;font-weight:400;"> (Auto GPS or paste manually)</span>
                             </label>
-                            <input type="text" id="classroomLat" class="form-input" placeholder="Click 'Pick Location'"
-                                readonly required>
+                            <input type="text" id="classroomLat" class="form-input"
+                                placeholder="Auto-filled by GPS or paste from Google Maps"
+                                pattern="-?[0-9]{1,3}\.[0-9]+" required
+                                oninput="onManualCoordInput()">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label" for="classroomLng">
-                                Classroom Longitude <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Pick
-                                    Location)</span>
+                                Classroom Longitude
+                                <span style="font-size:0.75rem;color:#64748b;font-weight:400;"> (Auto GPS or paste manually)</span>
                             </label>
-                            <input type="text" id="classroomLng" class="form-input" placeholder="Click 'Pick Location'"
-                                readonly required>
+                            <input type="text" id="classroomLng" class="form-input"
+                                placeholder="Auto-filled by GPS or paste from Google Maps"
+                                pattern="-?[0-9]{1,3}\.[0-9]+" required
+                                oninput="onManualCoordInput()">
                         </div>
 
                         <!-- Button to pick location -->
-                        <div class="form-group full-width">
+                        <div class="form-group full-width" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
                             <button type="button" class="btn-secondary" onclick="pickLocation()">📍 Pick
                                 Location</button>
+                            <button type="button" onclick="openGoogleMapsHelper()"
+                                style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7;padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:500;cursor:pointer;">
+                                🗺️ Get from Google Maps
+                            </button>
                         </div>
 
 
                         <div class="form-group full-width" style="margin-bottom: 0.25rem;">
                             <div id="teacherGpsBadge"
-                                style="font-size: 0.825rem; font-weight: 600; color: #7dd3fc; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                                style="font-size: 0.825rem; font-weight: 600; color: #7dd3fc; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem;">
                                 <span>📍 Acquiring Classroom GPS Location...</span>
-                                <button type="button" onclick="detectGPSLocation(true)"
-                                    style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh
-                                    Current Location</button>
+                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                    <button type="button" onclick="detectGPSLocation(true)"
+                                        style="background: transparent; border: none; color: #38bdf8; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">Refresh
+                                        Location</button>
+                                    <button type="button" onclick="openGoogleMapsHelper()"
+                                        style="background: transparent; border: none; color: #6ee7b7; text-decoration: underline; cursor: pointer; font-size: 0.8rem;">📋 Paste from Maps</button>
+                                </div>
                             </div>
                         </div>
                         <!-- Live GPS accuracy badge -->
@@ -1297,6 +1309,89 @@
             }
         }
 
+        // Called when teacher manually types lat/lng — update badge to show manual entry mode
+        function onManualCoordInput() {
+            const lat = document.getElementById('classroomLat').value.trim();
+            const lng = document.getElementById('classroomLng').value.trim();
+            const gpsBadge = document.getElementById('teacherGpsBadge');
+            const latVal = parseFloat(lat);
+            const lngVal = parseFloat(lng);
+            if (!isNaN(latVal) && !isNaN(lngVal) && latVal !== 0 && lngVal !== 0) {
+                if (gpsBadge) {
+                    gpsBadge.style.color = '#86efac';
+                    gpsBadge.style.background = 'rgba(34,197,94,0.15)';
+                    gpsBadge.style.borderColor = 'rgba(34,197,94,0.3)';
+                    gpsBadge.innerHTML = `<span>✏️ Manual Coordinates Set (${latVal.toFixed(5)}, ${lngVal.toFixed(5)})</span>
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            <button type="button" onclick="detectGPSLocation(true)" style="background:transparent;border:none;color:#86efac;text-decoration:underline;cursor:pointer;font-size:0.8rem;">Use GPS Instead</button>
+                            <button type="button" onclick="openGoogleMapsHelper()" style="background:transparent;border:none;color:#6ee7b7;text-decoration:underline;cursor:pointer;font-size:0.8rem;">📋 Paste from Maps</button>
+                        </div>`;
+                }
+            }
+        }
+
+        // Open Google Maps to let teacher get exact coordinates, then paste into fields
+        function openGoogleMapsHelper() {
+            // Open Google Maps in a new tab
+            window.open('https://maps.google.com', '_blank');
+
+            // Show instruction overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'mapsHelperOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+            overlay.innerHTML = `
+                <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:1.5rem;max-width:480px;width:100%;color:#f8fafc;">
+                    <h3 style="margin-bottom:1rem;color:#7dd3fc;font-size:1.1rem;">🗺️ How to get coordinates from Google Maps</h3>
+                    <ol style="padding-left:1.2rem;line-height:2;font-size:0.9rem;color:#cbd5e1;">
+                        <li>Google Maps <strong>new tab mein khula hai</strong></li>
+                        <li>Apni <strong>classroom/college location</strong> dhundho</li>
+                        <li>Location pe <strong>right-click</strong> karo</li>
+                        <li>Pehli line mein <strong>coordinates dikhenge</strong> (e.g. 28.8725, 78.7585)</li>
+                        <li>Unhe <strong>click karo</strong> — copy ho jayenge</li>
+                        <li>Neeche fields mein <strong>paste karo</strong></li>
+                    </ol>
+                    <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.5rem;">
+                        <input type="text" id="mapsLatPaste" placeholder="Latitude paste karo (e.g. 28.8725)"
+                            style="background:#0f172a;border:1px solid #334155;color:#f8fafc;padding:0.6rem 0.8rem;border-radius:8px;font-size:0.9rem;width:100%;">
+                        <input type="text" id="mapsLngPaste" placeholder="Longitude paste karo (e.g. 78.7585)"
+                            style="background:#0f172a;border:1px solid #334155;color:#f8fafc;padding:0.6rem 0.8rem;border-radius:8px;font-size:0.9rem;width:100%;">
+                        <p style="font-size:0.78rem;color:#64748b;margin-top:0.2rem;">💡 Tip: Google Maps se copy karne par "28.8725, 78.7585" format mein aata hai — dono numbers alag-alag paste karo</p>
+                    </div>
+                    <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+                        <button onclick="applyMapsCoords()" style="flex:1;background:rgba(37,99,235,0.8);border:none;color:#fff;padding:0.65rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">✅ Apply Coordinates</button>
+                        <button onclick="document.getElementById('mapsHelperOverlay').remove()" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:0.65rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Cancel</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+
+            // Auto-parse if user pastes "lat, lng" together in first field
+            document.getElementById('mapsLatPaste').addEventListener('input', function() {
+                const val = this.value.trim();
+                if (val.includes(',')) {
+                    const parts = val.split(',');
+                    if (parts.length === 2) {
+                        this.value = parts[0].trim();
+                        document.getElementById('mapsLngPaste').value = parts[1].trim();
+                    }
+                }
+            });
+        }
+
+        function applyMapsCoords() {
+            const rawLat = document.getElementById('mapsLatPaste').value.trim();
+            const rawLng = document.getElementById('mapsLngPaste').value.trim();
+            const lat = parseFloat(rawLat);
+            const lng = parseFloat(rawLng);
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('❌ Invalid coordinates. Please enter valid numbers (e.g. 28.8725 and 78.7585).');
+                return;
+            }
+            document.getElementById('classroomLat').value = lat.toFixed(7);
+            document.getElementById('classroomLng').value = lng.toFixed(7);
+            document.getElementById('mapsHelperOverlay').remove();
+            onManualCoordInput();
+        }
+
         let currentLocationSource = 'GPS';
 
         function detectGPSLocation(clearCache = false) {
@@ -1602,7 +1697,10 @@
             let radiusVal = isNaN(rawRadius) ? 500 : rawRadius;
             const isTestingMode = document.getElementById('testingModeCheckbox')?.checked || false;
 
-            if (!isTestingMode && (latVal === 0.0 || lngVal === 0.0 || isNaN(latVal) || isNaN(lngVal))) {
+            // Only auto-fetch GPS if coords are missing AND not in testing mode
+            // Skip GPS fetch if teacher already entered coordinates manually (via Google Maps helper or direct typing)
+            const hasManualCoords = latVal !== 0.0 && lngVal !== 0.0 && !isNaN(latVal) && !isNaN(lngVal);
+            if (!isTestingMode && !hasManualCoords) {
                 btn.textContent = 'Acquiring GPS location...';
                 try {
                     const pos = await new Promise((resolve, reject) => {
@@ -1615,7 +1713,7 @@
                     currentLocationSource = 'GPS';
                 } catch (gpsErr) {
                     console.warn('GPS acquire failed during session start:', gpsErr);
-                    alert('❌ Cannot launch session: GPS location is required but permission was denied or failed.\n\nPlease:\n1. Click the 🔒 lock icon in the address bar and ALLOW location.\n2. Click "Refresh Current Location" and wait for GPS to lock.\n3. Alternatively, enable "Testing / Anywhere Mode" to bypass location checking.');
+                    alert('❌ GPS location blocked.\n\nOptions:\n1. Click 🔒 lock icon → ALLOW location → Retry\n2. Click "🗺️ Get from Google Maps" button → paste your classroom coordinates\n3. Enable "Testing / Anywhere Mode" to bypass location checking.');
                     btn.disabled = false;
                     btn.textContent = 'Launch Active Session';
                     return;
