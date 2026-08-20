@@ -207,23 +207,31 @@ public class AttendanceService {
             // --- Wi-Fi SSID fallback (soft check, not primary enforcement) ---
             String studentWifiForCheck = request.getStudentWifiSsid() != null ? request.getStudentWifiSsid().trim() : null;
             String expectedWifiForCheck = session.getExpectedWifiSsid() != null ? session.getExpectedWifiSsid().trim() : null;
-            boolean wifiPass = expectedWifiForCheck != null && !expectedWifiForCheck.isEmpty()
+            boolean hasWifiConfig = expectedWifiForCheck != null && !expectedWifiForCheck.isEmpty();
+            boolean wifiPass = hasWifiConfig
                     && studentWifiForCheck != null && !studentWifiForCheck.isEmpty()
                     && expectedWifiForCheck.equalsIgnoreCase(studentWifiForCheck);
 
             logger.info("[TOKEN] Wi-Fi check — expected: '{}', student: '{}', wifiPass: {}",
                     expectedWifiForCheck, studentWifiForCheck, wifiPass);
 
-            // Reject only when BOTH GPS and Wi-Fi fail
-            if (!gpsPass && !wifiPass) {
+            // ── Geofence decision ─────────────────────────────────────────────────
+            // If the session has NO classroom GPS and NO Wi-Fi SSID configured, there
+            // is simply no geofence to enforce → allow attendance (token validity is sufficient).
+            if (!hasValidClassroomCoords && !hasWifiConfig) {
+                logger.warn("[TOKEN] Session {} has no classroom GPS or Wi-Fi SSID configured — " +
+                        "geofence skipped, token accepted.", session.getId());
+
+            } else if (!gpsPass && !wifiPass) {
+                // Both configured checks failed → reject with a helpful message
                 StringBuilder rejectMsg = new StringBuilder("GEOFENCE: Out of Classroom Range.");
                 if (hasValidClassroomCoords && distanceMeters != Double.MAX_VALUE) {
                     rejectMsg.append(" Your distance: ").append((int) distanceMeters)
                              .append("m (allowed: ").append(session.getRadiusMeters().intValue()).append("m).");
-                } else {
-                    rejectMsg.append(" Classroom GPS coordinates not configured for this session.");
+                } else if (!hasValidClassroomCoords) {
+                    rejectMsg.append(" Classroom GPS not set for this session.");
                 }
-                if (expectedWifiForCheck != null && !expectedWifiForCheck.isEmpty()) {
+                if (hasWifiConfig) {
                     rejectMsg.append(" Wi-Fi SSID mismatch");
                     if (studentWifiForCheck != null && !studentWifiForCheck.isEmpty()) {
                         rejectMsg.append(" (expected: '").append(expectedWifiForCheck)
@@ -236,9 +244,8 @@ public class AttendanceService {
                     rejectMsg.append(" Please ensure you are physically within the classroom.");
                 }
                 throw new IllegalArgumentException(rejectMsg.toString());
-            }
 
-            if (!gpsPass && wifiPass) {
+            } else if (!gpsPass && wifiPass) {
                 logger.info("[TOKEN] GPS out of range but Wi-Fi SSID matched — attendance ALLOWED " +
                         "via Wi-Fi fallback for student '{}' in session {}.", studentUsername, session.getId());
             }
