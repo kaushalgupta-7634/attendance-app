@@ -52,8 +52,14 @@ public class AttendanceService {
     }
 
     public AttendanceRecord markAttendance(MarkAttendanceRequest request, String studentUsername, String clientIp) {
-        if (request.getStudentLat() == null || request.getStudentLng() == null) {
-            throw new IllegalArgumentException("Student location coordinates are required.");
+        // Resolve submission mode: QR (camera scan) or TOKEN (manual 6-digit entry).
+        // For QR mode, GPS coordinates are not required — geofence is skipped (see below).
+        // For TOKEN mode (or unset legacy), GPS coordinates MUST be present.
+        boolean isQrMode = "QR".equalsIgnoreCase(request.getSubmissionMode());
+        boolean isTokenMode = !isQrMode; // TOKEN or legacy unset
+
+        if (isTokenMode && (request.getStudentLat() == null || request.getStudentLng() == null)) {
+            throw new IllegalArgumentException("Student location coordinates are required for manual token attendance.");
         }
 
         Long extractedSessionId = request.getSessionId();
@@ -141,11 +147,18 @@ public class AttendanceService {
                     + " to " + session.getEndTime().toLocalTime() + ". Please contact your teacher.");
         }
 
-        // Step (c): Hybrid GPS + Wi-Fi Geofencing Enforcement
-        // Testing mode (radiusMeters >= 99999 or <= 0) bypasses all checks.
-        // Normal mode: ALLOW if (GPS distance <= radius) OR (Wi-Fi SSID matches expected SSID).
-        // REJECT only when BOTH GPS and Wi-Fi checks fail.
-        // JUnit / Spring test suites are also allowed to bypass geofencing.
+        // ── Step (c): Geofence Enforcement ────────────────────────────────────────
+        //
+        // QR mode  → SKIP geofence entirely. Scanning a live rotating 15-second QR on
+        //            the teacher's screen is proof of physical presence. The HMAC token
+        //            expiry is the anti-replay guard; no additional GPS check is needed.
+        //
+        // TOKEN mode → STRICT Haversine enforcement. A 6-digit passcode can be shared
+        //              remotely, so GPS distance to classroom MUST be within allowed radius.
+        //
+        // Testing / Anywhere Mode (radiusMeters >= 99999 or <= 0) bypasses checks for both modes.
+        // JUnit / Spring test suite calls also bypass geofencing.
+
         boolean isRunningTest = false;
         for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
             if (element.getClassName().startsWith("org.junit.") || element.getClassName().startsWith("org.springframework.test.")) {
@@ -154,17 +167,25 @@ public class AttendanceService {
             }
         }
 
-        // Testing / Anywhere Mode: radiusMeters >= 99999 (sent as 100000 from frontend) or <= 0
-        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
+        boolean isTestingAnywhereMode = (session.getRadiusMeters() != null &&
+                (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
-        if (!isTestingAnywhereMode && !isRunningTest) {
+        if (isQrMode) {
+            // ── QR SCAN PATH: geofence bypassed ──────────────────────────────────
+            logger.info("[QR] Attendance for student '{}' in session {} — geofence BYPASSED " +
+                            "(live QR scan proves physical classroom presence).",
+                    studentUsername, session.getId());
+
+        } else if (!isTestingAnywhereMode && !isRunningTest) {
+            // ── TOKEN PATH: strict Haversine geofence ────────────────────────────
+            // At this point studentLat/Lng are guaranteed non-null (checked above).
             boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
                     && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
 
             double studentLat = request.getStudentLat();
             double studentLng = request.getStudentLng();
 
-            // --- GPS check ---
+            // --- GPS distance check ---
             boolean gpsPass = false;
             double distanceMeters = Double.MAX_VALUE;
             if (hasValidClassroomCoords) {
@@ -173,30 +194,31 @@ public class AttendanceService {
                         session.getClassroomLat(), session.getClassroomLng()
                 );
                 gpsPass = distanceMeters <= session.getRadiusMeters();
-                logger.info("Geofence check — student: ({}, {}), classroom: ({}, {}), distance: {}m, allowed: {}m, gpsPass: {}",
+                logger.info("[TOKEN] Geofence check — student: ({}, {}), classroom: ({}, {}), " +
+                                "distance: {}m, allowed: {}m, gpsPass: {}",
                         studentLat, studentLng,
                         session.getClassroomLat(), session.getClassroomLng(),
                         (int) distanceMeters, session.getRadiusMeters().intValue(), gpsPass);
             } else {
-                logger.warn("Session {} has no valid classroom GPS coordinates — falling back to Wi-Fi check only.", session.getId());
+                logger.warn("[TOKEN] Session {} has no valid classroom GPS coordinates — " +
+                        "falling back to Wi-Fi check only.", session.getId());
             }
 
-            // --- Wi-Fi SSID check (genuine fallback, not just a warning) ---
+            // --- Wi-Fi SSID fallback (soft check, not primary enforcement) ---
             String studentWifiForCheck = request.getStudentWifiSsid() != null ? request.getStudentWifiSsid().trim() : null;
             String expectedWifiForCheck = session.getExpectedWifiSsid() != null ? session.getExpectedWifiSsid().trim() : null;
             boolean wifiPass = expectedWifiForCheck != null && !expectedWifiForCheck.isEmpty()
                     && studentWifiForCheck != null && !studentWifiForCheck.isEmpty()
                     && expectedWifiForCheck.equalsIgnoreCase(studentWifiForCheck);
 
-            logger.info("Wi-Fi check — expected: '{}', student: '{}', wifiPass: {}",
+            logger.info("[TOKEN] Wi-Fi check — expected: '{}', student: '{}', wifiPass: {}",
                     expectedWifiForCheck, studentWifiForCheck, wifiPass);
 
-            // --- Hybrid decision ---
+            // Reject only when BOTH GPS and Wi-Fi fail
             if (!gpsPass && !wifiPass) {
-                // Build a GEOFENCE:-prefixed rejection message so the controller returns HTTP 403
                 StringBuilder rejectMsg = new StringBuilder("GEOFENCE: Out of Classroom Range.");
                 if (hasValidClassroomCoords && distanceMeters != Double.MAX_VALUE) {
-                    rejectMsg.append(" GPS distance: ").append((int) distanceMeters)
+                    rejectMsg.append(" Your distance: ").append((int) distanceMeters)
                              .append("m (allowed: ").append(session.getRadiusMeters().intValue()).append("m).");
                 } else {
                     rejectMsg.append(" Classroom GPS coordinates not configured for this session.");
@@ -207,19 +229,22 @@ public class AttendanceService {
                         rejectMsg.append(" (expected: '").append(expectedWifiForCheck)
                                  .append("', got: '").append(studentWifiForCheck).append("')");
                     } else {
-                        rejectMsg.append(" (no Wi-Fi SSID reported by student)");
+                        rejectMsg.append(" (no Wi-Fi SSID reported by your device)");
                     }
-                    rejectMsg.append(". Both GPS and Wi-Fi checks failed — you must be physically present.");
+                    rejectMsg.append(". Both GPS and Wi-Fi checks failed — you must be physically present in the classroom.");
                 } else {
-                    rejectMsg.append(" No Wi-Fi fallback configured. Ensure you are physically within the classroom.");
+                    rejectMsg.append(" Please ensure you are physically within the classroom.");
                 }
                 throw new IllegalArgumentException(rejectMsg.toString());
             }
 
             if (!gpsPass && wifiPass) {
-                logger.info("GPS check failed but Wi-Fi SSID matched — attendance ALLOWED via Wi-Fi fallback for student {} in session {}.",
-                        studentUsername, session.getId());
+                logger.info("[TOKEN] GPS out of range but Wi-Fi SSID matched — attendance ALLOWED " +
+                        "via Wi-Fi fallback for student '{}' in session {}.", studentUsername, session.getId());
             }
+        } else if (isTestingAnywhereMode) {
+            logger.info("[{}] Testing/Anywhere Mode active — geofence bypassed for student '{}' in session {}.",
+                    isQrMode ? "QR" : "TOKEN", studentUsername, session.getId());
         }
 
         // Step (d): Get student from JWT username

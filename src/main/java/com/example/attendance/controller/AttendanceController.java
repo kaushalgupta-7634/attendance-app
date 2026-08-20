@@ -38,10 +38,14 @@ public class AttendanceController {
     public ResponseEntity<?> markAttendance(@RequestBody MarkAttendanceRequest request,
                                             Principal principal,
                                             jakarta.servlet.http.HttpServletRequest httpRequest) {
-        // -- HTTP 400: coordinates are mandatory --
-        if (request.getStudentLat() == null || request.getStudentLng() == null) {
+
+        // For TOKEN (manual passcode) submissions, GPS coordinates are mandatory.
+        // For QR scan submissions, coordinates are optional — geofence is bypassed in the service layer
+        // because scanning a live rotating QR on the teacher's screen proves physical presence.
+        boolean isQrMode = "QR".equalsIgnoreCase(request.getSubmissionMode());
+        if (!isQrMode && (request.getStudentLat() == null || request.getStudentLng() == null)) {
             return ResponseEntity.badRequest()
-                    .body(java.util.Map.of("message", "Student GPS coordinates (studentLat, studentLng) are required. Please allow location permission in your browser."));
+                    .body(java.util.Map.of("message", "Student GPS coordinates (studentLat, studentLng) are required for manual token attendance. Please allow location permission in your browser."));
         }
 
         String clientIp = httpRequest != null ? httpRequest.getHeader("X-Forwarded-For") : null;
