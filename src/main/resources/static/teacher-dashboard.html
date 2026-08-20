@@ -588,7 +588,7 @@
                                 <span style="font-size:0.75rem;color:#94a3b8;font-weight:400;"> (Auto GPS or Pick on Map)</span>
                             </label>
                             <input type="text" id="classroomLat" class="form-input"
-                                placeholder="Auto-filled by GPS / Network"
+                                placeholder="Auto-filled by GPS or Map Pin"
                                 pattern="-?[0-9]{1,3}\.[0-9]+" required
                                 oninput="onManualCoordInput()">
                         </div>
@@ -599,7 +599,7 @@
                                 <span style="font-size:0.75rem;color:#94a3b8;font-weight:400;"> (Auto GPS or Pick on Map)</span>
                             </label>
                             <input type="text" id="classroomLng" class="form-input"
-                                placeholder="Auto-filled by GPS / Network"
+                                placeholder="Auto-filled by GPS or Map Pin"
                                 pattern="-?[0-9]{1,3}\.[0-9]+" required
                                 oninput="onManualCoordInput()">
                         </div>
@@ -1445,7 +1445,7 @@
                         accuracyBadge.style.color = '#fcd34d';
                         accuracyBadge.style.background = 'rgba(245, 158, 11, 0.15)';
                         accuracyBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                        accuracyBadge.innerHTML = `⚠️ Accuracy: ±${acc}m — Wi-Fi / Network Triangulation`;
+                        accuracyBadge.innerHTML = `⚠️ Low GPS Accuracy: ±${acc}m — Enable fine location / step outside for better signal`;
                     } else {
                         accuracyBadge.style.color = '#86efac';
                         accuracyBadge.style.background = 'rgba(34, 197, 94, 0.1)';
@@ -1484,8 +1484,8 @@
             }
         }
 
-        // High-accuracy browser GPS only — no IP/network fallback
-        // Mirrors the exact same logic used in the student portal (student-scan.html)
+        // High-accuracy browser GPS only — strictly NO IP/network geolocation fallback.
+        // Uses the same navigator.geolocation options as the student portal (student-scan.html).
         async function detectGPSLocation(forceRefresh = false) {
             updateGpsBadgeStatus('acquiring');
 
@@ -1876,16 +1876,18 @@
             let radiusVal = isNaN(rawRadius) ? 500 : rawRadius;
             const isTestingMode = document.getElementById('testingModeCheckbox')?.checked || false;
 
-            // Only auto-fetch GPS if coords are missing AND not in testing mode
-            // Skip GPS fetch if teacher already entered coordinates manually (via Google Maps helper or direct typing)
+            // Only auto-fetch GPS if coords are missing AND not in testing mode.
+            // No IP/network geolocation fallback — location MUST come from browser GPS or map pin.
             const hasManualCoords = latVal !== 0.0 && lngVal !== 0.0 && !isNaN(latVal) && !isNaN(lngVal);
             if (!isTestingMode && !hasManualCoords) {
-                btn.textContent = 'Acquiring GPS / Network location...';
+                btn.textContent = '🛰️ Acquiring High-Accuracy GPS...';
                 const detected = await detectGPSLocation(true);
                 if (detected) {
                     latVal = parseFloat(Number(detected.lat).toFixed(7));
                     lngVal = parseFloat(Number(detected.lng).toFixed(7));
                 } else {
+                    // GPS denied or timed out — check if teacher had previously confirmed a location via map pin.
+                    // This is NOT an IP fallback; it is a user-confirmed location from a prior map interaction.
                     const fallbackLat = parseFloat(localStorage.getItem('last_classroom_lat') || '0');
                     const fallbackLng = parseFloat(localStorage.getItem('last_classroom_lng') || '0');
                     if (fallbackLat !== 0 && fallbackLng !== 0) {
