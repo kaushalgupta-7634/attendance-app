@@ -559,19 +559,26 @@
         }
 
         // Global fetch interceptor to handle 401 Unauthorized (session invalidated/expired)
+        // Only redirects to login if the JWT token is ACTUALLY expired locally.
+        // This prevents logout on server-side business logic 401/403 errors (e.g., assignment not found).
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             try {
                 const response = await originalFetch(...args);
-                if (response.status === 401 || response.status === 403) {
+                if (response.status === 401) {
                     const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : (args[0] && args[0].url));
                     const isInternal = !url || url.startsWith('/') || url.startsWith(window.location.origin);
                     if (isInternal) {
-                        localStorage.removeItem('jwtToken');
-                        localStorage.removeItem('userRole');
-                        document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                        document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                        window.location.replace('/login.html');
+                        // Only force logout if token is truly expired or missing
+                        const currentToken = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
+                        if (!currentToken || isTokenExpired(currentToken)) {
+                            localStorage.removeItem('jwtToken');
+                            localStorage.removeItem('userRole');
+                            document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                            document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                            window.location.replace('/login.html');
+                        }
+                        // else: 401 is a business-logic error, not a session error — let caller handle it
                     }
                 }
                 return response;
@@ -1476,10 +1483,20 @@
                 `;
                 }).join('');
             } catch (err) {
-                container.innerHTML = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--accent-red); padding: 1rem; border-radius: 12px; text-align: center; color: #fca5a5; font-size: 0.85rem;">
-                    Session Expired or Connection Error. Please log in again.<br><br>
-                    <button class="btn-action" style="background: #ef4444; width: auto; display: inline-block; padding: 0.4rem 1rem;" onclick="logout()">🔑 Log In Again</button>
-                </div>`;
+                // Check if token is actually expired before showing session error
+                const checkTok = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');
+                const isExpired = !checkTok || isTokenExpired(checkTok);
+                if (isExpired) {
+                    container.innerHTML = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--accent-red); padding: 1rem; border-radius: 12px; text-align: center; color: #fca5a5; font-size: 0.85rem;">
+                        Session Expired. Please log in again.<br><br>
+                        <button class="btn-action" style="background: #ef4444; width: auto; display: inline-block; padding: 0.4rem 1rem;" onclick="logout()">🔑 Log In Again</button>
+                    </div>`;
+                } else {
+                    container.innerHTML = `<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); padding: 1rem; border-radius: 12px; text-align: center; color: #fca5a5; font-size: 0.85rem;">
+                        ⚠️ Could not load assignments. Check your internet connection and try again.
+                        <br><br><button class="btn-action" style="background: rgba(37,99,235,0.7); width: auto; display: inline-block; padding: 0.4rem 1rem;" onclick="fetchStudentAssignments()">🔄 Retry</button>
+                    </div>`;
+                }
             }
         }
     </script>
