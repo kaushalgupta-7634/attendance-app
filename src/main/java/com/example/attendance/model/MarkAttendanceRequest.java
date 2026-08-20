@@ -9,6 +9,14 @@ public class MarkAttendanceRequest {
     private String studentWifiSsid;
     private String deviceId;
 
+    /**
+     * "QR"    → camera scan of rotating 15-second QR code; geofence is bypassed
+     *            (live-screen scan proves physical presence; token expiry is the anti-replay guard).
+     * "TOKEN" → manual 6-digit passcode entry; strict Haversine geofence is enforced.
+     * null    → legacy / unset; service falls back to token-type detection.
+     */
+    private String submissionMode;
+
     public MarkAttendanceRequest() {
     }
 
@@ -79,5 +87,13 @@ public class MarkAttendanceRequest {
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public String getSubmissionMode() {
+        return submissionMode;
+    }
+
+    public void setSubmissionMode(String submissionMode) {
+        this.submissionMode = submissionMode;
     }
 }

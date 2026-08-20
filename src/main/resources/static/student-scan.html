@@ -708,7 +708,7 @@
                 }
                 showResult(true, "Processing Direct QR Scan...", "Submitting attendance from Google Lens / Camera QR link...");
                 setTimeout(() => {
-                    sendAttendanceSubmission(pendingToken);
+                    sendAttendanceSubmission(pendingToken, 'QR');
                 }, 600);
             }
         });
@@ -967,7 +967,7 @@
                 }
 
                 console.log("Photo/Gallery Scanned QR Code:", qrCodeMessage);
-                sendAttendanceSubmission(qrCodeMessage);
+                sendAttendanceSubmission(qrCodeMessage, 'QR');
             } catch (err) {
                 showResult(false, "QR Decode Error", "Could not detect a valid QR code in the selected gallery image. Please select a clear photo of the QR code and retry.");
             } finally {
@@ -978,7 +978,7 @@
         function onQrCodeScanned(qrCodeMessage) {
             console.log("Scanned QR Code:", qrCodeMessage);
             stopCameraScanner();
-            sendAttendanceSubmission(qrCodeMessage);
+            sendAttendanceSubmission(qrCodeMessage, 'QR');
         }
 
         function onQrScanError(errorMessage) {
@@ -988,12 +988,14 @@
         let lastSubmittedToken = "";
 
         function submitManualToken() {
+            // Manual token requires GPS — a typed passcode can be shared remotely,
+            // so Haversine geofence must be enforced server-side.
             if (!locationReady) {
-                showResult(false, 'GPS Location Required', 'Please allow location access in your browser and wait for GPS to lock before submitting a token.');
+                showResult(false, '📍 GPS Required for Token', 'Please allow location access and wait for GPS to lock before submitting a manual token. GPS is required to verify you are within the classroom radius.');
                 return;
             }
             const input = document.getElementById('manualTokenInput').value.trim();
-            sendAttendanceSubmission(input, false);
+            sendAttendanceSubmission(input, 'TOKEN');
         }
 
         function getSoftDetectedWifiSsid() {
@@ -1064,15 +1066,46 @@
             return devId + '_' + getBrowserFingerprint();
         }
 
-        async function sendAttendanceSubmission(qrToken) {
-            if (!locationReady || currentLat === null || currentLng === null) {
-                showResult(false, 'GPS Location Required', 'Please allow location access in your browser and wait for GPS to acquire your position before submitting attendance.');
+        /**
+         * Submits attendance to the backend.
+         * @param {string} qrToken  - The QR token string (sessionId:hash) or 6-digit passcode.
+         * @param {string} mode     - 'QR' for camera scan, 'TOKEN' for manual passcode entry.
+         */
+        async function sendAttendanceSubmission(qrToken, mode) {
+            // Normalise mode: default to 'QR' for camera scans (backward compat)
+            const submissionMode = (mode === 'TOKEN') ? 'TOKEN' : 'QR';
+
+            // TOKEN path requires GPS; QR path does NOT (physical presence = live screen scan)
+            if (submissionMode === 'TOKEN' && (!locationReady || currentLat === null || currentLng === null)) {
+                showResult(false, '📍 GPS Required for Token',
+                    'Your device GPS is not ready. Please allow location access and wait for GPS lock before submitting a manual token.');
                 return;
             }
+
             lastSubmittedToken = qrToken || "";
-            showResult(true, "Submitting...", "Verifying session and location radius...");
+
+            if (submissionMode === 'QR') {
+                showResult(true, "Submitting via QR...", "Verifying QR token with server...");
+            } else {
+                showResult(true, "Submitting Token...", "Verifying passcode and your classroom location...");
+            }
 
             const deviceId = getOrCreateDeviceId();
+
+            // Build payload — GPS coords included only for TOKEN path
+            const payload = {
+                qrToken: qrToken || "",
+                submissionMode: submissionMode,
+                bypassLocation: false,
+                studentWifiSsid: getSoftDetectedWifiSsid(),
+                deviceId: deviceId
+            };
+
+            if (submissionMode === 'TOKEN') {
+                payload.studentLat = currentLat;
+                payload.studentLng = currentLng;
+            }
+            // For QR mode: studentLat/studentLng intentionally omitted — geofence is bypassed on backend
 
             try {
                 const res = await fetch('/attendance/mark', {
@@ -1082,14 +1115,7 @@
                         'Authorization': 'Bearer ' + token,
                         'X-Device-Id': deviceId
                     },
-                    body: JSON.stringify({
-                        qrToken: qrToken || "",
-                        studentLat: currentLat,
-                        studentLng: currentLng,
-                        bypassLocation: false,
-                        studentWifiSsid: getSoftDetectedWifiSsid(),
-                        deviceId: deviceId
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 let data;
@@ -1101,12 +1127,10 @@
                     data = { message: text || 'HTTP Error ' + res.status };
                 }
 
-
                 if (!res.ok) {
                     // HTTP 403: geofence out-of-range OR session time window closed
                     if (res.status === 403) {
                         const errMsg = data.message || 'Access denied.';
-                        // Detect session-closed errors by message content
                         const isSessionClosed = errMsg.toLowerCase().includes('session time window') || errMsg.toLowerCase().includes('session was active');
                         if (isSessionClosed) {
                             showResult(false, '⏰ Session Has Ended', errMsg);
@@ -1133,7 +1157,8 @@
                     throw new Error(errMsg);
                 }
 
-                showResult(true, "Attendance Marked PRESENT!", `Successfully registered for session '${data.session ? data.session.className : 'Active Class'}'. Marked at ${new Date(data.markedAt).toLocaleTimeString()}`);
+                showResult(true, "✅ Attendance Marked PRESENT!",
+                    `Successfully registered for session '${data.session ? data.session.className : 'Active Class'}'. Marked at ${new Date(data.markedAt).toLocaleTimeString()}`);
                 fetchStudentAttendanceSummary();
 
             } catch (err) {
