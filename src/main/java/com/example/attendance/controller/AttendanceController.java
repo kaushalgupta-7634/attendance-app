@@ -35,9 +35,15 @@ public class AttendanceController {
 
     @PostMapping("/mark")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<AttendanceRecord> markAttendance(@RequestBody MarkAttendanceRequest request, 
-                                                            Principal principal,
-                                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+    public ResponseEntity<?> markAttendance(@RequestBody MarkAttendanceRequest request,
+                                            Principal principal,
+                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        // -- HTTP 400: coordinates are mandatory --
+        if (request.getStudentLat() == null || request.getStudentLng() == null) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("message", "Student GPS coordinates (studentLat, studentLng) are required. Please allow location permission in your browser."));
+        }
+
         String clientIp = httpRequest != null ? httpRequest.getHeader("X-Forwarded-For") : null;
         if (clientIp == null || clientIp.isBlank()) {
             clientIp = httpRequest != null ? httpRequest.getRemoteAddr() : null;
@@ -52,30 +58,22 @@ public class AttendanceController {
             }
         }
 
-        // Auto-bypass geofencing locally if the request is running on a local dev environment (localhost, 127.0.0.1, or local subnet)
-        String serverName = httpRequest != null ? httpRequest.getServerName() : "unknown";
-        boolean isRunningTest = false;
-        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-            if (element.getClassName().startsWith("org.junit.") || element.getClassName().startsWith("org.springframework.test.")) {
-                isRunningTest = true;
-                break;
+        try {
+            AttendanceRecord record = attendanceService.markAttendance(request, principal.getName(), clientIp);
+            return new ResponseEntity<>(record, HttpStatus.CREATED);
+        } catch (IllegalArgumentException ex) {
+            String msg = ex.getMessage() != null ? ex.getMessage() : "Attendance marking failed.";
+            // -- HTTP 403: out of classroom geofence radius --
+            if (msg.startsWith("GEOFENCE:")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(java.util.Map.of("message", msg.substring("GEOFENCE:".length()).trim()));
             }
+            // All other validation errors → 400
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("message", msg));
         }
-        boolean isLocalRequest = !isRunningTest && (
-                "localhost".equalsIgnoreCase(serverName) 
-                || "127.0.0.1".equals(serverName) 
-                || serverName.startsWith("192.168.") 
-                || serverName.startsWith("10.") 
-                || serverName.startsWith("172.")
-        );
-        
-        if (isLocalRequest && request != null) {
-            request.setBypassLocation(true);
-        }
-
-        AttendanceRecord record = attendanceService.markAttendance(request, principal.getName(), clientIp);
-        return new ResponseEntity<>(record, HttpStatus.CREATED);
     }
+
 
     @PostMapping("/manual-override")
     @PreAuthorize("hasRole('TEACHER')")

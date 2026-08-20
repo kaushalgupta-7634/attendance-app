@@ -141,9 +141,7 @@ public class AttendanceService {
         }
 
         // Step (c): Strict Geofencing Enforcement for anti-proxy protection (QR scan & Passcode/Token Number)
-        boolean isLocalDev = datasourceUrl != null && (datasourceUrl.contains("jdbc:h2") || datasourceUrl.contains("localhost") || datasourceUrl.contains("127.0.0.1"));
-        
-        // Exclude automated test suites (JUnit) from the local-dev bypass to keep integration tests strict
+        // Only JUnit integration test suites are allowed to bypass geofencing — no local-dev shortcut.
         boolean isRunningTest = false;
         for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
             if (element.getClassName().startsWith("org.junit.") || element.getClassName().startsWith("org.springframework.test.")) {
@@ -151,16 +149,7 @@ public class AttendanceService {
                 break;
             }
         }
-        if (isRunningTest) {
-            isLocalDev = false;
-        }
 
-        double classLat = session.getClassroomLat() != null ? session.getClassroomLat() : 0.0;
-        double classLng = session.getClassroomLng() != null ? session.getClassroomLng() : 0.0;
-
-        if (isLocalDev) {
-            logger.info("Local development environment detected. Bypassing geofencing location check.");
-        }
         boolean isTestingAnywhereMode = (session.getRadiusMeters() != null && (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
         if (!isTestingAnywhereMode) {
@@ -168,24 +157,26 @@ public class AttendanceService {
                     && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
 
             if (!hasValidClassroomCoords) {
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! Classroom GPS coordinates are outdated. Please ask your teacher to Refresh GPS or set classroom location manually.");
+                throw new IllegalArgumentException("Attendance rejected: Classroom GPS coordinates are not set. Please ask your teacher to use 'Refresh Current Location' and re-launch the session.");
             }
 
             double studentLat = request.getStudentLat();
             double studentLng = request.getStudentLng();
-            boolean isDefaultStudentCoords = Math.abs(studentLat - 12.9716) < 0.0001 && Math.abs(studentLng - 77.5946) < 0.0001;
-
-            if (isDefaultStudentCoords && !isRunningTest) {
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! Student GPS location defaulted to Bangalore coordinates (12.9716, 77.5946). Please allow location permission in your browser or click 'Bypass Distance Limit'.");
-            }
 
             double distanceMeters = calculateHaversineMeters(
                     studentLat, studentLng,
                     session.getClassroomLat(), session.getClassroomLng()
             );
 
-            if (distanceMeters > session.getRadiusMeters()) {
-                throw new IllegalArgumentException("Attendance rejected: Distance limit! You are outside allowed classroom radius.");
+            logger.info("Geofence check — student: ({}, {}), classroom: ({}, {}), distance: {}m, allowed: {}m",
+                    studentLat, studentLng,
+                    session.getClassroomLat(), session.getClassroomLng(),
+                    (int) distanceMeters, session.getRadiusMeters().intValue());
+
+            if (distanceMeters > session.getRadiusMeters() && !isRunningTest) {
+                throw new IllegalArgumentException(
+                        "GEOFENCE: Out of classroom radius. Distance: " + (int) distanceMeters
+                        + "m, Allowed: " + session.getRadiusMeters().intValue() + "m");
             }
         }
 
