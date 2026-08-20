@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Contact Us - ATTENDX Support</title>
     <meta name="description" content="Get in touch with the ATTENDX educational support and administrative assistance team.">
     <link rel="canonical" href="https://attendance-app-production-b868.up.railway.app/contact.html">
@@ -16,7 +16,7 @@
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
         }
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -28,6 +28,8 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
+            width: 100%;
         }
         nav {
             display: flex;
@@ -65,6 +67,7 @@
             border: 1px solid var(--border-card);
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 90%;
         }
         h1 {
             font-size: 2.25rem;
@@ -94,7 +97,9 @@
             width: 100px;
         }
         .back-link {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
             color: #60a5fa;
             text-decoration: none;
             font-weight: 600;
@@ -109,6 +114,33 @@
             text-align: center;
             color: var(--text-sub);
             font-size: 0.85rem;
+        }
+
+        /* ─── MOBILE RESPONSIVENESS (< 768px) ─── */
+        @media (max-width: 768px) {
+            nav {
+                padding: 0.75rem 1rem;
+            }
+            .container {
+                width: 100%;
+                max-width: 100%;
+                margin: 1rem auto;
+                padding: 1.25rem 1rem;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            .contact-info {
+                padding: 1rem;
+            }
+            .contact-item strong {
+                display: block;
+                width: auto;
+                margin-bottom: 0.25rem;
+            }
         }
     </style>
 </head>

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ATTENDX - Smart Geo-Fenced Attendance Platform</title>
     
     <!-- SEO Optimization -->
@@ -834,6 +834,66 @@
             text-align: left !important;
             margin: 0.25rem 0 1.25rem !important;
             max-width: 100% !important;
+        }
+
+        /* ─── MOBILE RESPONSIVENESS (< 768px) ─── */
+        @media (max-width: 768px) {
+            nav {
+                padding: 0.75rem 1rem;
+                flex-direction: column;
+                gap: 0.75rem;
+                align-items: flex-start;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .cta-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.75rem;
+            }
+
+            .btn-primary, .btn-secondary, .btn-nav {
+                width: 100%;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .hero {
+                padding: 2.5rem 1rem 2rem;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .collapsible-system {
+                padding: 0 0.75rem;
+                margin: 1.5rem auto;
+            }
+
+            .collapsible-trigger {
+                padding: 1rem;
+                min-height: 44px;
+            }
+
+            .collapsible-inner {
+                padding: 1rem 0.75rem !important;
+            }
+
+            .data-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+            }
         }
 
         /* Disable sizing animations for users who prefer reduced motion */

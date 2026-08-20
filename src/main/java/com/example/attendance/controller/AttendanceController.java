@@ -68,6 +68,11 @@ public class AttendanceController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(java.util.Map.of("message", msg.substring("GEOFENCE:".length()).trim()));
             }
+            // -- HTTP 403: session time window has closed --
+            if (msg.startsWith("SESSION_CLOSED:")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(java.util.Map.of("message", msg.substring("SESSION_CLOSED:".length()).trim()));
+            }
             // All other validation errors → 400
             return ResponseEntity.badRequest()
                     .body(java.util.Map.of("message", msg));
