@@ -1427,7 +1427,7 @@
                 gpsBadge.style.background = 'rgba(14, 165, 233, 0.15)';
                 gpsBadge.style.borderColor = 'rgba(14, 165, 233, 0.3)';
                 if (gpsDot) { gpsDot.style.background = '#38bdf8'; gpsDot.style.boxShadow = '0 0 8px #38bdf8'; }
-                if (gpsText) gpsText.textContent = '🛰️ Detecting Classroom Location (GPS / Network)...';
+                if (gpsText) gpsText.textContent = '🛰️ Acquiring High-Accuracy GPS Location...';
                 if (accuracyBadge) accuracyBadge.style.display = 'none';
             } else if (status === 'success' || status === 'saved' || status === 'manual') {
                 gpsBadge.style.color = '#86efac';
@@ -1462,7 +1462,7 @@
             }
         }
 
-        // Called when teacher manually types lat/lng
+        // Called when teacher manually types lat/lng — also re-centers live map marker
         function onManualCoordInput() {
             const lat = document.getElementById('classroomLat').value.trim();
             const lng = document.getElementById('classroomLng').value.trim();
@@ -1474,10 +1474,18 @@
                 localStorage.setItem('last_classroom_lat', latVal.toFixed(7));
                 localStorage.setItem('last_classroom_lng', lngVal.toFixed(7));
                 updateGpsBadgeStatus('manual', latVal, lngVal);
+                // Re-center the map marker if the map is currently open
+                if (leafletMap && mapMarker) {
+                    mapMarker.setLatLng([latVal, lngVal]);
+                    leafletMap.setView([latVal, lngVal], leafletMap.getZoom());
+                    const disp = document.getElementById('mapCoordsDisplay');
+                    if (disp) disp.textContent = `${latVal.toFixed(7)}, ${lngVal.toFixed(7)}`;
+                }
             }
         }
 
-        // Multi-tier location detection: GPS -> Wi-Fi Geolocation -> IP Fallback -> LocalStorage
+        // High-accuracy browser GPS only — no IP/network fallback
+        // Mirrors the exact same logic used in the student portal (student-scan.html)
         async function detectGPSLocation(forceRefresh = false) {
             updateGpsBadgeStatus('acquiring');
 
@@ -1495,73 +1503,36 @@
                 localStorage.setItem('last_classroom_lat', latFormatted);
                 localStorage.setItem('last_classroom_lng', lngFormatted);
                 updateGpsBadgeStatus('success', Number(lat), Number(lng), accuracy);
-            };
-
-            const tryHighAccuracy = () => new Promise((resolve, reject) => {
-                if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
-            });
-
-            const tryStandardAccuracy = () => new Promise((resolve, reject) => {
-                if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
-            });
-
-            const tryIpGeolocation = async () => {
-                try {
-                    const res = await fetch('https://ipwho.is/');
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.success && data.latitude && data.longitude) {
-                            return { latitude: data.latitude, longitude: data.longitude, accuracy: 1500 };
-                        }
-                    }
-                } catch (e) { }
-                try {
-                    const res2 = await fetch('https://freeipapi.com/api/json');
-                    if (res2.ok) {
-                        const data2 = await res2.json();
-                        if (data2.latitude && data2.longitude) {
-                            return { latitude: data2.latitude, longitude: data2.longitude, accuracy: 2000 };
-                        }
-                    }
-                } catch (e) { }
-                throw new Error('IP geolocation unavailable');
-            };
-
-            try {
-                // Tier 1: Try high-accuracy browser GPS
-                const pos = await tryHighAccuracy();
-                applyCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-                return { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            } catch (err1) {
-                console.warn('High-accuracy GPS failed, trying Wi-Fi / low accuracy geolocation:', err1);
-                try {
-                    // Tier 2: Try standard Wi-Fi geolocation
-                    const pos2 = await tryStandardAccuracy();
-                    applyCoords(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.accuracy);
-                    return { lat: pos2.coords.latitude, lng: pos2.coords.longitude };
-                } catch (err2) {
-                    console.warn('Browser geolocation failed, falling back to IP Geolocation:', err2);
-                    try {
-                        // Tier 3: Try fast IP geolocation
-                        const ipGeo = await tryIpGeolocation();
-                        applyCoords(ipGeo.latitude, ipGeo.longitude, ipGeo.accuracy);
-                        return { lat: ipGeo.latitude, lng: ipGeo.longitude };
-                    } catch (err3) {
-                        console.warn('All live location sources failed:', err3);
-                        // Tier 4: Fallback to last saved coords in localStorage
-                        const savedLat = localStorage.getItem('last_classroom_lat');
-                        const savedLng = localStorage.getItem('last_classroom_lng');
-                        if (savedLat && savedLng) {
-                            applyCoords(parseFloat(savedLat), parseFloat(savedLng), 50);
-                            return { lat: parseFloat(savedLat), lng: parseFloat(savedLng) };
-                        }
-                        updateGpsBadgeStatus('error');
-                        return null;
-                    }
+                // Also sync the map marker if the map is open
+                if (leafletMap && mapMarker) {
+                    mapMarker.setLatLng([Number(lat), Number(lng)]);
+                    leafletMap.setView([Number(lat), Number(lng)], leafletMap.getZoom());
+                    const disp = document.getElementById('mapCoordsDisplay');
+                    if (disp) disp.textContent = `${Number(lat).toFixed(7)}, ${Number(lng).toFixed(7)}`;
                 }
+            };
+
+            if (!navigator.geolocation) {
+                console.error('GPS Error: Geolocation not supported by this browser.');
+                updateGpsBadgeStatus('error');
+                return null;
             }
+
+            return new Promise((resolve) => {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const { latitude, longitude, accuracy } = pos.coords;
+                        applyCoords(latitude, longitude, accuracy);
+                        resolve({ lat: latitude, lng: longitude });
+                    },
+                    (err) => {
+                        console.error('GPS Error:', err);
+                        updateGpsBadgeStatus('error');
+                        resolve(null);
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            });
         }
 
         // ─── INTERACTIVE MAP PICKER MODAL CONTROLS ─────────────────────────────
@@ -1608,6 +1579,12 @@
                     const pos = mapMarker.getLatLng();
                     pickerCurrentLat = pos.lat;
                     pickerCurrentLng = pos.lng;
+                    // Immediately sync form inputs so session payload is always current
+                    const latInput = document.getElementById('classroomLat');
+                    const lngInput = document.getElementById('classroomLng');
+                    if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
+                    if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
+                    updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
                     const disp = document.getElementById('mapCoordsDisplay');
                     if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
                 });
@@ -1616,6 +1593,12 @@
                     pickerCurrentLat = e.latlng.lat;
                     pickerCurrentLng = e.latlng.lng;
                     mapMarker.setLatLng([pickerCurrentLat, pickerCurrentLng]);
+                    // Immediately sync form inputs so session payload is always current
+                    const latInput = document.getElementById('classroomLat');
+                    const lngInput = document.getElementById('classroomLng');
+                    if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
+                    if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
+                    updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
                     const disp = document.getElementById('mapCoordsDisplay');
                     if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
                 });
