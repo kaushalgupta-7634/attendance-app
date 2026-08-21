@@ -121,8 +121,9 @@ public class AttendanceService {
             throw new IllegalArgumentException("Attendance rejected: Class session '" + session.getClassName() + "' is not active.");
         }
 
-        // Validate QR Token Hash (15s window) or 6-Digit Passcode (30s window)
+        // Validate QR Token Hash (15s window) or 6-Digit Passcode (30s window) or Active Session Fallback
         boolean tokenVerified = false;
+        boolean isFallbackMode = "FALLBACK".equalsIgnoreCase(request.getSubmissionMode()) || (rawToken == null || rawToken.trim().isEmpty());
         if (tokenHash != null && !tokenHash.isEmpty()) {
             tokenVerified = qrCodeService.validateToken(session.getId(), tokenHash);
             if (!tokenVerified) {
@@ -134,6 +135,9 @@ public class AttendanceService {
             if (!tokenVerified) {
                 throw new IllegalArgumentException("Attendance rejected: 6-digit passcode expired (30s rotation). Please enter the current passcode shown on teacher screen.");
             }
+        } else if (isFallbackMode) {
+            // Attendance fallback button: verified by active session presence and geofence radius check
+            tokenVerified = true;
         } else {
             throw new IllegalArgumentException("Attendance rejected: Valid live QR code scan or current 6-digit passcode is required.");
         }
