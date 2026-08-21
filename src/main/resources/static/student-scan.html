@@ -168,14 +168,10 @@
             overflow: hidden !important;
             border: 1px solid var(--card-border) !important;
             background: #000000;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
+            text-align: center;
         }
 
-        #reader video,
-        #reader canvas,
-        #reader img {
+        #reader video {
             width: 100% !important;
             max-width: 100% !important;
             height: auto !important;
@@ -185,18 +181,24 @@
             display: block !important;
         }
 
+        #reader canvas {
+            display: none !important;
+        }
+
+        #reader img {
+            display: none !important;
+        }
+
         #reader__scan_region {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            max-width: 90% !important;
-            margin: 0.5rem auto !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
         }
 
         #reader__dashboard_section {
-            width: 100% !important;
-            text-align: center !important;
-            padding: 0.5rem !important;
+            display: none !important;
         }
 
         /* ─── ACTION BUTTONS & FORMS ─── */
