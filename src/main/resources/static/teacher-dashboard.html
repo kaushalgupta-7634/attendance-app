@@ -296,21 +296,28 @@
         }
 
         .table-container {
+            width: 100%;
+            max-width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: block;
             margin-top: 1rem;
+            border-radius: 10px;
         }
 
         table {
             width: 100%;
+            min-width: 480px;
             border-collapse: collapse;
             font-size: 0.875rem;
         }
 
         th,
         td {
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 0.85rem;
             text-align: left;
             border-bottom: 1px solid var(--input-border);
+            vertical-align: middle;
         }
 
         th {
@@ -356,7 +363,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 1.25rem;
             background: var(--input-bg);
             border: 1px solid var(--input-border);
             color: var(--text-secondary);
@@ -414,6 +421,7 @@
                 border-radius: 14px;
                 width: 100%;
                 max-width: 100%;
+                overflow: hidden;
             }
 
             .form-grid {
@@ -438,7 +446,7 @@
             }
 
             .btn-primary, .btn-secondary, .btn-danger, .btn-excel, .form-input, select, input, button {
-                min-height: 44px;
+                min-height: 40px;
             }
 
             .form-input, select {
@@ -446,19 +454,53 @@
             }
 
             .qr-frame {
-                width: 220px;
-                height: 220px;
-                max-width: 100%;
+                width: 240px;
+                height: 240px;
+                max-width: 78vw;
+                max-height: 78vw;
             }
 
             .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                width: 100%;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                width: 100% !important;
+                display: block !important;
+            }
+
+            .table-container table {
+                min-width: 460px !important;
+                font-size: 0.82rem !important;
             }
 
             .stat-grid, #subjectProgressCardsGrid {
                 grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Small Mobile (< 480px) */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem 0.35rem;
+            }
+
+            .card {
+                padding: 1rem 0.7rem !important;
+                border-radius: 12px;
+            }
+
+            .qr-frame {
+                width: 210px;
+                height: 210px;
+                max-width: 74vw;
+                max-height: 74vw;
+            }
+
+            .table-container table {
+                min-width: 440px !important;
+            }
+
+            th, td {
+                padding: 0.55rem 0.65rem !important;
             }
         }
     </style>
