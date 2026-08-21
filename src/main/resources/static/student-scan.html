@@ -832,10 +832,10 @@
                     locationReady = true;
                     updateSubmitButtonState();
                     dot.className = 'dot active';
-                    if (acc > 100) {
-                        text.innerHTML = `\u26a0\ufe0f GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) &mdash; <span style="color:#fcd34d">Accuracy: &plusmn;${acc}m &mdash; Low accuracy, ensure Wi-Fi is on</span>`;
+                    if (acc > 200) {
+                        text.innerHTML = `⚠️ GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) &mdash; <span style="color:#fcd34d">Accuracy: &plusmn;${acc}m &mdash; Enable Wi-Fi for better accuracy</span>`;
                     } else {
-                        text.textContent = `\u2705 GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) \u2014 Accuracy: \u00b1${acc}m`;
+                        text.textContent = `✅ GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}) — Accuracy: ±${acc}m`;
                     }
                 },
                 (err) => {
@@ -1075,37 +1075,33 @@
             // Normalise mode: default to 'QR' for camera scans (backward compat)
             const submissionMode = (mode === 'TOKEN') ? 'TOKEN' : 'QR';
 
-            // TOKEN path requires GPS; QR path does NOT (physical presence = live screen scan)
-            if (submissionMode === 'TOKEN' && (!locationReady || currentLat === null || currentLng === null)) {
-                showResult(false, '📍 GPS Required for Token',
-                    'Your device GPS is not ready. Please allow location access and wait for GPS lock before submitting a manual token.');
+            // Both QR and TOKEN paths require student GPS coordinates to verify classroom radius
+            if (!locationReady || currentLat === null || currentLng === null) {
+                showResult(false, '📍 GPS Required',
+                    'Your device GPS is not ready. Please allow location access and wait for GPS lock before submitting attendance.');
                 return;
             }
 
             lastSubmittedToken = qrToken || "";
 
             if (submissionMode === 'QR') {
-                showResult(true, "Submitting via QR...", "Verifying QR token with server...");
+                showResult(true, "Submitting via QR...", "Verifying QR token and classroom location with server...");
             } else {
-                showResult(true, "Submitting Token...", "Verifying passcode and your classroom location...");
+                showResult(true, "Submitting Token...", "Verifying passcode and classroom location with server...");
             }
 
             const deviceId = getOrCreateDeviceId();
 
-            // Build payload — GPS coords included only for TOKEN path
+            // Build payload — GPS coords included for all modes
             const payload = {
                 qrToken: qrToken || "",
                 submissionMode: submissionMode,
                 bypassLocation: false,
                 studentWifiSsid: getSoftDetectedWifiSsid(),
-                deviceId: deviceId
+                deviceId: deviceId,
+                studentLat: currentLat,
+                studentLng: currentLng
             };
-
-            if (submissionMode === 'TOKEN') {
-                payload.studentLat = currentLat;
-                payload.studentLng = currentLng;
-            }
-            // For QR mode: studentLat/studentLng intentionally omitted — geofence is bypassed on backend
 
             try {
                 const res = await fetch('/attendance/mark', {

@@ -10,9 +10,8 @@ public class MarkAttendanceRequest {
     private String deviceId;
 
     /**
-     * "QR"    → camera scan of rotating 15-second QR code; geofence is bypassed
-     *            (live-screen scan proves physical presence; token expiry is the anti-replay guard).
-     * "TOKEN" → manual 6-digit passcode entry; strict Haversine geofence is enforced.
+     * "QR"    → camera scan of rotating 15-second QR code (bound with GPS radius check).
+     * "TOKEN" → manual 6-digit passcode entry (bound with GPS radius check).
      * null    → legacy / unset; service falls back to token-type detection.
      */
     private String submissionMode;

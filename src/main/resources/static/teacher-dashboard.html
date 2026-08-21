@@ -568,9 +568,18 @@
                         <div class="form-group">
                             <label class="form-label" for="endTime">End Time</label>
                             <input type="datetime-local" id="endTime" class="form-input" required>
-                                                <!-- Hidden lat/lng inputs — auto-filled by GPS or map picker, never typed manually -->
-                        <input type="hidden" id="classroomLat">
-                        <input type="hidden" id="classroomLng">
+                        </div>
+
+                        <!-- Manual Classroom Lat/Lng Inputs -->
+                        <div class="form-group">
+                            <label class="form-label" for="classroomLat">Classroom Latitude</label>
+                            <input type="number" step="any" id="classroomLat" class="form-input" placeholder="e.g. 28.8725" oninput="onManualCoordInput()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="classroomLng">Classroom Longitude</label>
+                            <input type="number" step="any" id="classroomLng" class="form-input" placeholder="e.g. 78.7585" oninput="onManualCoordInput()">
+                        </div>
 
                         <!-- Compact GPS Location Pill -->
                         <div class="form-group full-width" style="margin-bottom:0.6rem;">
@@ -586,7 +595,7 @@
                                 <!-- Left: status dot + text + accuracy badge -->
                                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                     <span id="teacherGpsDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; flex-shrink:0;"></span>
-                                    <span id="teacherGpsText" style="font-size:0.82rem;">🛰️ Detecting Classroom Location...</span>
+                                    <span id="teacherGpsText" style="font-size:0.82rem;">📍 Set Classroom Location (Manual, Auto-Detect or Map)</span>
                                     <span id="gpsAccuracyBadge" style="display:none; font-size:0.75rem; font-weight:600; padding:0.15rem 0.5rem; border-radius:5px; border:1px solid transparent;"></span>
                                 </div>
 
@@ -604,8 +613,6 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
-
                         </div>
 
                         <div class="form-group full-width">
@@ -1367,25 +1374,6 @@
         let pickerCurrentLat = 28.8725;
         let pickerCurrentLng = 78.7585;
 
-        // Auto-restore saved location from localStorage on startup
-        function restoreSavedLocation() {
-            const savedLat = localStorage.getItem('last_classroom_lat');
-            const savedLng = localStorage.getItem('last_classroom_lng');
-            if (savedLat && savedLng) {
-                const latVal = parseFloat(savedLat);
-                const lngVal = parseFloat(savedLng);
-                if (!isNaN(latVal) && !isNaN(lngVal) && latVal !== 0 && lngVal !== 0) {
-                    const latInput = document.getElementById('classroomLat');
-                    const lngInput = document.getElementById('classroomLng');
-                    if (latInput && !latInput.value) latInput.value = latVal.toFixed(7);
-                    if (lngInput && !lngInput.value) lngInput.value = lngVal.toFixed(7);
-                    pickerCurrentLat = latVal;
-                    pickerCurrentLng = lngVal;
-                    updateGpsBadgeStatus('saved', latVal, lngVal);
-                }
-            }
-        }
-
         function updateGpsBadgeStatus(status, lat, lng, accuracy) {
             const gpsBadge = document.getElementById('teacherGpsBadge');
             const gpsDot = document.getElementById('teacherGpsDot');
@@ -1401,13 +1389,13 @@
                 if (gpsDot) { gpsDot.style.background = '#38bdf8'; gpsDot.style.boxShadow = '0 0 8px #38bdf8'; }
                 if (gpsText) gpsText.textContent = '🛰️ Acquiring High-Accuracy GPS Location...';
                 if (accuracyBadge) accuracyBadge.style.display = 'none';
-            } else if (status === 'success' || status === 'saved' || status === 'manual') {
+            } else if (status === 'success' || status === 'manual') {
                 gpsBadge.style.color = '#86efac';
                 gpsBadge.style.background = 'rgba(34, 197, 94, 0.15)';
                 gpsBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
                 if (gpsDot) { gpsDot.style.background = '#22c55e'; gpsDot.style.boxShadow = '0 0 8px #22c55e'; }
 
-                const prefix = status === 'saved' ? '📍 Saved Classroom Location' : (status === 'manual' ? '✏️ Custom Location Set' : '✅ Classroom Location Acquired');
+                const prefix = status === 'manual' ? '✏️ Classroom Location Set' : '✅ Classroom Location Acquired';
                 if (gpsText) gpsText.textContent = `${prefix} (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
 
                 if (accuracyBadge && accuracy !== undefined) {
@@ -1433,14 +1421,19 @@
                 gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
                 gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
                 if (gpsDot) { gpsDot.style.background = '#f59e0b'; gpsDot.style.boxShadow = '0 0 8px #f59e0b'; }
-                if (gpsText) gpsText.textContent = '⚠️ Location Blocked — Use "Pick on Interactive Map" or check browser permission.';
+                if (gpsText) gpsText.textContent = '⚠️ Location Blocked — Use "Pick on Map" or enter coordinates manually.';
             }
         }
 
-        // onManualCoordInput — retained as a no-op stub.
-        // Lat/lng inputs are now type=hidden and auto-filled by GPS/map only.
-        // This stub prevents any residual onclick="onManualCoordInput()" calls from erroring.
-        function onManualCoordInput() { /* no-op: inputs are hidden, set programmatically */ }
+        function onManualCoordInput() {
+            const lat = parseFloat(document.getElementById('classroomLat')?.value);
+            const lng = parseFloat(document.getElementById('classroomLng')?.value);
+            if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                pickerCurrentLat = lat;
+                pickerCurrentLng = lng;
+                updateGpsBadgeStatus('manual', lat, lng);
+            }
+        }
 
         // High-accuracy browser GPS only — strictly NO IP/network geolocation fallback.
         // Uses the same navigator.geolocation options as the student portal (student-scan.html).
@@ -1458,8 +1451,6 @@
                 if (lngInput) lngInput.value = lngFormatted;
                 pickerCurrentLat = Number(lat);
                 pickerCurrentLng = Number(lng);
-                localStorage.setItem('last_classroom_lat', latFormatted);
-                localStorage.setItem('last_classroom_lng', lngFormatted);
                 updateGpsBadgeStatus('success', Number(lat), Number(lng), accuracy);
                 // Also sync the map marker if the map is open
                 if (leafletMap && mapMarker) {
@@ -1592,15 +1583,11 @@
             if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
             if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
 
-            localStorage.setItem('last_classroom_lat', pickerCurrentLat.toFixed(7));
-            localStorage.setItem('last_classroom_lng', pickerCurrentLng.toFixed(7));
             updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
             closeMapPicker();
         }
 
-        // Restore saved location & auto detect GPS on page load
-        restoreSavedLocation();
-        detectGPSLocation();
+        // Auto fetch active session & courses on page load
         autoFetchLatestActiveSession();
         loadTeacherCourses();
 
@@ -1835,7 +1822,6 @@
             const isTestingMode = document.getElementById('testingModeCheckbox')?.checked || false;
 
             // Only auto-fetch GPS if coords are missing AND not in testing mode.
-            // No IP/network geolocation fallback — location MUST come from browser GPS or map pin.
             const hasManualCoords = latVal !== 0.0 && lngVal !== 0.0 && !isNaN(latVal) && !isNaN(lngVal);
             if (!isTestingMode && !hasManualCoords) {
                 btn.textContent = '🛰️ Acquiring High-Accuracy GPS...';
@@ -1843,19 +1829,8 @@
                 if (detected) {
                     latVal = parseFloat(Number(detected.lat).toFixed(7));
                     lngVal = parseFloat(Number(detected.lng).toFixed(7));
-                } else {
-                    // GPS denied or timed out — check if teacher had previously confirmed a location via map pin.
-                    // This is NOT an IP fallback; it is a user-confirmed location from a prior map interaction.
-                    const fallbackLat = parseFloat(localStorage.getItem('last_classroom_lat') || '0');
-                    const fallbackLng = parseFloat(localStorage.getItem('last_classroom_lng') || '0');
-                    if (fallbackLat !== 0 && fallbackLng !== 0) {
-                        latVal = fallbackLat;
-                        lngVal = fallbackLng;
-                    }
                 }
             }
-
-
 
             const payload = {
                 classCourseId: isNaN(selectedClassCourseId) ? 0 : selectedClassCourseId,
@@ -1887,12 +1862,6 @@
 
                 const session = await res.json();
                 activeSessionId = session.id;
-
-                // Save successfully started session coordinates to localStorage
-                if (payload.classroomLat && payload.classroomLng) {
-                    localStorage.setItem('last_classroom_lat', payload.classroomLat);
-                    localStorage.setItem('last_classroom_lng', payload.classroomLng);
-                }
 
                 if (session.active) {
                     document.getElementById('activeClassName').textContent = session.className + ' (ACTIVE)';
