@@ -9,9 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS & JS for In-App Interactive Classroom Map Picker -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Chart.js Library for Visual Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- jsPDF & AutoTable for Professional PDF Export -->
@@ -595,7 +592,7 @@
                                 <!-- Left: status dot + text + accuracy badge -->
                                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                     <span id="teacherGpsDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; flex-shrink:0;"></span>
-                                    <span id="teacherGpsText" style="font-size:0.82rem;">📍 Set Classroom Location (Manual, Auto-Detect or Map)</span>
+                                    <span id="teacherGpsText" style="font-size:0.82rem;">📍 Classroom Location (Auto-Detect or Manual Entry)</span>
                                     <span id="gpsAccuracyBadge" style="display:none; font-size:0.75rem; font-weight:600; padding:0.15rem 0.5rem; border-radius:5px; border:1px solid transparent;"></span>
                                 </div>
 
@@ -604,12 +601,7 @@
                                     <button type="button" onclick="detectGPSLocation(true)"
                                         style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.35); color:#38bdf8; padding:0.3rem 0.7rem; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer; transition:background 0.2s;"
                                         onmouseover="this.style.background='rgba(56,189,248,0.22)'" onmouseout="this.style.background='rgba(56,189,248,0.12)'">
-                                        📍 Auto-Detect
-                                    </button>
-                                    <button type="button" onclick="openMapPicker()"
-                                        style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(134,239,172,0.1); border:1px solid rgba(134,239,172,0.3); color:#86efac; padding:0.3rem 0.7rem; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer; transition:background 0.2s;"
-                                        onmouseover="this.style.background='rgba(134,239,172,0.2)'" onmouseout="this.style.background='rgba(134,239,172,0.1)'">
-                                        🗺️ Pick on Map
+                                        📍 Auto-Detect GPS
                                     </button>
                                 </div>
                             </div>
@@ -1452,13 +1444,6 @@
                 pickerCurrentLat = Number(lat);
                 pickerCurrentLng = Number(lng);
                 updateGpsBadgeStatus('success', Number(lat), Number(lng), accuracy);
-                // Also sync the map marker if the map is open
-                if (leafletMap && mapMarker) {
-                    mapMarker.setLatLng([Number(lat), Number(lng)]);
-                    leafletMap.setView([Number(lat), Number(lng)], leafletMap.getZoom());
-                    const disp = document.getElementById('mapCoordsDisplay');
-                    if (disp) disp.textContent = `${Number(lat).toFixed(7)}, ${Number(lng).toFixed(7)}`;
-                }
             };
 
             if (!navigator.geolocation) {
@@ -1482,109 +1467,6 @@
                     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                 );
             });
-        }
-
-        // ─── INTERACTIVE MAP PICKER MODAL CONTROLS ─────────────────────────────
-        function openMapPicker() {
-            const modal = document.getElementById('mapPickerModal');
-            if (modal) modal.style.display = 'flex';
-
-            const currentLatInput = parseFloat(document.getElementById('classroomLat')?.value);
-            const currentLngInput = parseFloat(document.getElementById('classroomLng')?.value);
-
-            if (!isNaN(currentLatInput) && !isNaN(currentLngInput) && currentLatInput !== 0 && currentLngInput !== 0) {
-                pickerCurrentLat = currentLatInput;
-                pickerCurrentLng = currentLngInput;
-            }
-
-            const disp = document.getElementById('mapCoordsDisplay');
-            if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
-
-            setTimeout(() => {
-                initOrUpdateLeafletMap(pickerCurrentLat, pickerCurrentLng);
-            }, 200);
-        }
-
-        function closeMapPicker() {
-            const modal = document.getElementById('mapPickerModal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        function initOrUpdateLeafletMap(lat, lng) {
-            const container = document.getElementById('leafletMapContainer');
-            if (!container || typeof L === 'undefined') return;
-
-            if (!leafletMap) {
-                leafletMap = L.map('leafletMapContainer').setView([lat, lng], 16);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(leafletMap);
-
-                mapMarker = L.marker([lat, lng], { draggable: true }).addTo(leafletMap);
-                mapMarker.bindPopup("<b>🏫 Classroom Location</b><br>Drag pin or click map to move").openPopup();
-
-                mapMarker.on('dragend', function () {
-                    const pos = mapMarker.getLatLng();
-                    pickerCurrentLat = pos.lat;
-                    pickerCurrentLng = pos.lng;
-                    // Immediately sync form inputs so session payload is always current
-                    const latInput = document.getElementById('classroomLat');
-                    const lngInput = document.getElementById('classroomLng');
-                    if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
-                    if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
-                    updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
-                    const disp = document.getElementById('mapCoordsDisplay');
-                    if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
-                });
-
-                leafletMap.on('click', function (e) {
-                    pickerCurrentLat = e.latlng.lat;
-                    pickerCurrentLng = e.latlng.lng;
-                    mapMarker.setLatLng([pickerCurrentLat, pickerCurrentLng]);
-                    // Immediately sync form inputs so session payload is always current
-                    const latInput = document.getElementById('classroomLat');
-                    const lngInput = document.getElementById('classroomLng');
-                    if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
-                    if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
-                    updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
-                    const disp = document.getElementById('mapCoordsDisplay');
-                    if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
-                });
-            } else {
-                leafletMap.invalidateSize();
-                leafletMap.setView([lat, lng], 16);
-                if (mapMarker) {
-                    mapMarker.setLatLng([lat, lng]);
-                }
-            }
-        }
-
-        async function centerMapOnCurrentGPS() {
-            const btn = event?.currentTarget;
-            if (btn) btn.textContent = '⏳ Detecting...';
-            const coords = await detectGPSLocation(true);
-            if (btn) btn.textContent = '🎯 My Location';
-            if (coords) {
-                pickerCurrentLat = coords.lat;
-                pickerCurrentLng = coords.lng;
-                const disp = document.getElementById('mapCoordsDisplay');
-                if (disp) disp.textContent = `${pickerCurrentLat.toFixed(7)}, ${pickerCurrentLng.toFixed(7)}`;
-                if (leafletMap && mapMarker) {
-                    leafletMap.setView([pickerCurrentLat, pickerCurrentLng], 17);
-                    mapMarker.setLatLng([pickerCurrentLat, pickerCurrentLng]);
-                }
-            }
-        }
-
-        function confirmMapLocation() {
-            const latInput = document.getElementById('classroomLat');
-            const lngInput = document.getElementById('classroomLng');
-            if (latInput) latInput.value = pickerCurrentLat.toFixed(7);
-            if (lngInput) lngInput.value = pickerCurrentLng.toFixed(7);
-
-            updateGpsBadgeStatus('manual', pickerCurrentLat, pickerCurrentLng);
-            closeMapPicker();
         }
 
         // Auto fetch active session & courses on page load
@@ -4193,52 +4075,7 @@
                     style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 12px; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; color: #065f46; font-weight: 600; font-size: 1.1rem;">
                     <span id="zoomModalTimerText">Rotating in 15s</span>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- INTERACTIVE MAP PICKER MODAL -->
-    <div id="mapPickerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); z-index:99999; justify-content:center; align-items:center; padding:1rem;">
-        <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; width:100%; max-width:820px; height:85vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.6); color:#f8fafc;">
-            <!-- Modal Header -->
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; border-bottom:1px solid #334155; background:#0f172a;">
-                <div>
-                    <h3 style="margin:0; font-size:1.15rem; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:0.4rem;">
-                        🗺️ Select Classroom Location
-                    </h3>
-                    <span style="font-size:0.8rem; color:#94a3b8;">Click anywhere on the map or drag the pin to set exact classroom coordinates</span>
-                </div>
-                <button onclick="closeMapPicker()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer; padding:0 0.5rem;">&times;</button>
-            </div>
-
-            <!-- Coordinate Bar & Center on GPS -->
-            <div style="padding:0.75rem 1.5rem; background:#1e293b; border-bottom:1px solid #334155; display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; justify-content:space-between;">
-                <div style="display:flex; align-items:center; gap:0.5rem; background:#0f172a; padding:0.45rem 0.9rem; border-radius:8px; border:1px solid #334155;">
-                    <span style="font-size:0.8rem; color:#94a3b8;">📍 Selected:</span>
-                    <strong id="mapCoordsDisplay" style="font-family:monospace; color:#86efac; font-size:0.9rem;">28.8725000, 78.7585000</strong>
-                </div>
-                <button type="button" onclick="centerMapOnCurrentGPS()" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:0.4rem;">
-                    🎯 Center on My Location
-                </button>
-            </div>
-
-            <!-- Map Viewport -->
-            <div id="leafletMapContainer" style="flex:1; width:100%; min-height:320px; background:#0f172a;"></div>
-
-            <!-- Modal Footer -->
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; border-top:1px solid #334155; background:#0f172a; flex-wrap:wrap; gap:0.5rem;">
-                <span style="font-size:0.8rem; color:#94a3b8;">💡 Drag marker or click map, then tap Confirm</span>
-                <div style="display:flex; gap:0.6rem;">
-                    <button type="button" onclick="closeMapPicker()" style="background:rgba(255,255,255,0.05); border:1px solid #334155; color:#cbd5e1; padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="confirmMapLocation()" style="background:#2563eb; border:none; color:#fff; padding:0.55rem 1.3rem; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.4);">
-                        ✅ Confirm Location
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 </body>
-
 </html>
