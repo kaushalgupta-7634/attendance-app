@@ -863,19 +863,14 @@
         let isScanning = false;
 
         function updateSubmitButtonState() {
-            const blocked = !locationReady;
-            const quickBtn = document.querySelector('.btn-quick');
-            const scanBtn = document.getElementById('scanToggleBtn');
-            const manualBtn = document.getElementById('manualTokenSubmitBtn');
             const hintEl = document.getElementById('locationBlockedHint');
-            if (quickBtn) quickBtn.disabled = blocked;
-            if (scanBtn) scanBtn.disabled = blocked;
-            if (manualBtn) manualBtn.disabled = blocked;
-            if (hintEl) hintEl.style.display = blocked ? 'block' : 'none';
+            if (hintEl) {
+                hintEl.style.display = (!locationReady && currentLat === null) ? 'block' : 'none';
+            }
         }
 
         // Auto request Location & load enrolled courses on page load
-        updateSubmitButtonState(); // Disable submit buttons until GPS acquired
+        updateSubmitButtonState();
         fetchLocation();
         loadStudentEnrolledCourses();
 
@@ -1314,9 +1309,34 @@
 
             // Both QR, TOKEN and FALLBACK paths require student GPS coordinates to verify classroom radius
             if (!locationReady || currentLat === null || currentLng === null) {
-                showResult(false, '📍 GPS Required',
-                    'Your device GPS is not ready. Please allow location access and wait for GPS lock before submitting attendance.');
-                return;
+                if (navigator.geolocation) {
+                    showResult(true, "📍 Getting Location...", "Acquiring GPS location to verify classroom radius. If prompted, please tap ALLOW...");
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            locationReady = true;
+                            const dot = document.getElementById('geoDot');
+                            const text = document.getElementById('geoStatusText');
+                            if (dot) dot.className = 'dot active';
+                            if (text) text.textContent = `✅ GPS Acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
+                            updateSubmitButtonState();
+                            sendAttendanceSubmission(qrToken, mode);
+                        },
+                        (err) => {
+                            locationReady = false;
+                            updateSubmitButtonState();
+                            showResult(false, '📍 GPS Required',
+                                'Location permission is required to verify you are inside the classroom radius. Please tap the 🔒 icon in your browser address bar → allow Location → tap Retry GPS.', true);
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                    return;
+                } else {
+                    showResult(false, '📍 GPS Required',
+                        'Your device does not support GPS. Location verification is mandatory.');
+                    return;
+                }
             }
 
             lastSubmittedToken = qrToken || "";
