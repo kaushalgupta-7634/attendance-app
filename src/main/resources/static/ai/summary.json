@@ -12,7 +12,12 @@
     "Comprehensive CSV/PDF exports for faculty analytics"
   ],
   "technologies": ["Spring Boot", "Spring Security", "JWT", "PostgreSQL", "HTML5", "CSS3", "JavaScript"],
-  "developer": "kaushalgupta-7634",
+  "developer": "Kaushal Gupta (Lead Developer) & ATTENDX Core Team",
+  "contact": {
+    "email": "attendx12@gmail.com",
+    "phone": "+91 9568616880",
+    "address": "Department of Computer Applications, MIT Moradabad, Uttar Pradesh, India - 244001"
+  },
   "website": "https://attendance-app-production-b868.up.railway.app/",
   "documentation": "https://attendance-app-production-b868.up.railway.app/swagger-ui.html"
 }
