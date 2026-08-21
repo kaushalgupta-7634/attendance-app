@@ -19,8 +19,10 @@
             --card-border: #334155;
             --accent-blue: #2563eb;
             --accent-blue-hover: #1d4ed8;
+            --accent-cyan: #0284c7;
             --accent-green: #10b981;
             --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --input-bg: #0f172a;
@@ -38,7 +40,7 @@
             min-height: 100vh;
             background: var(--bg-gradient);
             color: var(--text-primary);
-            padding: 1.5rem;
+            padding: 1.5rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -46,6 +48,7 @@
             width: 100%;
         }
 
+        /* ─── NAVBAR ─── */
         .navbar {
             width: 100%;
             max-width: 540px;
@@ -55,8 +58,9 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             padding: 0.85rem 1.25rem;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-bottom: 1.25rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .role-badge {
@@ -67,32 +71,39 @@
             font-weight: 600;
             padding: 0.2rem 0.6rem;
             border-radius: 6px;
+            letter-spacing: 0.02em;
         }
 
         .btn-logout {
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.3);
             color: #fca5a5;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s ease;
+            transition: all 0.15s ease;
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-logout:hover {
             background: rgba(239, 68, 68, 0.25);
+            border-color: var(--accent-red);
         }
 
+        /* ─── CARD LAYOUT ─── */
         .card {
             width: 100%;
             max-width: 540px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
             margin-bottom: 1.25rem;
         }
 
@@ -106,16 +117,18 @@
             color: #ffffff;
         }
 
+        /* ─── GEO BANNER ─── */
         .geo-banner {
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: #0f172a;
             border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 0.7rem 0.9rem;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
             margin-bottom: 1.15rem;
             font-size: 0.85rem;
+            gap: 0.5rem;
         }
 
         .geo-status {
@@ -123,53 +136,92 @@
             align-items: center;
             gap: 0.5rem;
             font-weight: 500;
+            word-break: break-word;
         }
 
         .dot {
-            width: 8px;
-            height: 8px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
-            background: #e2e8f0;
+            background: #94a3b8;
+            flex-shrink: 0;
         }
 
         .dot.active {
             background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
         }
 
         .dot.error {
             background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
         }
 
+        /* ─── QR SCANNER CONTAINER (CENTERED FLEXBOX & RESPONSIVE) ─── */
         #reader {
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid var(--card-border);
-            background: #000000;
-            margin-bottom: 1rem;
-        }
-
-        #reader video {
             width: 100% !important;
-            border-radius: 10px;
+            max-width: 100% !important;
+            min-height: 240px;
+            margin: 0 auto 1.15rem auto !important;
+            border-radius: 14px !important;
+            overflow: hidden !important;
+            border: 1px solid var(--card-border) !important;
+            background: #000000 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
+        #reader video,
+        #reader canvas,
+        #reader img {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 10px !important;
+            object-fit: cover !important;
+            margin: auto !important;
+            display: block !important;
+        }
+
+        #reader__scan_region {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            max-width: 90% !important;
+            margin: 0.5rem auto !important;
+        }
+
+        #reader__dashboard_section {
+            width: 100% !important;
+            text-align: center !important;
+            padding: 0.5rem !important;
+        }
+
+        /* ─── ACTION BUTTONS & FORMS ─── */
         .btn-action {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.8rem 1rem;
             background: var(--accent-blue);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: #ffffff;
             font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: background 0.15s ease;
+            transition: all 0.15s ease;
             margin-bottom: 0.65rem;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
         .btn-action:hover {
             background: var(--accent-blue-hover);
+            transform: translateY(-1px);
         }
 
         .btn-photo {
@@ -195,17 +247,22 @@
             margin-top: 0.75rem;
         }
 
+        .btn-secondary-action:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
         .result-card {
             display: none;
             padding: 1.25rem;
-            border-radius: 16px;
+            border-radius: 14px;
             text-align: center;
             animation: popIn 0.3s ease-out;
             margin-top: 1rem;
+            word-break: break-word;
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.95); }
+            from { opacity: 0; transform: scale(0.96); }
             to { opacity: 1; transform: scale(1); }
         }
 
@@ -229,7 +286,7 @@
 
         .form-input {
             width: 100%;
-            padding: 0.7rem 0.85rem;
+            padding: 0.75rem 0.9rem;
             background: var(--input-bg);
             border: 1px solid var(--input-border);
             border-radius: 10px;
@@ -237,12 +294,14 @@
             font-size: 0.9rem;
             outline: none;
             margin-bottom: 0.75rem;
+            min-height: 44px;
         }
 
         .form-input:focus {
             border-color: var(--accent-cyan);
         }
 
+        /* ─── PORTAL TABS ─── */
         .portal-tabs {
             width: 100%;
             max-width: 540px;
@@ -251,7 +310,7 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             padding: 0.5rem;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-bottom: 1.25rem;
             overflow-x: auto;
             scrollbar-width: thin;
@@ -269,10 +328,11 @@
             color: var(--text-secondary);
             font-size: 0.825rem;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.2s ease;
+            min-height: 42px;
         }
 
         .portal-tab-btn:hover {
@@ -298,45 +358,161 @@
             display: block;
         }
 
-        /* ─── MOBILE RESPONSIVENESS (< 768px) ─── */
-        @media (max-width: 768px) {
+        /* ─── RESPONSIVE TABLES & CONTAINERS ─── */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            margin-top: 0.75rem;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            min-width: 480px;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th, td {
+            padding: 0.75rem 0.85rem;
+            text-align: left;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ─── BREAKPOINTS MEDIA QUERIES ─── */
+
+        /* 1. Small & Extra Small Mobile (< 480px) */
+        @media (max-width: 480px) {
             body {
-                padding: 0.75rem 0.5rem;
+                padding: 0.6rem 0.4rem;
             }
 
-            .navbar, .card, .portal-tabs, .tab-content-section {
-                width: 100%;
-                max-width: 100%;
+            .navbar {
+                padding: 0.7rem 0.85rem;
+                margin-bottom: 0.85rem;
+                border-radius: 12px;
+            }
+
+            .navbar h3 {
+                font-size: 0.95rem !important;
+            }
+
+            .role-badge {
+                font-size: 0.7rem;
+                padding: 0.15rem 0.45rem;
             }
 
             .card {
                 padding: 1.1rem 0.85rem;
                 border-radius: 12px;
+                margin-bottom: 1rem;
+            }
+
+            .card-title {
+                font-size: 1.05rem;
+            }
+
+            .geo-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.65rem 0.8rem;
+            }
+
+            .geo-banner button {
+                align-self: flex-end;
+                font-size: 0.78rem;
+                padding: 0.2rem 0.4rem;
             }
 
             .portal-tabs {
                 padding: 0.35rem;
-                gap: 0.35rem;
+                gap: 0.3rem;
+                margin-bottom: 1rem;
+                border-radius: 10px;
             }
 
             .portal-tab-btn {
-                padding: 0.6rem 0.7rem;
+                padding: 0.55rem 0.4rem;
+                font-size: 0.75rem;
+                min-height: 40px;
+                gap: 0.25rem;
+            }
+
+            .portal-tab-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .btn-action {
+                font-size: 0.85rem;
+                padding: 0.7rem 0.8rem;
+                min-height: 44px;
+            }
+
+            .form-input {
+                font-size: 0.85rem;
+                padding: 0.65rem 0.75rem;
+                min-height: 44px;
+            }
+
+            #subjectBreakdownContainer {
+                grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)) !important;
+                gap: 0.4rem !important;
+            }
+
+            .subject-breakdown-card {
+                padding: 0.55rem 0.65rem !important;
+            }
+        }
+
+        /* 2. Tablet & Medium Screens (481px to 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                padding: 1rem 0.75rem;
+            }
+
+            .navbar, .card, .portal-tabs, .tab-content-section {
+                width: 100%;
+                max-width: 580px;
+            }
+
+            .card {
+                padding: 1.25rem 1rem;
+            }
+
+            .portal-tabs {
+                gap: 0.4rem;
+            }
+
+            .portal-tab-btn {
                 font-size: 0.8rem;
-                min-height: 44px;
             }
 
-            .btn-action, .btn-logout, .form-input, select, input, button {
-                min-height: 44px;
+            #subjectBreakdownContainer {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+                gap: 0.5rem !important;
+            }
+        }
+
+        /* 3. Desktop & Large Screens (769px+) */
+        @media (min-width: 769px) {
+            .navbar, .card, .portal-tabs, .tab-content-section {
+                max-width: 540px;
             }
 
-            .form-input, select {
-                width: 100%;
-            }
-
-            .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                width: 100%;
+            .card {
+                padding: 1.5rem;
             }
         }
     </style>
@@ -491,9 +667,9 @@
                 Join a Class Course
             </h3>
             <form id="joinClassForm" onsubmit="handleJoinClass(event)">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <input type="text" id="joinClassCodeInput" class="form-input" placeholder="Enter Unique Class Code from Teacher (e.g. CS101-A)" style="margin-bottom: 0; text-transform: uppercase;" required>
-                    <button type="submit" id="joinClassBtn" class="btn-action" style="width: auto; white-space: nowrap; margin-bottom: 0; padding: 0.7rem 1.2rem;">Join Class</button>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                    <input type="text" id="joinClassCodeInput" class="form-input" placeholder="Enter Unique Class Code (e.g. CS101-A)" style="margin-bottom: 0; flex: 1; min-width: 160px; text-transform: uppercase;" required>
+                    <button type="submit" id="joinClassBtn" class="btn-action" style="width: auto; flex-shrink: 0; white-space: nowrap; margin-bottom: 0; padding: 0.7rem 1.2rem;">Join Class</button>
                 </div>
             </form>
             <div id="joinClassAlert" style="display: none; padding: 0.6rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 1rem;"></div>
