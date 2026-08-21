@@ -160,15 +160,14 @@
 
         /* ─── QR SCANNER CONTAINER (CENTERED FLEXBOX & RESPONSIVE) ─── */
         #reader {
+            display: none;
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 240px;
             margin: 0 auto 1.15rem auto !important;
             border-radius: 14px !important;
             overflow: hidden !important;
             border: 1px solid var(--card-border) !important;
-            background: #000000 !important;
-            display: flex !important;
+            background: #000000;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
@@ -569,15 +568,15 @@
             </div>
 
             <!-- CAMERA SCANNER VIEWPORT -->
-            <div id="reader"></div>
+            <div id="reader" style="display: none;"></div>
 
             <!-- BUTTON 1: LIVE STREAM CAMERA SCANNER -->
             <button id="scanToggleBtn" class="btn-action" onclick="toggleCameraScanner()">Start Live Camera Scanner</button>
 
 
 
-            <!-- BUTTON 3: 1-CLICK QUICK CHECK-IN -->
-            <button class="btn-action btn-quick" onclick="sendAttendanceSubmission('')">⚡ Mark Attendance for Active Session</button>
+            <!-- BUTTON 3: 1-CLICK QUICK CHECK-IN / FALLBACK -->
+            <button class="btn-action btn-quick" onclick="sendAttendanceSubmission('', 'FALLBACK')">⚡ Mark Attendance for Active Session</button>
 
             <!-- SUBMISSION RESULT CARD -->
             <div id="resultCard" class="result-card">
@@ -709,6 +708,10 @@
 
     <script>
         function switchStudentTab(tabId) {
+            if (tabId !== 'scan') {
+                stopCameraScanner();
+            }
+
             document.querySelectorAll('.portal-tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content-section').forEach(sec => sec.classList.remove('active'));
 
@@ -1029,9 +1032,7 @@
         }
 
         function logout() {
-            if (html5QrCode && isScanning) {
-                html5QrCode.stop();
-            }
+            stopCameraScanner();
             const savedDevId = localStorage.getItem('attendx_device_id');
             localStorage.clear();
             if (savedDevId) {
@@ -1050,7 +1051,20 @@
 
         function startCameraScanner() {
             const btn = document.getElementById('scanToggleBtn');
-            html5QrCode = new Html5Qrcode("reader");
+            const readerEl = document.getElementById('reader');
+
+            // If already scanning, prevent duplicate stream
+            if (isScanning) {
+                return;
+            }
+
+            if (readerEl) {
+                readerEl.style.display = 'block';
+            }
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
 
             const config = {
                 fps: 20,
@@ -1074,21 +1088,60 @@
                 onQrScanError
             ).then(() => {
                 isScanning = true;
-                btn.textContent = "Stop Camera Scanner";
-                btn.style.background = "rgba(239, 68, 68, 0.8)";
+                if (btn) {
+                    btn.textContent = "Stop Camera Scanner";
+                    btn.style.background = "rgba(239, 68, 68, 0.8)";
+                }
             }).catch(err => {
-                showResult(false, "Camera Stream Blocked", "Live video stream requires HTTPS. Use HTTPS link https://swift-cups-attend.loca.lt, or tap '📷 Take Photo / Upload QR Image' or '⚡ Mark Attendance for Active Session' below!");
+                isScanning = false;
+                if (readerEl) {
+                    readerEl.style.display = 'none';
+                    readerEl.innerHTML = '';
+                }
+                if (btn) {
+                    btn.textContent = "Start Live Camera Scanner";
+                    btn.style.background = "";
+                }
+                showResult(false, "Camera Stream Blocked", "Live video stream requires camera permission and HTTPS. Use '⚡ Mark Attendance for Active Session' or enter 6-digit passcode below!");
             });
         }
 
         function stopCameraScanner() {
             const btn = document.getElementById('scanToggleBtn');
+            const readerEl = document.getElementById('reader');
             if (html5QrCode && isScanning) {
                 html5QrCode.stop().then(() => {
                     isScanning = false;
-                    btn.textContent = "Start Live Camera Scanner";
-                    btn.style.background = "linear-gradient(135deg, var(--accent-purple), var(--accent-cyan))";
+                    if (readerEl) {
+                        readerEl.style.display = 'none';
+                        readerEl.innerHTML = '';
+                    }
+                    if (btn) {
+                        btn.textContent = "Start Live Camera Scanner";
+                        btn.style.background = "";
+                    }
+                }).catch(err => {
+                    console.warn("Error stopping camera scanner:", err);
+                    isScanning = false;
+                    if (readerEl) {
+                        readerEl.style.display = 'none';
+                        readerEl.innerHTML = '';
+                    }
+                    if (btn) {
+                        btn.textContent = "Start Live Camera Scanner";
+                        btn.style.background = "";
+                    }
                 });
+            } else {
+                isScanning = false;
+                if (readerEl) {
+                    readerEl.style.display = 'none';
+                    readerEl.innerHTML = '';
+                }
+                if (btn) {
+                    btn.textContent = "Start Live Camera Scanner";
+                    btn.style.background = "";
+                }
             }
         }
 
@@ -1249,10 +1302,15 @@
          * @param {string} mode     - 'QR' for camera scan, 'TOKEN' for manual passcode entry.
          */
         async function sendAttendanceSubmission(qrToken, mode) {
-            // Normalise mode: default to 'QR' for camera scans (backward compat)
-            const submissionMode = (mode === 'TOKEN') ? 'TOKEN' : 'QR';
+            // Normalise mode: default to 'QR' for scans, 'TOKEN' for manual token, 'FALLBACK' for 1-click fallback
+            let submissionMode = 'QR';
+            if (mode === 'TOKEN') {
+                submissionMode = 'TOKEN';
+            } else if (mode === 'FALLBACK' || (!qrToken && !mode)) {
+                submissionMode = 'FALLBACK';
+            }
 
-            // Both QR and TOKEN paths require student GPS coordinates to verify classroom radius
+            // Both QR, TOKEN and FALLBACK paths require student GPS coordinates to verify classroom radius
             if (!locationReady || currentLat === null || currentLng === null) {
                 showResult(false, '📍 GPS Required',
                     'Your device GPS is not ready. Please allow location access and wait for GPS lock before submitting attendance.');
@@ -1263,8 +1321,10 @@
 
             if (submissionMode === 'QR') {
                 showResult(true, "Submitting via QR...", "Verifying QR token and classroom location with server...");
-            } else {
+            } else if (submissionMode === 'TOKEN') {
                 showResult(true, "Submitting Token...", "Verifying passcode and classroom location with server...");
+            } else {
+                showResult(true, "Verifying Location...", "Checking active session and verifying classroom GPS radius with server...");
             }
 
             const deviceId = getOrCreateDeviceId();
