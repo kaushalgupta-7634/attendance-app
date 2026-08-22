@@ -1625,6 +1625,8 @@
             } catch (err) {
                 alert(err.message || 'Error removing subject');
             }
+        }
+
         async function deleteFacultySubjectByName(subjectName) {
             if (!subjectName || !subjectName.trim()) return;
             const cleanSub = subjectName.trim();
