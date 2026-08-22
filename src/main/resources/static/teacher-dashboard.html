@@ -1582,9 +1582,9 @@
                                 <span class="timer-badge" style="background: rgba(139, 92, 246, 0.2); border-color: var(--accent-purple); color: #c4b5fd; font-size: 0.9rem; font-weight: 700; padding: 0.3rem 0.65rem; font-family: monospace;">
                                     ${escapeHtml(c.classCode)}
                                 </span>
-                                <button type="button" class="btn-excel" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="copyClassCode('${escapeHtml(c.classCode)}')">Copy Code</button>
-                                <button type="button" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; width: auto;" onclick="selectCourseToLaunch(${c.id}, '${escapeJsString(c.className)}', '${escapeJsString(c.subject)}')">Launch Session</button>
-                                <button type="button" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="deleteClassCourse(${c.id}, '${escapeJsString(c.className)}')">🗑️ Delete</button>
+                                <button type="button" class="btn-excel" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="copyClassCode('${escapeHtml(c.classCode)}')">📋 Copy Code</button>
+                                <button type="button" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; width: auto;" onclick="selectCourseToLaunch(${c.id}, '${escapeJsString(c.className)}', '${escapeJsString(c.subject)}')">🚀 Launch Session</button>
+                                <button type="button" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.3rem 0.65rem; font-size: 0.75rem; font-weight: 600;" onclick="deleteFacultySubject(${c.id}, '${escapeJsString(c.subject)}', '${escapeJsString(c.className)}')">🗑️ Delete Subject</button>
                             </div>
                         `;
                         listContainer.appendChild(card);
@@ -1595,25 +1595,40 @@
             }
         }
 
-        async function deleteClassCourse(courseId, className) {
-            if (!confirm(`Are you sure you want to DELETE class course '${className}'?\n\nThis will remove the class code and student enrollments.`)) return;
+        async function deleteFacultySubject(courseId, subjectName, className) {
+            const displayName = subjectName ? `${subjectName} (${className})` : className;
+            if (!confirm(`Are you sure you want to remove '${displayName}'?\n\n(Past student attendance records and historical sessions will remain safely preserved in archives).`)) {
+                return;
+            }
 
             try {
-                const res = await fetch(`/classes/${courseId}`, {
+                const res = await fetch(`/api/faculty/subjects/${courseId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
-                if (!res.ok) {
-                    const errText = await res.text();
-                    throw new Error(errText || 'Failed to delete class course');
+                if (res.status === 403) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Unauthorized to delete this subject: You are not the owner of this course.');
                 }
 
-                alert(`Class course '${className}' deleted successfully.`);
-                loadTeacherCourses();
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to remove assigned subject.');
+                }
+
+                alert(`✅ Subject '${displayName}' removed successfully.\n\nPast student attendance records remain safely preserved in archives.`);
+                await loadTeacherCourses();
+                if (typeof loadTeacherSessions === 'function') {
+                    await loadTeacherSessions();
+                }
             } catch (err) {
-                alert(err.message || 'Error deleting class course');
+                alert(err.message || 'Error removing subject');
             }
+        }
+
+        async function deleteClassCourse(courseId, className) {
+            await deleteFacultySubject(courseId, '', className);
         }
 
         async function handleCreateClassCourse(e) {

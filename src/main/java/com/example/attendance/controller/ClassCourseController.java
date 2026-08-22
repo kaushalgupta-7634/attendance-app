@@ -17,7 +17,7 @@ import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/classes")
+@RequestMapping({"/classes", "/api/faculty", "/faculty"})
 public class ClassCourseController {
 
     private final ClassCourseService classCourseService;
@@ -32,7 +32,7 @@ public class ClassCourseController {
      * POST /classes/create (TEACHER and ADMIN)
      * Creates a new ClassCourse and returns a unique classCode.
      */
-    @PostMapping("/create")
+    @PostMapping({"/create", "/courses/create", "/subjects/create"})
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ClassCourse> createClassCourse(@RequestBody CreateClassCourseRequest request, Principal principal) {
         ClassCourse createdCourse = classCourseService.createClassCourse(request, principal.getName());
@@ -51,20 +51,20 @@ public class ClassCourseController {
     }
 
     /**
-     * GET /classes/my-courses
+     * GET /classes/my-courses, GET /api/faculty/courses, GET /api/faculty/subjects
      * Returns courses taught by the teacher or enrolled by the student.
      */
-    @GetMapping("/my-courses")
+    @GetMapping({"/my-courses", "/courses", "/subjects"})
     public ResponseEntity<List<ClassCourse>> getMyCourses(Principal principal) {
         List<ClassCourse> courses = classCourseService.getCoursesForUser(principal.getName());
         return ResponseEntity.ok(courses);
     }
 
     /**
-     * GET /classes/available-classes
+     * GET /classes/available-classes, GET /api/faculty/available-classes
      * Returns all available classes from the database with their associated subjects.
      */
-    @GetMapping("/available-classes")
+    @GetMapping({"/available-classes", "/classes-with-subjects"})
     public ResponseEntity<List<com.example.attendance.model.ClassWithSubjectsDTO>> getAvailableClasses() {
         List<com.example.attendance.model.ClassWithSubjectsDTO> list = classCourseService.getAllAvailableClassesWithSubjects();
         return ResponseEntity.ok(list);
@@ -111,10 +111,10 @@ public class ClassCourseController {
     }
 
     /**
-     * DELETE /classes/{id} (TEACHER and ADMIN)
-     * Deletes a ClassCourse by ID (soft-delete).
+     * DELETE /classes/{id}, DELETE /api/faculty/subjects/{subjectId}, DELETE /faculty/subjects/{subjectId}
+     * Deletes / removes a faculty assigned subject / ClassCourse by ID with ownership verification and soft-delete.
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping({"/{id}", "/subjects/{id}", "/courses/{id}"})
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Void> deleteClassCourse(
             @PathVariable("id") Long id,

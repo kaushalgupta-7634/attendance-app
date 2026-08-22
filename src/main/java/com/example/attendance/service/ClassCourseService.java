@@ -142,13 +142,14 @@ public class ClassCourseService {
         }
 
         if (user.getRole() != Role.TEACHER) {
-            throw new AccessDeniedException("Access denied: Only teachers or admins can delete class courses.");
+            throw new AccessDeniedException("Access denied: Only faculty/teachers or admins can delete subjects/courses.");
         }
 
-        if (!course.getTeacher().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Access denied: You are not the owner of this class course.");
+        if (course.getTeacher() == null || !course.getTeacher().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Unauthorized to delete this subject: You are not the owner of this course.");
         }
 
+        // Safe Deletion: Soft-delete to preserve all student attendance history and archives
         course.setIsDeleted(true);
         course.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         classCourseRepository.save(course);
