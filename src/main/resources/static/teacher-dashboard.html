@@ -1625,6 +1625,40 @@
             } catch (err) {
                 alert(err.message || 'Error removing subject');
             }
+        async function deleteFacultySubjectByName(subjectName) {
+            if (!subjectName || !subjectName.trim()) return;
+            const cleanSub = subjectName.trim();
+            if (!confirm(`Are you sure you want to remove assigned subject '${cleanSub}'?\n\n(Past student attendance records and historical sessions will remain safely preserved in archives).`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/faculty/subjects/by-name/${encodeURIComponent(cleanSub)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.status === 403) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Unauthorized to delete this subject.');
+                }
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to remove subject.');
+                }
+
+                alert(`✅ Subject '${cleanSub}' removed successfully.\n\nPast student attendance records remain safely preserved in archives.`);
+                currentSubjectFilter = 'all';
+                if (typeof loadTeacherSessions === 'function') {
+                    await loadTeacherSessions();
+                }
+                if (typeof loadTeacherCourses === 'function') {
+                    await loadTeacherCourses();
+                }
+            } catch (err) {
+                alert(err.message || 'Error removing subject');
+            }
         }
 
         async function deleteClassCourse(courseId, className) {
@@ -3608,7 +3642,12 @@
                                                 <h4 style="font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0;">📖 ${escapeHtml(sa.subject)}</h4>
                                                 <span style="font-size: 0.75rem; color: var(--text-secondary);">${sa.totalSessionsHeld} sessions held • ${sa.studentCount || summary.totalStudents || 0} students</span>
                                             </div>
-                                            <span style="font-size: 1.3rem; font-weight: 800; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${sa.averagePercentage}%</span>
+                                            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                                <span style="font-size: 1.3rem; font-weight: 800; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${sa.averagePercentage}%</span>
+                                                <button type="button" onclick="event.stopPropagation(); deleteFacultySubjectByName('${escapeJsString(sa.subject)}')" title="Remove this subject (preserves archives)" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.72rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'">
+                                                    🗑️ Remove
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <!-- PROGRESS BAR -->

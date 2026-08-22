@@ -127,11 +127,11 @@ public class ClassCourseController {
     }
 
     /**
-     * DELETE /classes/subjects/by-name/{subjectName} (ADMIN only)
+     * DELETE /classes/subjects/by-name/{subjectName} (TEACHER and ADMIN)
      * Deletes all records associated with a subject by name (soft-delete).
      */
-    @DeleteMapping("/subjects/by-name/{subjectName}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping({"/subjects/by-name/{subjectName}", "/courses/by-name/{subjectName}"})
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Void> deleteSubjectByName(
             @PathVariable("subjectName") String subjectName,
             @RequestHeader(value = "x-admin-master-pin", required = false) String pinHeader,
