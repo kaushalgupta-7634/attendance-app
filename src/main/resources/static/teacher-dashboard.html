@@ -1652,6 +1652,13 @@
 
                 alert(`✅ Subject '${cleanSub}' removed successfully.\n\nPast student attendance records remain safely preserved in archives.`);
                 currentSubjectFilter = 'all';
+                const classSelectVal = document.getElementById('teacherClassSelect')?.value?.trim() || 'all';
+                if (typeof updateSubjectDropdownOptions === 'function') {
+                    await updateSubjectDropdownOptions(classSelectVal);
+                }
+                if (typeof loadSelectedClassAnalytics === 'function') {
+                    await loadSelectedClassAnalytics('all');
+                }
                 if (typeof loadTeacherSessions === 'function') {
                     await loadTeacherSessions();
                 }
