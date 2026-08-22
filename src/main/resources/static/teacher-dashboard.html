@@ -1241,6 +1241,8 @@
             if (tabId === 'session') {
                 document.getElementById('teacherTabSession')?.classList.add('active');
                 document.getElementById('teacherSectionSession')?.classList.add('active');
+                if (typeof loadTeacherCourses === 'function') loadTeacherCourses();
+                if (typeof loadTeacherSessions === 'function') loadTeacherSessions();
             } else if (tabId === 'analytics') {
                 document.getElementById('teacherTabAnalytics')?.classList.add('active');
                 document.getElementById('teacherSectionAnalytics')?.classList.add('active');
@@ -1527,8 +1529,8 @@
 
         async function loadTeacherCourses() {
             try {
-                const res = await fetch('/classes/my-courses', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                const res = await fetch('/classes/my-courses?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
                 });
                 if (!res.ok) return;
                 const courses = await res.json();
@@ -2933,11 +2935,11 @@
                     }
                 } catch (e) { }
 
-                // 3. Fallback to hardcoded defaults if DB has no classes yet
+                // 3. Clean fallback classes without hardcoded subjects
                 if (classSubjectsMap.size === 0) {
-                    classSubjectsMap.set('BCA', new Set(['ai', 'Math']));
-                    classSubjectsMap.set('BBA', new Set(['Business']));
-                    classSubjectsMap.set('CS101', new Set(['Computer Science']));
+                    classSubjectsMap.set('BCA', new Set());
+                    classSubjectsMap.set('BBA', new Set());
+                    classSubjectsMap.set('CS101', new Set());
                 }
 
                 // Build Class Select Dropdown HTML
@@ -2984,9 +2986,9 @@
             // 2. Fetch summary backend to extract registered subjects
             try {
                 const token = getJwtToken();
-                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const headers = token ? { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' } : {};
                 const targetCls = (className && className !== 'all') ? className : 'all';
-                const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(targetCls)}/attendance-summary`, { headers });
+                const sumRes = await fetch(`/classes/by-name/${encodeURIComponent(targetCls)}/attendance-summary?t=` + Date.now(), { headers });
                 if (sumRes.ok) {
                     const summary = await sumRes.json();
                     if (summary.subjectAverages && summary.subjectAverages.length > 0) {
@@ -2998,13 +3000,6 @@
                     }
                 }
             } catch (e) { }
-
-            // 3. Fallback subjects if database has no subject entries yet
-            if (allSubjects.size === 0) {
-                allSubjects.add("Math");
-                allSubjects.add("ai");
-                allSubjects.add("Computer Science");
-            }
 
             allSubjects.forEach(sub => {
                 subOptionsHtml += `<option value="${escapeHtml(sub)}">📖 ${escapeHtml(sub)}</option>`;
