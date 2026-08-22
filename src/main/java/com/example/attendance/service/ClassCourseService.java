@@ -188,8 +188,29 @@ public class ClassCourseService {
             classCourseRepository.save(c);
         }
 
+        if (courses.isEmpty()) {
+            ClassCourse marker = new ClassCourse();
+            marker.setClassName(subTrim);
+            marker.setSubject(subTrim);
+            marker.setClassCode("DEL-" + UUID.randomUUID().toString().substring(0, 4));
+            marker.setTeacher(requester);
+            marker.setIsDeleted(true);
+            marker.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+            classCourseRepository.save(marker);
+        }
+
+        // 2. Soft-cancel sessions for this subject so they immediately vanish from active attendance averages
+        List<ClassSession> sessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled() && s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subTrim))
+                .filter(s -> requester.getRole() == Role.ADMIN || (s.getTeacher() != null && s.getTeacher().getId().equals(requester.getId())))
+                .toList();
+        for (ClassSession s : sessions) {
+            s.setCancelled(true);
+            classSessionRepository.save(s);
+        }
+
         if (requester.getRole() == Role.ADMIN) {
-            auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records associated with subject", ipAddress);
+            auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records and cancelled " + sessions.size() + " sessions associated with subject", ipAddress);
         }
     }
 
