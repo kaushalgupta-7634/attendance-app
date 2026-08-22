@@ -26,12 +26,12 @@ public class AdminService {
     private final AuditLogService auditLogService;
 
     public AdminService(UserRepository userRepository,
-                        ClassCourseRepository classCourseRepository,
-                        ClassSessionRepository classSessionRepository,
-                        AttendanceRecordRepository attendanceRecordRepository,
-                        EnrollmentRepository enrollmentRepository,
-                        PasswordEncoder passwordEncoder,
-                        AuditLogService auditLogService) {
+            ClassCourseRepository classCourseRepository,
+            ClassSessionRepository classSessionRepository,
+            AttendanceRecordRepository attendanceRecordRepository,
+            EnrollmentRepository enrollmentRepository,
+            PasswordEncoder passwordEncoder,
+            AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.classCourseRepository = classCourseRepository;
         this.classSessionRepository = classSessionRepository;
@@ -42,18 +42,23 @@ public class AdminService {
     }
 
     public AdminDTOs.SystemStatsDTO getSystemStats() {
-        long totalStudents = userRepository.findAll().stream().filter(u -> !u.isDeleted() && u.getRole() == Role.STUDENT).count();
-        long totalTeachers = userRepository.findAll().stream().filter(u -> !u.isDeleted() && u.getRole() == Role.TEACHER).count();
+        List<User> allUsers = userRepository.findAll();
+        long totalStudents = allUsers.stream()
+                .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || "STUDENT".equalsIgnoreCase(String.valueOf(u.getRole()))))
+                .count();
+        long totalTeachers = allUsers.stream()
+                .filter(u -> !u.isDeleted() && (u.getRole() == Role.TEACHER || "TEACHER".equalsIgnoreCase(String.valueOf(u.getRole()))))
+                .count();
         long totalCourses = classCourseRepository.findAll().stream().filter(c -> !c.isDeleted()).count();
         long totalAttendanceRecords = attendanceRecordRepository.count();
         long activeSessionsCount = classSessionRepository.findByActiveTrue().size();
 
-        java.util.Map<String, Long> classwiseCounts = userRepository.findAll().stream()
-                .filter(u -> !u.isDeleted() && u.getRole() == Role.STUDENT && u.getClassName() != null && !u.getClassName().isBlank())
+        java.util.Map<String, Long> classwiseCounts = allUsers.stream()
+                .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || "STUDENT".equalsIgnoreCase(String.valueOf(u.getRole())))
+                        && u.getClassName() != null && !u.getClassName().isBlank())
                 .collect(Collectors.groupingBy(
                         u -> u.getClassName().trim().toUpperCase(),
-                        Collectors.counting()
-                ));
+                        Collectors.counting()));
 
         return new AdminDTOs.SystemStatsDTO(
                 totalStudents,
@@ -61,8 +66,7 @@ public class AdminService {
                 totalCourses,
                 totalAttendanceRecords,
                 activeSessionsCount,
-                classwiseCounts
-        );
+                classwiseCounts);
     }
 
     public List<AdminDTOs.UserSummaryDTO> getUsers(String roleFilter, String query) {
@@ -80,9 +84,9 @@ public class AdminService {
             String q = query.trim().toLowerCase();
             users = users.stream()
                     .filter(u -> (u.getName() != null && u.getName().toLowerCase().contains(q)) ||
-                                 (u.getUsername() != null && u.getUsername().toLowerCase().contains(q)) ||
-                                 (u.getEmail() != null && u.getEmail().toLowerCase().contains(q)) ||
-                                 (u.getClassName() != null && u.getClassName().toLowerCase().contains(q)))
+                            (u.getUsername() != null && u.getUsername().toLowerCase().contains(q)) ||
+                            (u.getEmail() != null && u.getEmail().toLowerCase().contains(q)) ||
+                            (u.getClassName() != null && u.getClassName().toLowerCase().contains(q)))
                     .collect(Collectors.toList());
         }
 
@@ -93,29 +97,33 @@ public class AdminService {
                 u.getEmail(),
                 u.getRole(),
                 u.getClassName(),
-                u.isEnabled()
-        )).collect(Collectors.toList());
+                u.isEnabled())).collect(Collectors.toList());
     }
 
     public void validateMasterPin(String adminUsername, String pinHeader) {
         if (adminUsername == null || adminUsername.isBlank()) {
-            throw new com.example.attendance.exception.InvalidMasterPinException("Admin authorization context missing.");
+            throw new com.example.attendance.exception.InvalidMasterPinException(
+                    "Admin authorization context missing.");
         }
         User admin = userRepository.findByUsernameIgnoreCase(adminUsername.trim())
                 .or(() -> userRepository.findByEmailIgnoreCase(adminUsername.trim()))
-                .orElseThrow(() -> new com.example.attendance.exception.InvalidMasterPinException("Admin account not found."));
+                .orElseThrow(() -> new com.example.attendance.exception.InvalidMasterPinException(
+                        "Admin account not found."));
 
         if (!admin.hasMasterPin()) {
-            throw new com.example.attendance.exception.InvalidMasterPinException("Master PIN is not configured yet. Please configure your 6-digit Master PIN in Admin Settings.");
+            throw new com.example.attendance.exception.InvalidMasterPinException(
+                    "Master PIN is not configured yet. Please configure your 6-digit Master PIN in Admin Settings.");
         }
 
-        if (pinHeader == null || pinHeader.isBlank() || !passwordEncoder.matches(pinHeader.trim(), admin.getMasterPin())) {
+        if (pinHeader == null || pinHeader.isBlank()
+                || !passwordEncoder.matches(pinHeader.trim(), admin.getMasterPin())) {
             throw new com.example.attendance.exception.InvalidMasterPinException("Invalid Master PIN");
         }
     }
 
     public boolean hasMasterPin(String adminUsername) {
-        if (adminUsername == null || adminUsername.isBlank()) return false;
+        if (adminUsername == null || adminUsername.isBlank())
+            return false;
         return userRepository.findByUsernameIgnoreCase(adminUsername.trim())
                 .or(() -> userRepository.findByEmailIgnoreCase(adminUsername.trim()))
                 .map(User::hasMasterPin)
@@ -142,12 +150,14 @@ public class AdminService {
         admin.setMasterPin(passwordEncoder.encode(request.getMasterPin().trim()));
         userRepository.save(admin);
 
-        auditLogService.logAction(admin.getEmail(), "SET_MASTER_PIN", "Master PIN", "Updated 6-digit administrative Master Security PIN", ipAddress);
+        auditLogService.logAction(admin.getEmail(), "SET_MASTER_PIN", "Master PIN",
+                "Updated 6-digit administrative Master Security PIN", ipAddress);
         logger.info("Admin '{}' successfully set a new 6-digit Master PIN.", adminUsername);
     }
 
     @Transactional
-    public void toggleUserStatus(Long userId, boolean enabled, String adminUsername, String pinHeader, String ipAddress) {
+    public void toggleUserStatus(Long userId, boolean enabled, String adminUsername, String pinHeader,
+            String ipAddress) {
         // Step-up verification if disabling account
         if (!enabled) {
             validateMasterPin(adminUsername, pinHeader);
@@ -163,15 +173,18 @@ public class AdminService {
         user.setEnabled(enabled);
         userRepository.save(user);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "TOGGLE_USER_STATUS", "User #" + userId + " (" + user.getUsername() + ")", "Status set to " + (enabled ? "Active" : "Disabled"), ipAddress);
+        auditLogService.logAction(adminEmail, "TOGGLE_USER_STATUS", "User #" + userId + " (" + user.getUsername() + ")",
+                "Status set to " + (enabled ? "Active" : "Disabled"), ipAddress);
         logger.info("Admin updated status for user '{}' (ID {}) to enabled={}", user.getUsername(), userId, enabled);
     }
 
     @Transactional
-    public void resetUserPassword(Long userId, String newPassword, String adminUsername, String pinHeader, String ipAddress) {
+    public void resetUserPassword(Long userId, String newPassword, String adminUsername, String pinHeader,
+            String ipAddress) {
         validateMasterPin(adminUsername, pinHeader);
 
         if (newPassword == null || newPassword.isBlank() || newPassword.trim().length() < 6) {
@@ -186,10 +199,12 @@ public class AdminService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "RESET_PASSWORD", "User #" + userId + " (" + user.getUsername() + ")", "Admin performed direct password reset", ipAddress);
+        auditLogService.logAction(adminEmail, "RESET_PASSWORD", "User #" + userId + " (" + user.getUsername() + ")",
+                "Admin performed direct password reset", ipAddress);
         logger.info("Admin reset password for user '{}' (ID {})", user.getUsername(), userId);
     }
 
@@ -209,10 +224,12 @@ public class AdminService {
         user.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         userRepository.save(user);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "DELETE_USER", "User #" + userId + " (" + user.getUsername() + ")", "Soft-deleted user account (Moved to Trash)", ipAddress);
+        auditLogService.logAction(adminEmail, "DELETE_USER", "User #" + userId + " (" + user.getUsername() + ")",
+                "Soft-deleted user account (Moved to Trash)", ipAddress);
         logger.info("Admin soft-deleted user '{}' (ID {}, Role {})", user.getUsername(), userId, user.getRole());
     }
 
@@ -228,10 +245,12 @@ public class AdminService {
         user.setDeletedAt(null);
         userRepository.save(user);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "RESTORE_USER", "User #" + userId + " (" + user.getUsername() + ")", "Restored soft-deleted user account from Trash", ipAddress);
+        auditLogService.logAction(adminEmail, "RESTORE_USER", "User #" + userId + " (" + user.getUsername() + ")",
+                "Restored soft-deleted user account from Trash", ipAddress);
         logger.info("Admin restored user '{}' (ID {})", user.getUsername(), userId);
     }
 
@@ -249,8 +268,7 @@ public class AdminService {
                     c.getSubject(),
                     c.getClassCode(),
                     teacherName,
-                    enrolledCount
-            );
+                    enrolledCount);
         }).collect(Collectors.toList());
     }
 
@@ -265,10 +283,13 @@ public class AdminService {
         course.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         classCourseRepository.save(course);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "DELETE_COURSE", "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")", "Soft-deleted class course (Moved to Trash)", ipAddress);
+        auditLogService.logAction(adminEmail, "DELETE_COURSE",
+                "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")",
+                "Soft-deleted class course (Moved to Trash)", ipAddress);
         logger.info("Admin soft-deleted course ID {} ({})", courseId, course.getClassName());
     }
 
@@ -283,10 +304,13 @@ public class AdminService {
         course.setDeletedAt(null);
         classCourseRepository.save(course);
 
-        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        auditLogService.logAction(adminEmail, "RESTORE_COURSE", "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")", "Restored class course from Trash", ipAddress);
+        auditLogService.logAction(adminEmail, "RESTORE_COURSE",
+                "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")",
+                "Restored class course from Trash", ipAddress);
         logger.info("Admin restored course ID {} ({})", courseId, course.getClassName());
     }
 
@@ -302,9 +326,9 @@ public class AdminService {
                             "USER",
                             u.getId(),
                             u.getName() + " (@" + u.getUsername() + ")",
-                            "Role: " + u.getRole() + " | Email: " + u.getEmail() + (u.getClassName() != null ? " | Class: " + u.getClassName() : ""),
-                            deletedAtStr
-                    ));
+                            "Role: " + u.getRole() + " | Email: " + u.getEmail()
+                                    + (u.getClassName() != null ? " | Class: " + u.getClassName() : ""),
+                            deletedAtStr));
                 });
 
         // Soft-deleted Courses
@@ -318,8 +342,7 @@ public class AdminService {
                             c.getId(),
                             c.getClassName() + " - " + c.getSubject(),
                             "Code: " + c.getClassCode() + " | Teacher: " + teacherName,
-                            deletedAtStr
-                    ));
+                            deletedAtStr));
                 });
 
         return trash;
@@ -386,41 +409,51 @@ public class AdminService {
             }
 
             String className = "-";
-            if (rec.getSession() != null && rec.getSession().getClassName() != null && !rec.getSession().getClassName().isBlank()) {
+            if (rec.getSession() != null && rec.getSession().getClassName() != null
+                    && !rec.getSession().getClassName().isBlank()) {
                 className = rec.getSession().getClassName().trim();
-            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null && rec.getSession().getClassCourse().getClassName() != null && !rec.getSession().getClassCourse().getClassName().isBlank()) {
+            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null
+                    && rec.getSession().getClassCourse().getClassName() != null
+                    && !rec.getSession().getClassCourse().getClassName().isBlank()) {
                 className = rec.getSession().getClassCourse().getClassName().trim();
-            } else if (rec.getStudent() != null && rec.getStudent().getClassName() != null && !rec.getStudent().getClassName().isBlank()) {
+            } else if (rec.getStudent() != null && rec.getStudent().getClassName() != null
+                    && !rec.getStudent().getClassName().isBlank()) {
                 className = rec.getStudent().getClassName().trim();
             }
 
             String subject = "-";
-            if (rec.getSession() != null && rec.getSession().getSubject() != null && !rec.getSession().getSubject().isBlank()) {
+            if (rec.getSession() != null && rec.getSession().getSubject() != null
+                    && !rec.getSession().getSubject().isBlank()) {
                 subject = rec.getSession().getSubject().trim();
-            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null && rec.getSession().getClassCourse().getSubject() != null) {
+            } else if (rec.getSession() != null && rec.getSession().getClassCourse() != null
+                    && rec.getSession().getClassCourse().getSubject() != null) {
                 subject = rec.getSession().getClassCourse().getSubject().trim();
             }
 
             String status = rec.getStatus() != null ? rec.getStatus().name() : "PRESENT";
             String timestamp = rec.getMarkedAt() != null ? rec.getMarkedAt().toString() : "-";
 
-            dtos.add(new AdminDTOs.AttendanceRecordSummaryDTO(rec.getId(), studentName, className, subject, status, timestamp));
+            dtos.add(new AdminDTOs.AttendanceRecordSummaryDTO(rec.getId(), studentName, className, subject, status,
+                    timestamp));
         }
         return dtos;
     }
 
-    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr, String classNameFilter) {
+    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr,
+            String classNameFilter) {
         return getDateRangeAnalytics(startDateStr, endDateStr, classNameFilter, null);
     }
 
-    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr, String classNameFilter, String subjectFilter) {
+    public AdminDTOs.DateRangeAnalyticsDTO getDateRangeAnalytics(String startDateStr, String endDateStr,
+            String classNameFilter, String subjectFilter) {
         java.time.LocalDateTime startDateTime;
         java.time.LocalDateTime endDateTime;
 
         try {
             if (startDateStr != null && !startDateStr.isBlank()) {
                 String s = startDateStr.trim();
-                if (s.length() == 7) s += "-01";
+                if (s.length() == 7)
+                    s += "-01";
                 startDateTime = java.time.LocalDate.parse(s).atStartOfDay();
             } else {
                 startDateTime = java.time.LocalDate.now().minusMonths(6).withDayOfMonth(1).atStartOfDay();
@@ -445,23 +478,35 @@ public class AdminService {
             endDateTime = java.time.LocalDateTime.now();
         }
 
-        String finalClassFilter = (classNameFilter != null && !classNameFilter.isBlank() && !"ALL".equalsIgnoreCase(classNameFilter.trim()))
-                ? classNameFilter.trim() : null;
+        String finalClassFilter = (classNameFilter != null && !classNameFilter.isBlank()
+                && !"ALL".equalsIgnoreCase(classNameFilter.trim()))
+                        ? classNameFilter.trim()
+                        : null;
 
-        String finalSubjectFilter = (subjectFilter != null && !subjectFilter.isBlank() && !"ALL".equalsIgnoreCase(subjectFilter.trim()))
-                ? subjectFilter.trim() : null;
+        String finalSubjectFilter = (subjectFilter != null && !subjectFilter.isBlank()
+                && !"ALL".equalsIgnoreCase(subjectFilter.trim()))
+                        ? subjectFilter.trim()
+                        : null;
 
         final java.time.LocalDateTime finalStart = startDateTime;
         final java.time.LocalDateTime finalEnd = endDateTime;
 
         java.util.function.BiPredicate<ClassSession, String> sessionClassMatcher = (s, filter) -> {
-            if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter)) return true;
-            if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(filter)) return true;
-            if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(filter)) return true;
+            if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter))
+                return true;
+            if (s.getClassName() != null && s.getClassName().equalsIgnoreCase(filter))
+                return true;
+            if (s.getSubject() != null && s.getSubject().equalsIgnoreCase(filter))
+                return true;
             if (s.getClassCourse() != null) {
-                if (s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(filter)) return true;
-                if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(filter)) return true;
-                if (s.getClassCourse().getClassCode() != null && s.getClassCourse().getClassCode().equalsIgnoreCase(filter)) return true;
+                if (s.getClassCourse().getClassName() != null
+                        && s.getClassCourse().getClassName().equalsIgnoreCase(filter))
+                    return true;
+                if (s.getClassCourse().getSubject() != null && s.getClassCourse().getSubject().equalsIgnoreCase(filter))
+                    return true;
+                if (s.getClassCourse().getClassCode() != null
+                        && s.getClassCourse().getClassCode().equalsIgnoreCase(filter))
+                    return true;
             }
             return false;
         };
@@ -469,12 +514,15 @@ public class AdminService {
         List<ClassSession> allSessions = classSessionRepository.findAll().stream()
                 .filter(s -> !s.isCancelled())
                 .filter(s -> sessionClassMatcher.test(s, finalClassFilter))
-                .filter(s -> finalSubjectFilter == null || (s.getSubject() != null && s.getSubject().equalsIgnoreCase(finalSubjectFilter)))
+                .filter(s -> finalSubjectFilter == null
+                        || (s.getSubject() != null && s.getSubject().equalsIgnoreCase(finalSubjectFilter)))
                 .collect(Collectors.toList());
 
-        // Filter by date range if sessions exist in date range, otherwise fallback to all-time sessions
+        // Filter by date range if sessions exist in date range, otherwise fallback to
+        // all-time sessions
         List<ClassSession> dateFilteredSessions = allSessions.stream()
-                .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart) && !s.getStartTime().isAfter(finalEnd))
+                .filter(s -> s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)
+                        && !s.getStartTime().isAfter(finalEnd))
                 .collect(Collectors.toList());
 
         if (!dateFilteredSessions.isEmpty()) {
@@ -498,21 +546,24 @@ public class AdminService {
             matchedStudents.addAll(userRepository.findByRole(Role.STUDENT));
         } else {
             List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, finalClassFilter);
-            if (direct != null) matchedStudents.addAll(direct);
+            if (direct != null)
+                matchedStudents.addAll(direct);
 
             classCourseRepository.findAll().stream()
                     .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(finalClassFilter)) ||
-                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(finalClassFilter)) ||
-                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(finalClassFilter)))
+                            (c.getSubject() != null && c.getSubject().equalsIgnoreCase(finalClassFilter)) ||
+                            (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(finalClassFilter)))
                     .forEach(c -> {
                         enrollmentRepository.findByClassCourse(c).forEach(e -> {
-                            if (e.getStudent() != null) matchedStudents.add(e.getStudent());
+                            if (e.getStudent() != null)
+                                matchedStudents.add(e.getStudent());
                         });
                     });
 
             allSessions.forEach(s -> {
                 attendanceRecordRepository.findBySession(s).forEach(r -> {
-                    if (r.getStudent() != null) matchedStudents.add(r.getStudent());
+                    if (r.getStudent() != null)
+                        matchedStudents.add(r.getStudent());
                 });
             });
 
@@ -547,7 +598,8 @@ public class AdminService {
             long subStudentsCount = totalStudents;
             long subPossible = subSessionsHeld * Math.max(1, subStudentsCount);
             double subPercent = subPossible > 0 ? ((double) subPresent / subPossible) * 100.0 : 0.0;
-            subjectBreakdown.add(new AdminDTOs.SubjectAnalyticsDTO(subject, subSessionsHeld, subPresent, Math.round(subPercent * 10.0) / 10.0));
+            subjectBreakdown.add(new AdminDTOs.SubjectAnalyticsDTO(subject, subSessionsHeld, subPresent,
+                    Math.round(subPercent * 10.0) / 10.0));
         }
 
         // Class Breakdown
@@ -560,14 +612,16 @@ public class AdminService {
             String clsName = entry.getKey();
             long clsSessions = entry.getValue().size();
             long clsStudents = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, clsName).size();
-            if (clsStudents == 0) clsStudents = totalStudents;
+            if (clsStudents == 0)
+                clsStudents = totalStudents;
             long clsPresent = allRecords.stream()
                     .filter(r -> r.getSession() != null && clsName.equalsIgnoreCase(r.getSession().getClassName()))
                     .count();
 
             long clsPossible = clsSessions * Math.max(1, clsStudents);
             double clsPercent = clsPossible > 0 ? ((double) clsPresent / clsPossible) * 100.0 : 0.0;
-            classBreakdown.add(new AdminDTOs.ClassAnalyticsDTO(clsName, clsStudents, clsSessions, Math.round(clsPercent * 10.0) / 10.0));
+            classBreakdown.add(new AdminDTOs.ClassAnalyticsDTO(clsName, clsStudents, clsSessions,
+                    Math.round(clsPercent * 10.0) / 10.0));
         }
 
         return new AdminDTOs.DateRangeAnalyticsDTO(
@@ -579,7 +633,6 @@ public class AdminService {
                 overallPercentage,
                 totalStudents,
                 subjectBreakdown,
-                classBreakdown
-        );
+                classBreakdown);
     }
 }
