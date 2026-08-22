@@ -383,7 +383,16 @@ public class AttendanceService {
         final java.time.LocalDateTime finalStart = startDateTime;
         final java.time.LocalDateTime finalEnd = endDateTime;
 
-        List<String> subjectNames = classSessionRepository.findDistinctSubjects();
+        java.util.Set<String> activeSubjectNames = classCourseRepository.findAll().stream()
+                .filter(c -> !c.isDeleted() && c.getSubject() != null && !c.getSubject().isBlank())
+                .map(c -> c.getSubject().trim().toLowerCase())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<String> rawSubjects = classSessionRepository.findDistinctSubjects();
+        List<String> subjectNames = (rawSubjects == null ? List.<String>of() : rawSubjects).stream()
+                .filter(s -> s != null && !s.isBlank())
+                .filter(s -> activeSubjectNames.isEmpty() || activeSubjectNames.contains(s.trim().toLowerCase()))
+                .collect(java.util.stream.Collectors.toList());
         List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
 
         List<StudentAttendanceSummaryDTO.SubjectSummaryDTO> breakdown = new java.util.ArrayList<>();
@@ -678,14 +687,35 @@ public class AttendanceService {
                     }
                 });
 
-        // 2. Gather subjects from ClassSession matching the class
+        // 2. Gather active vs deleted subject names to prevent resurrection from historical sessions
+        java.util.Set<String> activeSubjectNames = classCourseRepository.findAll().stream()
+                .filter(c -> !c.isDeleted() && c.getSubject() != null && !c.getSubject().isBlank())
+                .map(c -> c.getSubject().trim().toLowerCase())
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
+                .filter(ClassCourse::isDeleted)
+                .map(ClassCourse::getSubject)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 3. Gather subjects from ClassSession matching the class ONLY if active
         classSessions.forEach(s -> {
+            if (s.getClassCourse() != null && s.getClassCourse().isDeleted()) {
+                return;
+            }
             if (s.getSubject() != null && !s.getSubject().isBlank()) {
-                subjectSet.add(s.getSubject().trim());
+                String subTrim = s.getSubject().trim();
+                if (deletedSubjectNames.contains(subTrim.toLowerCase()) && !activeSubjectNames.contains(subTrim.toLowerCase())) {
+                    return;
+                }
+                subjectSet.add(subTrim);
             }
         });
 
-        // 3. Fallback to all distinct active subjects ONLY if isAllClass
+        // 4. Fallback to all distinct active subjects ONLY if isAllClass
         if (isAllClass && subjectSet.isEmpty()) {
             classCourseRepository.findAll().stream()
                     .filter(c -> !c.isDeleted())

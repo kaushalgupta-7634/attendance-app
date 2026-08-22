@@ -2929,10 +2929,10 @@
             try {
                 classSubjectsMap.clear();
 
-                // 1. Fetch available classes
+                // 1. Fetch available classes (fresh network fetch)
                 try {
-                    const res = await fetch('/classes/available-classes', {
-                        headers: { 'Authorization': 'Bearer ' + token }
+                    const res = await fetch('/classes/available-classes?t=' + Date.now(), {
+                        headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
                     });
                     if (res.ok) {
                         const available = await res.json();
@@ -2954,10 +2954,10 @@
                     }
                 } catch (e) { }
 
-                // 2. Fetch my-courses
+                // 2. Fetch my-courses (fresh network fetch)
                 try {
-                    const cRes = await fetch('/classes/my-courses', {
-                        headers: { 'Authorization': 'Bearer ' + token }
+                    const cRes = await fetch('/classes/my-courses?t=' + Date.now(), {
+                        headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
                     });
                     if (cRes.ok) {
                         const courses = await cRes.json();
