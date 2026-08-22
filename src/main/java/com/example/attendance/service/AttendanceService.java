@@ -388,10 +388,18 @@ public class AttendanceService {
                 .map(c -> c.getSubject().trim().toLowerCase())
                 .collect(java.util.stream.Collectors.toSet());
 
+        java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
+                .filter(ClassCourse::isDeleted)
+                .map(ClassCourse::getSubject)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toSet());
+
         List<String> rawSubjects = classSessionRepository.findDistinctSubjects();
         List<String> subjectNames = (rawSubjects == null ? List.<String>of() : rawSubjects).stream()
                 .filter(s -> s != null && !s.isBlank())
-                .filter(s -> activeSubjectNames.isEmpty() || activeSubjectNames.contains(s.trim().toLowerCase()))
+                .filter(s -> activeSubjectNames.contains(s.trim().toLowerCase()) && !deletedSubjectNames.contains(s.trim().toLowerCase()))
                 .collect(java.util.stream.Collectors.toList());
         List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
 
@@ -439,6 +447,14 @@ public class AttendanceService {
         List<AttendanceRecord> existingRecords = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent).stream()
                 .filter(r -> finalStart == null || (r.getMarkedAt() != null && !r.getMarkedAt().isBefore(finalStart)))
                 .filter(r -> finalEnd == null || (r.getMarkedAt() != null && !r.getMarkedAt().isAfter(finalEnd)))
+                .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
+                .filter(r -> {
+                    String sub = r.getSession().getSubject();
+                    if (sub != null && deletedSubjectNames.contains(sub.trim().toLowerCase()) && !activeSubjectNames.contains(sub.trim().toLowerCase())) {
+                        return false;
+                    }
+                    return true;
+                })
                 .collect(java.util.stream.Collectors.toList());
 
         java.util.Map<Long, AttendanceRecord> existingMap = existingRecords.stream()
