@@ -70,11 +70,14 @@ public class ClassSessionService {
 
         ClassCourse classCourse = null;
         if (request.getClassCourseId() != null) {
-            classCourse = classCourseRepository.findById(request.getClassCourseId()).orElse(null);
+            classCourse = classCourseRepository.findById(request.getClassCourseId())
+                    .filter(c -> !c.isDeleted())
+                    .orElse(null);
         } else if (request.getClassName() != null && !request.getClassName().isBlank()) {
             classCourse = classCourseRepository.findByClassCodeIgnoreCase(request.getClassName())
+                    .filter(c -> !c.isDeleted())
                     .orElseGet(() -> classCourseRepository.findAll().stream()
-                            .filter(c -> c.getClassName().equalsIgnoreCase(request.getClassName()))
+                            .filter(c -> !c.isDeleted() && c.getClassName().equalsIgnoreCase(request.getClassName()))
                             .findFirst().orElse(null));
         }
 
@@ -485,20 +488,21 @@ public class ClassSessionService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class rosters.");
         }
 
-        ClassCourse classCourse = classCourseRepository.findById(classId).orElse(null);
+        ClassCourse classCourse = classCourseRepository.findById(classId).filter(c -> !c.isDeleted()).orElse(null);
         String className = null;
         Long resolvedId = classId;
 
         if (classCourse == null) {
             ClassSession session = classSessionRepository.findById(classId).orElse(null);
             if (session != null) {
-                classCourse = session.getClassCourse();
+                classCourse = session.getClassCourse() != null && !session.getClassCourse().isDeleted() ? session.getClassCourse() : null;
                 className = session.getClassName();
                 if (classCourse == null && className != null) {
                     final String nameToFind = className;
                     classCourse = classCourseRepository.findByClassCodeIgnoreCase(nameToFind)
+                            .filter(c -> !c.isDeleted())
                             .orElseGet(() -> classCourseRepository.findAll().stream()
-                                    .filter(c -> c.getClassName().equalsIgnoreCase(nameToFind))
+                                    .filter(c -> !c.isDeleted() && c.getClassName().equalsIgnoreCase(nameToFind))
                                     .findFirst().orElse(null));
                 }
             } else {
@@ -511,7 +515,7 @@ public class ClassSessionService {
         List<User> students = java.util.Collections.emptyList();
         if (classCourse != null) {
             List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(classCourse);
-            students = enrollments.stream().map(Enrollment::getStudent).collect(Collectors.toList());
+            students = enrollments.stream().map(Enrollment::getStudent).filter(u -> u != null && !u.isDeleted()).collect(Collectors.toList());
         }
 
         List<ClassRosterResponseDTO.StudentDTO> studentDTOs = students.stream().map(student ->
@@ -542,7 +546,7 @@ public class ClassSessionService {
         List<User> students = new java.util.ArrayList<>();
         if (className != null && !className.isBlank() && !"all".equalsIgnoreCase(className.trim())) {
             String search = className.trim();
-            List<User> allStudents = userRepository.findByRole(Role.STUDENT);
+            List<User> allStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).toList();
             for (User st : allStudents) {
                 if (st.getClassName() != null && !st.getClassName().isBlank()) {
                     if (matchesSearch(st.getClassName(), search)) {
@@ -554,6 +558,7 @@ public class ClassSessionService {
             }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
                     .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(search)) ||
                                  matchesSearch(c.getClassName(), search) ||
                                  matchesSearch(c.getSubject(), search) ||

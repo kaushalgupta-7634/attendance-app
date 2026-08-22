@@ -501,14 +501,14 @@ public class AttendanceService {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can view class attendance summary.");
         }
 
-        ClassCourse course = classCourseRepository.findById(classId).orElse(null);
+        ClassCourse course = classCourseRepository.findById(classId).filter(c -> !c.isDeleted()).orElse(null);
         if (course != null) {
             return getClassAttendanceSummaryByName(course.getClassName(), teacherUsername);
         }
 
         ClassSession session = classSessionRepository.findById(classId).orElse(null);
         if (session != null) {
-            if (session.getClassCourse() != null) {
+            if (session.getClassCourse() != null && !session.getClassCourse().isDeleted()) {
                 return getClassAttendanceSummaryByName(session.getClassCourse().getClassName(), teacherUsername);
             }
 
@@ -516,6 +516,7 @@ public class AttendanceService {
             if (distinctStudents == null || distinctStudents.isEmpty()) {
                 distinctStudents = userRepository.findByRole(Role.STUDENT);
             }
+            distinctStudents = distinctStudents.stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
 
             List<String> subjects = classSessionRepository.findDistinctSubjects();
             List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
@@ -579,7 +580,7 @@ public class AttendanceService {
         List<User> distinctStudents = new java.util.ArrayList<>();
         int rawEnrollmentCount = 0;
         if (!isAllClass) {
-            List<User> allStudents = userRepository.findByRole(Role.STUDENT);
+            List<User> allStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).toList();
             for (User st : allStudents) {
                 if (st.getClassName() != null && !st.getClassName().isBlank()) {
                     if (matchesSearch(st.getClassName(), searchClass)) {
@@ -591,6 +592,7 @@ public class AttendanceService {
             }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
                     .filter(c -> (c.getId() != null && c.getId().toString().equalsIgnoreCase(searchClass)) ||
                                  matchesSearch(c.getClassName(), searchClass) ||
                                  matchesSearch(c.getSubject(), searchClass) ||
@@ -603,7 +605,7 @@ public class AttendanceService {
                 List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
                 rawEnrollmentCount += enrollments.size();
                 for (Enrollment e : enrollments) {
-                    if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
+                    if (e.getStudent() != null && !e.getStudent().isDeleted() && !distinctStudents.contains(e.getStudent())) {
                         distinctStudents.add(e.getStudent());
                     }
                 }
@@ -614,23 +616,23 @@ public class AttendanceService {
                     .filter(s -> (s.getId() != null && s.getId().toString().equalsIgnoreCase(searchClass)) ||
                                  matchesSearch(s.getClassName(), searchClass) ||
                                  matchesSearch(s.getSubject(), searchClass) ||
-                                 (s.getClassCourse() != null && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) ||
-                                 (s.getClassCourse() != null && matchesSearch(s.getClassCourse().getClassName(), searchClass)))
+                                 (s.getClassCourse() != null && !s.getClassCourse().isDeleted() && s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassCourse() != null && !s.getClassCourse().isDeleted() && matchesSearch(s.getClassCourse().getClassName(), searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
                 List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
                 for (AttendanceRecord r : records) {
-                    if (r.getStudent() != null && !distinctStudents.contains(r.getStudent())) {
+                    if (r.getStudent() != null && !r.getStudent().isDeleted() && !distinctStudents.contains(r.getStudent())) {
                         distinctStudents.add(r.getStudent());
                     }
                 }
             }
         } else {
-            distinctStudents = userRepository.findByRole(Role.STUDENT);
+            distinctStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
             if (distinctStudents.isEmpty()) {
                 distinctStudents = userRepository.findAll().stream()
-                        .filter(u -> u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN))
+                        .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || (u.getRole() != Role.TEACHER && u.getRole() != Role.ADMIN)))
                         .collect(java.util.stream.Collectors.toList());
             }
             logger.info("[DEBUG-ANALYTICS] 'All Classes Overall' selected. Total student count: {}", distinctStudents.size());
@@ -644,7 +646,7 @@ public class AttendanceService {
                     if (matchesSearch(s.getClassName(), searchClass)) return true;
                     if (matchesSearch(s.getSubject(), searchClass)) return true;
                     if (matchesSearch(s.getEffectiveClassName(), searchClass)) return true;
-                    if (s.getClassCourse() != null) {
+                    if (s.getClassCourse() != null && !s.getClassCourse().isDeleted()) {
                         if (s.getClassCourse().getId() != null && s.getClassCourse().getId().toString().equalsIgnoreCase(searchClass)) return true;
                         if (matchesSearch(s.getClassCourse().getClassName(), searchClass)) return true;
                         if (matchesSearch(s.getClassCourse().getSubject(), searchClass)) return true;
@@ -662,8 +664,9 @@ public class AttendanceService {
 
         java.util.Set<String> subjectSet = new java.util.LinkedHashSet<>();
 
-        // 1. Gather subjects from ClassCourse matching the class
+        // 1. Gather subjects from active ClassCourse matching the class
         classCourseRepository.findAll().stream()
+                .filter(c -> !c.isDeleted())
                 .filter(c -> isAllClass ||
                              (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
                              (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)) ||
@@ -681,13 +684,10 @@ public class AttendanceService {
             }
         });
 
-        // 3. Fallback to all distinct subjects ONLY if isAllClass
+        // 3. Fallback to all distinct active subjects ONLY if isAllClass
         if (isAllClass && subjectSet.isEmpty()) {
-            List<String> globalSubs = classSessionRepository.findDistinctSubjects();
-            if (globalSubs != null) {
-                globalSubs.stream().filter(java.util.Objects::nonNull).filter(s -> !s.isBlank()).forEach(s -> subjectSet.add(s.trim()));
-            }
             classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
                     .map(ClassCourse::getSubject)
                     .filter(java.util.Objects::nonNull)
                     .filter(s -> !s.isBlank())
@@ -806,9 +806,12 @@ public class AttendanceService {
         List<User> distinctStudents = new java.util.ArrayList<>();
         if (!isAllClass) {
             List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, searchClass);
-            if (direct != null) distinctStudents.addAll(direct);
+            if (direct != null) {
+                direct.stream().filter(u -> !u.isDeleted()).forEach(distinctStudents::add);
+            }
 
             List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
                     .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
                                  (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)) ||
                                  (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
@@ -817,7 +820,7 @@ public class AttendanceService {
             for (ClassCourse course : matchingCourses) {
                 List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
                 for (Enrollment e : enrollments) {
-                    if (e.getStudent() != null && !distinctStudents.contains(e.getStudent())) {
+                    if (e.getStudent() != null && !e.getStudent().isDeleted() && !distinctStudents.contains(e.getStudent())) {
                         distinctStudents.add(e.getStudent());
                     }
                 }
@@ -827,23 +830,23 @@ public class AttendanceService {
                     .filter(s -> !s.isCancelled())
                     .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) ||
                                  (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) ||
-                                 (s.getClassCourse() != null && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
+                                 (s.getClassCourse() != null && !s.getClassCourse().isDeleted() && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
                     .collect(java.util.stream.Collectors.toList());
 
             for (ClassSession session : matchingSessions) {
                 List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
                 for (AttendanceRecord r : records) {
-                    if (r.getStudent() != null && !distinctStudents.contains(r.getStudent())) {
+                    if (r.getStudent() != null && !r.getStudent().isDeleted() && !distinctStudents.contains(r.getStudent())) {
                         distinctStudents.add(r.getStudent());
                     }
                 }
             }
 
             if (distinctStudents.isEmpty()) {
-                distinctStudents = userRepository.findByRole(Role.STUDENT);
+                distinctStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
             }
         } else {
-            distinctStudents = userRepository.findByRole(Role.STUDENT);
+            distinctStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
         }
 
         for (User student : distinctStudents) {
