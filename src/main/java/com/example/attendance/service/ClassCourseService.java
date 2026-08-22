@@ -61,11 +61,23 @@ public class ClassCourseService {
             throw new IllegalArgumentException("Subject is required.");
         }
 
+        String cName = request.getClassName().trim();
+        String sName = request.getSubject().trim();
+
+        // If an existing deleted course exists for this class & subject, remove old tombstones
+        List<ClassCourse> oldDeleted = classCourseRepository.findAll().stream()
+                .filter(c -> c.isDeleted() && c.getClassName() != null && c.getClassName().equalsIgnoreCase(cName) &&
+                             c.getSubject() != null && c.getSubject().equalsIgnoreCase(sName))
+                .toList();
+        for (ClassCourse old : oldDeleted) {
+            classCourseRepository.delete(old);
+        }
+
         String classCode = request.getClassCode() != null && !request.getClassCode().isBlank() 
                 ? request.getClassCode().trim().toUpperCase() 
                 : generateUniqueClassCode(request.getSubject());
 
-        ClassCourse course = new ClassCourse(teacher, request.getClassName().trim(), request.getSubject().trim(), classCode);
+        ClassCourse course = new ClassCourse(teacher, cName, sName, classCode);
         return classCourseRepository.save(course);
     }
 

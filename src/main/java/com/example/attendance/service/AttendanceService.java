@@ -715,6 +715,7 @@ public class AttendanceService {
                 .filter(java.util.Objects::nonNull)
                 .map(String::trim)
                 .map(String::toLowerCase)
+                .filter(sub -> !activeSubjectNames.contains(sub))
                 .collect(java.util.stream.Collectors.toSet());
 
         // 3. Gather subjects from ClassSession matching the class ONLY if active

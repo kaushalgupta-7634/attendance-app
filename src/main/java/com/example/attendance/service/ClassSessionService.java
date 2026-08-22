@@ -90,14 +90,45 @@ public class ClassSessionService {
             throw new IllegalArgumentException("Subject is required to start a session.");
         }
 
-        session.setSubject(subject.trim());
+        String subTrim = subject.trim();
+        String classTrim = (request.getClassName() != null && !request.getClassName().isBlank()) 
+                ? request.getClassName().trim() 
+                : (classCourse != null ? classCourse.getClassName() : "BCA");
 
-        if (classCourse != null) {
-            session.setClassCourse(classCourse);
-            session.setClassName(classCourse.getClassName());
-        } else {
-            session.setClassName(request.getClassName());
+        if (classCourse == null) {
+            // Find existing active course
+            classCourse = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted() && c.getClassName().equalsIgnoreCase(classTrim) && c.getSubject().equalsIgnoreCase(subTrim))
+                    .findFirst().orElse(null);
+
+            // If none active, revive or create fresh
+            if (classCourse == null) {
+                ClassCourse deleted = classCourseRepository.findAll().stream()
+                        .filter(c -> c.isDeleted() && c.getClassName().equalsIgnoreCase(classTrim) && c.getSubject().equalsIgnoreCase(subTrim))
+                        .findFirst().orElse(null);
+                if (deleted != null) {
+                    deleted.setIsDeleted(false);
+                    deleted.setDeletedAt(null);
+                    deleted.setTeacher(teacher);
+                    classCourse = classCourseRepository.save(deleted);
+                } else {
+                    ClassCourse newC = new ClassCourse();
+                    newC.setClassName(classTrim);
+                    newC.setSubject(subTrim);
+                    String prefix = subTrim.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                    if (prefix.length() > 4) prefix = prefix.substring(0, 4);
+                    if (prefix.isEmpty()) prefix = "CLS";
+                    newC.setClassCode(prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase());
+                    newC.setTeacher(teacher);
+                    newC.setIsDeleted(false);
+                    classCourse = classCourseRepository.save(newC);
+                }
+            }
         }
+
+        session.setSubject(subTrim);
+        session.setClassCourse(classCourse);
+        session.setClassName(classTrim);
 
         LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
 
