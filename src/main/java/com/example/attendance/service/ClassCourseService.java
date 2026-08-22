@@ -165,34 +165,32 @@ public class ClassCourseService {
         User requester = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
-        if (requester.getRole() != Role.ADMIN) {
-            throw new AccessDeniedException("Access denied: Only admins can delete subjects.");
+        if (requester.getRole() != Role.ADMIN && requester.getRole() != Role.TEACHER) {
+            throw new AccessDeniedException("Access denied: Only faculty/teachers or admins can delete subjects.");
         }
 
-        adminService.validateMasterPin(username, pinHeader);
+        if (requester.getRole() == Role.ADMIN) {
+            adminService.validateMasterPin(username, pinHeader);
+        }
 
         if (subjectName == null || subjectName.isBlank()) return;
         String subTrim = subjectName.trim();
 
-        // 1. Soft-delete matching ClassCourse records for this subject
+        // 1. Soft-delete matching ClassCourse records for this subject (filtered by teacher if teacher role)
         List<ClassCourse> courses = classCourseRepository.findAll().stream()
                 .filter(c -> !c.isDeleted() && c.getSubject() != null && c.getSubject().trim().equalsIgnoreCase(subTrim))
+                .filter(c -> requester.getRole() == Role.ADMIN || (c.getTeacher() != null && c.getTeacher().getId().equals(requester.getId())))
                 .toList();
+
         for (ClassCourse c : courses) {
             c.setIsDeleted(true);
             c.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
             classCourseRepository.save(c);
         }
 
-        // 2. Clean up any active sessions for this subject
-        List<ClassSession> sessions = classSessionRepository.findAll().stream()
-                .filter(s -> s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subTrim))
-                .toList();
-        if (!sessions.isEmpty()) {
-            classSessionRepository.deleteAll(sessions);
+        if (requester.getRole() == Role.ADMIN) {
+            auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records associated with subject", ipAddress);
         }
-
-        auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records associated with subject", ipAddress);
     }
 
     private String generateUniqueClassCode(String subject) {
