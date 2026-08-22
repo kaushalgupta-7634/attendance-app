@@ -1084,6 +1084,35 @@
         let cachedTrashItems = [];
         let cachedAuditLogs = [];
 
+        async function loadStats() {
+            try {
+                const res = await fetch('/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('statStudents').textContent = data.totalStudents || 0;
+                    document.getElementById('statTeachers').textContent = data.totalTeachers || 0;
+                    document.getElementById('statCourses').textContent = data.totalCourses || 0;
+                    document.getElementById('statAttendance').textContent = data.totalAttendanceRecords || 0;
+                    document.getElementById('statActiveSessions').textContent = data.activeSessionsCount || 0;
+
+                    const breakdownContainer = document.getElementById('classBreakdownBadges');
+                    if (breakdownContainer) {
+                        if (data.classwiseStudentCounts && Object.keys(data.classwiseStudentCounts).length > 0) {
+                            breakdownContainer.innerHTML = Object.entries(data.classwiseStudentCounts).map(([cls, count]) => `
+                                <span class="badge badge-active" style="padding: 0.45rem 0.9rem; font-size: 0.875rem; border-radius: 8px;">
+                                    🎓 <strong>${escapeHtml(cls)}</strong>: ${count} ${count === 1 ? 'Student' : 'Students'}
+                                </span>
+                            `).join('');
+                        } else {
+                            breakdownContainer.innerHTML = `<span style="color: var(--text-secondary); font-size: 0.85rem;">No class assignments yet.</span>`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const adminName = localStorage.getItem('userName') || 'System Administrator';
             document.getElementById('adminNameDisplay').textContent = `Hello, ${adminName}`;
