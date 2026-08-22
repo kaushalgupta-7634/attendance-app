@@ -22,17 +22,23 @@ public class ClassCourseService {
     private final UserRepository userRepository;
     private final ClassSessionRepository classSessionRepository;
     private final AttendanceRecordRepository attendanceRecordRepository;
+    private final AdminService adminService;
+    private final AuditLogService auditLogService;
 
     public ClassCourseService(ClassCourseRepository classCourseRepository,
                               EnrollmentRepository enrollmentRepository,
                               UserRepository userRepository,
                               ClassSessionRepository classSessionRepository,
-                              AttendanceRecordRepository attendanceRecordRepository) {
+                              AttendanceRecordRepository attendanceRecordRepository,
+                              @org.springframework.context.annotation.Lazy AdminService adminService,
+                              AuditLogService auditLogService) {
         this.classCourseRepository = classCourseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.classSessionRepository = classSessionRepository;
         this.attendanceRecordRepository = attendanceRecordRepository;
+        this.adminService = adminService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -44,8 +50,8 @@ public class ClassCourseService {
         User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + teacherUsername));
 
-        if (teacher.getRole() != Role.TEACHER) {
-            throw new AccessDeniedException("Access denied: Only teachers can create class courses.");
+        if (teacher.getRole() != Role.TEACHER && teacher.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Access denied: Only teachers and admins can create class courses.");
         }
 
         if (request.getClassName() == null || request.getClassName().isBlank()) {
@@ -59,17 +65,13 @@ public class ClassCourseService {
                 ? request.getClassCode().trim().toUpperCase() 
                 : generateUniqueClassCode(request.getSubject());
 
-        if (classCourseRepository.existsByClassCode(classCode)) {
-            throw new IllegalArgumentException("Class code '" + classCode + "' already exists. Please choose a different code.");
-        }
-
-        ClassCourse classCourse = new ClassCourse(teacher, request.getClassName().trim(), request.getSubject().trim(), classCode);
-        return classCourseRepository.save(classCourse);
+        ClassCourse course = new ClassCourse(teacher, request.getClassName().trim(), request.getSubject().trim(), classCode);
+        return classCourseRepository.save(course);
     }
 
     /**
      * POST /classes/join (STUDENT only)
-     * Enrolls student into a ClassCourse via classCode and returns the Enrollment record.
+     * Enrolls student into a ClassCourse via classCode.
      */
     @Transactional
     public Enrollment joinClass(JoinClassRequest request, String studentUsername) {
@@ -77,78 +79,88 @@ public class ClassCourseService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + studentUsername));
 
         if (student.getRole() != Role.STUDENT) {
-            throw new AccessDeniedException("Access denied: Only students can join class courses.");
+            throw new AccessDeniedException("Access denied: Only students can join classes.");
         }
 
         if (request.getClassCode() == null || request.getClassCode().isBlank()) {
-            throw new IllegalArgumentException("Class code must not be empty.");
+            throw new IllegalArgumentException("Class code is required.");
         }
 
-        String classCode = request.getClassCode().trim().toUpperCase();
-        ClassCourse classCourse = classCourseRepository.findByClassCodeIgnoreCase(classCode)
-                .orElseThrow(() -> new IllegalArgumentException("Class course not found with code: " + classCode));
+        ClassCourse course = classCourseRepository.findByClassCodeIgnoreCase(request.getClassCode().trim())
+                .filter(c -> !c.isDeleted())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid class code: Course not found or inactive."));
 
-        if (enrollmentRepository.existsByStudentAndClassCourse(student, classCourse)) {
-            throw new IllegalArgumentException("Student is already enrolled in class '" + classCourse.getClassName() + "' (" + classCode + ").");
+        if (enrollmentRepository.existsByStudentAndClassCourse(student, course)) {
+            throw new IllegalStateException("You are already enrolled in this class.");
         }
 
-        // Strict Class/Department check to ensure student joins the correct department classes
-        if (student.getClassName() != null && !student.getClassName().isBlank()
-                && classCourse.getClassName() != null && !classCourse.getClassName().isBlank()) {
-            String studentClass = student.getClassName().trim().toLowerCase();
-            String courseClass = classCourse.getClassName().trim().toLowerCase();
-
-            if (!courseClass.contains(studentClass) && !studentClass.contains(courseClass)) {
-                throw new IllegalArgumentException("Access Denied: You belong to the '" + student.getClassName() 
-                        + "' department, but this course is for '" + classCourse.getClassName() + "'.");
-            }
-        }
-
-        Enrollment enrollment = new Enrollment(student, classCourse, LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        Enrollment enrollment = new Enrollment(student, course, java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         return enrollmentRepository.save(enrollment);
     }
 
+    /**
+     * GET /classes/my-courses
+     * Returns courses taught by the teacher or enrolled by the student.
+     */
     public List<ClassCourse> getCoursesForUser(String username) {
         User user = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
         if (user.getRole() == Role.TEACHER) {
-            return classCourseRepository.findByTeacher(user);
+            return classCourseRepository.findByTeacher(user).stream()
+                    .filter(c -> !c.isDeleted())
+                    .toList();
         } else {
             List<Enrollment> enrollments = enrollmentRepository.findByStudent(user);
-            return enrollments.stream().map(Enrollment::getClassCourse).toList();
+            return enrollments.stream()
+                    .map(Enrollment::getClassCourse)
+                    .filter(c -> c != null && !c.isDeleted())
+                    .toList();
         }
     }
 
     @Transactional
-    public void deleteClassCourse(Long id, String teacherUsername) {
-        User teacher = userRepository.findByUsernameIgnoreCase(teacherUsername)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + teacherUsername));
+    public void deleteClassCourse(Long id, String username) {
+        deleteClassCourse(id, username, null, null);
+    }
 
-        if (teacher.getRole() != Role.TEACHER) {
-            throw new AccessDeniedException("Access denied: Only teachers can delete class courses.");
-        }
+    @Transactional
+    public void deleteClassCourse(Long id, String username, String pinHeader, String ipAddress) {
+        User user = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
         ClassCourse course = classCourseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ClassCourse not found with ID: " + id));
 
-        if (!course.getTeacher().getId().equals(teacher.getId())) {
+        if (user.getRole() == Role.ADMIN) {
+            adminService.validateMasterPin(username, pinHeader);
+            course.setIsDeleted(true);
+            course.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+            classCourseRepository.save(course);
+            auditLogService.logAction(user.getEmail(), "DELETE_COURSE", "Course #" + id + " (" + course.getClassName() + " - " + course.getSubject() + ")", "Soft-deleted class course", ipAddress);
+            return;
+        }
+
+        if (user.getRole() != Role.TEACHER) {
+            throw new AccessDeniedException("Access denied: Only teachers or admins can delete class courses.");
+        }
+
+        if (!course.getTeacher().getId().equals(user.getId())) {
             throw new AccessDeniedException("Access denied: You are not the owner of this class course.");
         }
 
-        enrollmentRepository.deleteByClassCourse(course);
-
-        List<ClassSession> sessions = classSessionRepository.findByClassCourse(course);
-        for (ClassSession s : sessions) {
-            s.setClassCourse(null);
-            classSessionRepository.save(s);
-        }
-
-        classCourseRepository.delete(course);
+        course.setIsDeleted(true);
+        course.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        classCourseRepository.save(course);
     }
 
     @Transactional
     public void deleteSubjectByName(String subjectName, String username) {
+        deleteSubjectByName(subjectName, username, null, null);
+    }
+
+    @Transactional
+    public void deleteSubjectByName(String subjectName, String username, String pinHeader, String ipAddress) {
         User requester = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
@@ -156,27 +168,22 @@ public class ClassCourseService {
             throw new AccessDeniedException("Access denied: Only admins can delete subjects.");
         }
 
+        adminService.validateMasterPin(username, pinHeader);
+
         if (subjectName == null || subjectName.isBlank()) return;
         String subTrim = subjectName.trim();
 
-        // 1. Delete matching ClassCourse records for this subject
+        // 1. Soft-delete matching ClassCourse records for this subject
         List<ClassCourse> courses = classCourseRepository.findAll().stream()
-                .filter(c -> c.getSubject() != null && c.getSubject().trim().equalsIgnoreCase(subTrim))
+                .filter(c -> !c.isDeleted() && c.getSubject() != null && c.getSubject().trim().equalsIgnoreCase(subTrim))
                 .toList();
         for (ClassCourse c : courses) {
-            enrollmentRepository.deleteByClassCourse(c);
-            classCourseRepository.delete(c);
+            c.setIsDeleted(true);
+            c.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+            classCourseRepository.save(c);
         }
 
-        // 2. Delete matching ClassSession records and attendance records for this subject
-        List<ClassSession> sessions = classSessionRepository.findAll().stream()
-                .filter(s -> (s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subTrim)) ||
-                             (s.getEffectiveSubject() != null && s.getEffectiveSubject().trim().equalsIgnoreCase(subTrim)))
-                .toList();
-        for (ClassSession s : sessions) {
-            attendanceRecordRepository.deleteBySession(s);
-            classSessionRepository.delete(s);
-        }
+        auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records associated with subject", ipAddress);
     }
 
     private String generateUniqueClassCode(String subject) {
@@ -199,8 +206,10 @@ public class ClassCourseService {
     public List<ClassWithSubjectsDTO> getAllAvailableClassesWithSubjects() {
         java.util.Map<String, java.util.Set<String>> map = new java.util.LinkedHashMap<>();
 
-        // 1. Collect from ClassCourse entities
-        List<ClassCourse> courses = classCourseRepository.findAll();
+        // 1. Collect from ClassCourse entities (only active/non-deleted)
+        List<ClassCourse> courses = classCourseRepository.findAll().stream()
+                .filter(c -> !c.isDeleted())
+                .toList();
         for (ClassCourse c : courses) {
             if (c.getClassName() != null && !c.getClassName().isBlank()) {
                 String clsName = c.getClassName().trim();
@@ -223,8 +232,10 @@ public class ClassCourseService {
             }
         }
 
-        // 3. Collect from User (Student) entities
-        List<User> students = userRepository.findByRole(Role.STUDENT);
+        // 3. Collect from User (Student) entities (only non-deleted)
+        List<User> students = userRepository.findByRole(Role.STUDENT).stream()
+                .filter(u -> !u.isDeleted())
+                .toList();
         for (User u : students) {
             if (u.getClassName() != null && !u.getClassName().isBlank()) {
                 String clsName = u.getClassName().trim();

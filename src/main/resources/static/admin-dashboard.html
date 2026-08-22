@@ -372,6 +372,10 @@
             </div>
             <div class="user-info">
                 <span id="adminNameDisplay" style="font-weight: 600;">Hello, Admin</span>
+                <button id="masterPinBtn" class="btn-sm" style="background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.5); color: #93c5fd; display: inline-flex; align-items: center; gap: 0.45rem;" onclick="openMasterPinModal()">
+                    🔒 <span>Master Security PIN</span>
+                    <span id="pinStatusDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #eab308;" title="PIN Status"></span>
+                </button>
                 <button class="logout-btn" onclick="handleLogout()">Logout</button>
             </div>
         </header>
@@ -417,6 +421,8 @@
                 <button id="tabSessionsBtn" class="tab-btn" onclick="switchSection('sessions')">⚡ Live QR Sessions</button>
                 <button id="tabAttendanceBtn" class="tab-btn" onclick="switchSection('attendance')">📋 Attendance Log</button>
                 <button id="tabAnalyticsBtn" class="tab-btn" onclick="switchSection('analytics')">📊 Month & Date Analytics</button>
+                <button id="tabTrashBtn" class="tab-btn" onclick="switchSection('trash')">🗑️ Trash / Inactive</button>
+                <button id="tabAuditBtn" class="tab-btn" onclick="switchSection('audit')">🛡️ Security & Audit Logs</button>
             </div>
 
             <!-- SECTION 1: USERS ROSTER -->
@@ -646,6 +652,114 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SECTION 6: TRASH / INACTIVE ITEMS -->
+            <div id="trashSection" class="hidden">
+                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                        <input type="text" id="trashSearch" class="search-input" placeholder="Search soft-deleted users and courses..." oninput="filterTrashTable()">
+                    </div>
+                    <button class="btn-sm" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="loadTrashItems()">🔄 Refresh Trash</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Type</th>
+                                <th>Item ID</th>
+                                <th>Name / Title</th>
+                                <th>Details</th>
+                                <th>Deleted At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trashTableBody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading trash items...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 7: SECURITY & AUDIT LOGS -->
+            <div id="auditSection" class="hidden">
+                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                        <input type="text" id="auditSearch" class="search-input" placeholder="Search audit logs by admin, action type, IP, or details..." oninput="filterAuditTable()">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="exportAuditLogsCSV()">📥 Export CSV</button>
+                        <button class="btn-sm" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="loadAuditLogs()">🔄 Refresh Logs</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Log ID</th>
+                                <th>Timestamp</th>
+                                <th>Admin Identity</th>
+                                <th>Action Type</th>
+                                <th>Target Resource</th>
+                                <th>Client IP</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading audit logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: SET / UPDATE MASTER PIN -->
+    <div id="setMasterPinModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 460px;">
+            <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                🔒 <span>Set / Update 6-Digit Master PIN</span>
+            </h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4;">
+                This Master PIN protects destructive operations (deletions, resets, status changes). It is securely encrypted with BCrypt in the database.
+            </p>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Current Admin Password:</label>
+                <input type="password" id="masterPinCurrentPassword" class="search-input" style="width: 100%;" placeholder="Enter your current login password">
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">New 6-Digit Master Security PIN:</label>
+                <input type="password" id="masterPinNewInput" class="search-input" style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Confirm 6-Digit Master PIN:</label>
+                <input type="password" id="masterPinConfirmInput" class="search-input" style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
+            </div>
+            <div id="masterPinModalMsg" style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn-sm" onclick="closeModal('setMasterPinModal')">Cancel</button>
+                <button class="btn-sm" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;" onclick="saveMasterSecurityPin()">Save Master PIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: STEP-UP MASTER PIN VERIFICATION PROMPT -->
+    <div id="stepUpPinModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 440px; border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25);">
+            <h3 class="modal-title" style="color: #fca5a5; display: flex; align-items: center; gap: 0.5rem;">
+                🛡️ <span id="stepUpTitle">Step-Up Authorization</span>
+            </h3>
+            <p id="stepUpDescription" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.25rem; line-height: 1.45;">
+                This action is destructive and requires Master PIN authorization.
+            </p>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.5rem; text-align: center;">Enter 6-Digit Master Security PIN:</label>
+                <input type="password" id="stepUpPinInput" class="search-input" style="width: 100%; letter-spacing: 0.35em; font-weight: 800; font-size: 1.35rem; text-align: center; color: #60a5fa; border: 2px solid rgba(59, 130, 246, 0.5);" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" onkeydown="if(event.key==='Enter') confirmStepUpAction()">
+            </div>
+            <div id="stepUpErrorMsg" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;"></div>
+            <div class="modal-actions">
+                <button class="btn-sm" onclick="closeStepUpModal()">Cancel</button>
+                <button id="stepUpSubmitBtn" class="btn-sm" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;" onclick="confirmStepUpAction()">Authorize &amp; Proceed</button>
+            </div>
         </div>
     </div>
 
@@ -692,12 +806,12 @@
         window.fetch = async function(...args) {
             try {
                 const response = await originalFetch(...args);
-                if (response.status === 401 || response.status === 403) {
+                if (response.status === 401) {
                     const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : (args[0] && args[0].url));
                     const isInternal = !url || url.startsWith('/') || url.startsWith(window.location.origin);
                     if (isInternal) {
-                        localStorage.removeItem('jwtToken');
-                        localStorage.removeItem('userRole');
+                        localStorage.clear();
+                        sessionStorage.clear();
                         document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                         document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                         window.location.replace('/login.html');
@@ -708,6 +822,31 @@
                 throw err;
             }
         };
+
+        // 15-MINUTE INACTIVITY AUTO-TIMEOUT (Enterprise Session Security)
+        let inactivityTimer = null;
+        const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+        function resetInactivityTimer() {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                triggerInactivityLogout();
+            }, INACTIVITY_TIMEOUT_MS);
+        }
+
+        function triggerInactivityLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            alert("⚠️ Security Alert: Admin Command Center session has timed out due to 15 minutes of inactivity.\n\nPlease sign in again.");
+            window.location.replace('/login.html?timeout=true');
+        }
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+            window.addEventListener(evt, resetInactivityTimer, { passive: true });
+        });
+        resetInactivityTimer();
 
         // Force check on back/forward cache navigation
         window.addEventListener('pageshow', function (event) {
@@ -729,17 +868,23 @@
         }
 
         let selectedUserId = null;
+        let pendingStepUpCallback = null;
+        let cachedTrashItems = [];
+        let cachedAuditLogs = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             const adminName = localStorage.getItem('userName') || 'System Administrator';
             document.getElementById('adminNameDisplay').textContent = `Hello, ${adminName}`;
             loadStats();
             loadUsers();
+            checkMasterPinStatus();
         });
 
         function handleLogout() {
             localStorage.clear();
             sessionStorage.clear();
+            document.cookie = "attendx_student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "attendx_user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login.html';
         }
         function logout() {
@@ -752,52 +897,144 @@
             document.getElementById('sessionsSection').classList.toggle('hidden', type !== 'sessions');
             document.getElementById('attendanceSection').classList.toggle('hidden', type !== 'attendance');
             document.getElementById('analyticsSection').classList.toggle('hidden', type !== 'analytics');
+            document.getElementById('trashSection').classList.toggle('hidden', type !== 'trash');
+            document.getElementById('auditSection').classList.toggle('hidden', type !== 'audit');
 
             document.getElementById('tabUsersBtn').classList.toggle('active', type === 'users');
             document.getElementById('tabCoursesBtn').classList.toggle('active', type === 'courses');
             document.getElementById('tabSessionsBtn').classList.toggle('active', type === 'sessions');
             document.getElementById('tabAttendanceBtn').classList.toggle('active', type === 'attendance');
             document.getElementById('tabAnalyticsBtn').classList.toggle('active', type === 'analytics');
+            document.getElementById('tabTrashBtn').classList.toggle('active', type === 'trash');
+            document.getElementById('tabAuditBtn').classList.toggle('active', type === 'audit');
 
             if (type === 'users') loadUsers();
             if (type === 'courses') loadCourses();
             if (type === 'sessions') loadSessions();
             if (type === 'attendance') loadAttendanceLogs();
             if (type === 'analytics') loadAnalyticsReport();
+            if (type === 'trash') loadTrashItems();
+            if (type === 'audit') loadAuditLogs();
         }
 
-        function filterAdminLogsBySubject(subjectName) {
-            switchSection('attendance');
-            const searchInput = document.getElementById('attendanceSearchInput');
-            if (searchInput) {
-                searchInput.value = subjectName;
-                loadAttendanceLogs();
-            }
-        }
-
-        async function loadStats() {
+        /* ─── MASTER PIN & STEP-UP AUTHENTICATION ─── */
+        async function checkMasterPinStatus() {
             try {
-                const res = await fetch('/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+                const res = await fetch('/admin/master-pin/status', { headers: { 'Authorization': 'Bearer ' + token } });
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('statStudents').textContent = data.totalStudents || 0;
-                    document.getElementById('statTeachers').textContent = data.totalTeachers || 0;
-                    document.getElementById('statCourses').textContent = data.totalCourses || 0;
-                    document.getElementById('statAttendance').textContent = data.totalAttendanceRecords || 0;
-                    document.getElementById('statActiveSessions').textContent = data.activeSessionsCount || 0;
-
-                    const breakdownContainer = document.getElementById('classBreakdownBadges');
-                    if (data.classwiseStudentCounts && Object.keys(data.classwiseStudentCounts).length > 0) {
-                        breakdownContainer.innerHTML = Object.entries(data.classwiseStudentCounts).map(([cls, count]) => `
-                            <span class="badge badge-active" style="padding: 0.45rem 0.9rem; font-size: 0.875rem; border-radius: 8px;">
-                                🎓 <strong>${escapeHtml(cls)}</strong>: ${count} ${count === 1 ? 'Student' : 'Students'}
-                            </span>
-                        `).join('');
-                    } else {
-                        breakdownContainer.innerHTML = `<span style="color: var(--text-secondary); font-size: 0.85rem;">No class assignments yet.</span>`;
+                    const dot = document.getElementById('pinStatusDot');
+                    if (dot) {
+                        dot.style.background = data.hasMasterPin ? '#10b981' : '#eab308';
+                        dot.title = data.hasMasterPin ? '6-Digit Master PIN Configured' : 'Master PIN Not Configured';
                     }
                 }
             } catch (e) {}
+        }
+
+        function openMasterPinModal() {
+            document.getElementById('masterPinCurrentPassword').value = '';
+            document.getElementById('masterPinNewInput').value = '';
+            document.getElementById('masterPinConfirmInput').value = '';
+            const msg = document.getElementById('masterPinModalMsg');
+            msg.style.display = 'none';
+            document.getElementById('setMasterPinModal').style.display = 'flex';
+        }
+
+        function showPinError(element, text) {
+            element.textContent = text;
+            element.style.display = 'block';
+            element.style.background = 'rgba(239, 68, 68, 0.2)';
+            element.style.color = '#fca5a5';
+            element.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+        }
+
+        async function saveMasterSecurityPin() {
+            const currentPassword = document.getElementById('masterPinCurrentPassword').value;
+            const masterPin = document.getElementById('masterPinNewInput').value.trim();
+            const confirmPin = document.getElementById('masterPinConfirmInput').value.trim();
+            const msgBox = document.getElementById('masterPinModalMsg');
+
+            if (!currentPassword) {
+                showPinError(msgBox, 'Please enter your current admin password.');
+                return;
+            }
+            if (!masterPin || masterPin.length !== 6 || !/^\d{6}$/.test(masterPin)) {
+                showPinError(msgBox, 'Master Security PIN must be exactly 6 digits (0-9).');
+                return;
+            }
+            if (masterPin !== confirmPin) {
+                showPinError(msgBox, 'New Master PIN and Confirmation PIN do not match.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/set-master-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ currentPassword, masterPin })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showPinError(msgBox, data.message || 'Failed to update Master PIN.');
+                    return;
+                }
+
+                alert('✅ 6-Digit Master Security PIN has been configured successfully!');
+                closeModal('setMasterPinModal');
+                checkMasterPinStatus();
+            } catch (err) {
+                showPinError(msgBox, err.message || 'Error updating Master PIN.');
+            }
+        }
+
+        function promptMasterPin(title, description, onVerifiedCallback) {
+            pendingStepUpCallback = onVerifiedCallback;
+            document.getElementById('stepUpTitle').textContent = title || 'Step-Up Authorization';
+            document.getElementById('stepUpDescription').textContent = description || 'This destructive mutation requires 6-digit Master PIN authorization.';
+            const pinInput = document.getElementById('stepUpPinInput');
+            pinInput.value = '';
+            document.getElementById('stepUpErrorMsg').style.display = 'none';
+            document.getElementById('stepUpPinModal').style.display = 'flex';
+            setTimeout(() => pinInput.focus(), 100);
+        }
+
+        function closeStepUpModal() {
+            pendingStepUpCallback = null;
+            document.getElementById('stepUpPinModal').style.display = 'none';
+        }
+
+        async function confirmStepUpAction() {
+            const pin = document.getElementById('stepUpPinInput').value.trim();
+            const errBox = document.getElementById('stepUpErrorMsg');
+            const submitBtn = document.getElementById('stepUpSubmitBtn');
+
+            if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                errBox.textContent = 'Please enter a valid 6-digit numeric Master PIN.';
+                errBox.style.display = 'block';
+                return;
+            }
+
+            if (typeof pendingStepUpCallback === 'function') {
+                const callback = pendingStepUpCallback;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Verifying...';
+                try {
+                    await callback(pin);
+                    closeStepUpModal();
+                } catch (err) {
+                    errBox.textContent = err.message || 'Invalid Master PIN.';
+                    errBox.style.display = 'block';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Authorize & Proceed';
+                }
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
         }
 
         async function loadUsers() {
@@ -827,7 +1064,7 @@
                         <td><span class="badge ${u.enabled ? 'badge-active' : 'badge-disabled'}">${u.enabled ? 'Active' : 'Disabled'}</span></td>
                         <td>
                             ${u.role !== 'ADMIN' ? `
-                                <button class="btn-sm btn-toggle" onclick="toggleStatus(${u.id}, ${!u.enabled})">${u.enabled ? 'Disable' : 'Enable'}</button>
+                                <button class="btn-sm btn-toggle" onclick="toggleStatus(${u.id}, ${!u.enabled}, '${escapeJs(u.username)}')">${u.enabled ? 'Disable' : 'Enable'}</button>
                                 <button class="btn-sm btn-reset" onclick="openResetPasswordModal(${u.id}, '${escapeJs(u.username)}')">Reset Password</button>
                                 <button class="btn-sm btn-delete" onclick="deleteUserAccount(${u.id}, '${escapeJs(u.username)}')">Delete</button>
                             ` : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Super Admin</span>'}
@@ -840,18 +1077,34 @@
             }
         }
 
-        async function toggleStatus(userId, newStatus) {
-            try {
-                const res = await fetch(`/admin/users/${userId}/status`, {
+        function toggleStatus(userId, newStatus, username) {
+            if (!newStatus) {
+                // Disabling account is a destructive mutation requiring Master PIN
+                promptMasterPin(
+                    `Disable User Account (@${username})`,
+                    `Are you sure you want to disable account for user '${username}'? Enter Master PIN to confirm.`,
+                    async (pin) => {
+                        const res = await fetch(`/admin/users/${userId}/status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin },
+                            body: JSON.stringify({ enabled: false })
+                        });
+                        if (!res.ok) {
+                            const errData = await res.json().catch(() => ({}));
+                            throw new Error(errData.message || 'Invalid Master PIN or operation failed.');
+                        }
+                        loadUsers();
+                    }
+                );
+            } else {
+                fetch(`/admin/users/${userId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ enabled: newStatus })
+                    body: JSON.stringify({ enabled: true })
+                }).then(res => {
+                    if (res.ok) loadUsers();
+                    else alert('Failed to enable user account.');
                 });
-
-                if (!res.ok) throw new Error('Failed to update status');
-                loadUsers();
-            } catch (err) {
-                alert(err.message);
             }
         }
 
@@ -862,48 +1115,50 @@
             document.getElementById('resetPasswordModal').style.display = 'flex';
         }
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-
-        async function confirmResetPassword() {
+        function confirmResetPassword() {
             const newPassword = document.getElementById('newAdminPasswordInput').value;
             if (!newPassword || newPassword.length < 6) {
                 alert('Password must be at least 6 characters long.');
                 return;
             }
+            closeModal('resetPasswordModal');
 
-            try {
-                const res = await fetch(`/admin/users/${selectedUserId}/reset-password`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ newPassword })
-                });
-
-                if (!res.ok) throw new Error('Failed to reset password');
-                alert('Password reset successfully!');
-                closeModal('resetPasswordModal');
-            } catch (err) {
-                alert(err.message);
-            }
+            promptMasterPin(
+                `Reset Password Authorization`,
+                `Please enter your 6-digit Master Security PIN to authorize direct password reset.`,
+                async (pin) => {
+                    const res = await fetch(`/admin/users/${selectedUserId}/reset-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin },
+                        body: JSON.stringify({ newPassword })
+                    });
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || 'Invalid Master PIN or password reset failed.');
+                    }
+                    alert('✅ Password reset successfully!');
+                }
+            );
         }
 
-        async function deleteUserAccount(userId, username) {
-            if (!confirm(`Are you sure you want to permanently delete user '${username}'? This will clean up all associated records.`)) return;
-
-            try {
-                const res = await fetch(`/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (!res.ok) throw new Error('Failed to delete user account');
-                alert(`User '${username}' deleted successfully.`);
-                loadStats();
-                loadUsers();
-            } catch (err) {
-                alert(err.message);
-            }
+        function deleteUserAccount(userId, username) {
+            promptMasterPin(
+                `Delete User Account (@${username})`,
+                `Are you sure you want to delete user '${username}'? The account will be deactivated and moved to Trash (Data Loss Prevention).`,
+                async (pin) => {
+                    const res = await fetch(`/admin/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin }
+                    });
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || 'Invalid Master PIN or user deletion failed.');
+                    }
+                    alert(`User '${username}' moved to Trash.`);
+                    loadStats();
+                    loadUsers();
+                }
+            );
         }
 
         async function loadSubjectsManager() {
@@ -937,24 +1192,27 @@
             }
         }
 
-        async function deleteSubjectByName(subjectName) {
+        function deleteSubjectByName(subjectName) {
             if (!subjectName) return;
-            if (!confirm(`Are you sure you want to delete subject '${subjectName}'?\n\nThis will remove all class sessions and attendance records associated with this subject across all classes.`)) return;
+            promptMasterPin(
+                `Delete Subject (${subjectName})`,
+                `Are you sure you want to delete subject '${subjectName}'? This will soft-delete associated course records and move them to Trash.`,
+                async (pin) => {
+                    const res = await fetch(`/classes/subjects/by-name/${encodeURIComponent(subjectName)}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin }
+                    });
 
-            try {
-                const res = await fetch(`/classes/subjects/by-name/${encodeURIComponent(subjectName)}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (!res.ok) throw new Error('Failed to delete subject');
-                alert(`Subject '${subjectName}' has been deleted successfully!`);
-                loadStats();
-                loadCourses();
-                loadSubjectsManager();
-            } catch (err) {
-                alert(err.message || 'Error deleting subject.');
-            }
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || 'Invalid Master PIN or subject removal failed.');
+                    }
+                    alert(`Subject '${subjectName}' has been soft-deleted and moved to Trash.`);
+                    loadStats();
+                    loadCourses();
+                    loadSubjectsManager();
+                }
+            );
         }
 
         async function loadCourses() {
@@ -989,22 +1247,182 @@
             }
         }
 
-        async function deleteCourseRecord(courseId, className) {
-            if (!confirm(`Are you sure you want to delete course '${className}'?`)) return;
+        function deleteCourseRecord(courseId, className) {
+            promptMasterPin(
+                `Delete Course (${className})`,
+                `Are you sure you want to delete course '${className}'? It will be soft-deleted and moved to Trash.`,
+                async (pin) => {
+                    const res = await fetch(`/admin/courses/${courseId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || 'Invalid Master PIN or deletion failed.');
+                    }
+                    alert('Course soft-deleted and moved to Trash.');
+                    loadStats();
+                    loadCourses();
+                }
+            );
+        }
+
+        /* ─── TRASH / INACTIVE ITEMS MANAGEMENT ─── */
+        async function loadTrashItems() {
+            const tbody = document.getElementById('trashTableBody');
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading soft-deleted items...</td></tr>`;
 
             try {
-                const res = await fetch(`/admin/courses/${courseId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const res = await fetch('/admin/trash', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to load trash items');
 
-                if (!res.ok) throw new Error('Failed to delete course');
-                alert('Course deleted successfully.');
-                loadStats();
-                loadCourses();
+                cachedTrashItems = await res.json();
+                renderTrashTable(cachedTrashItems);
             } catch (err) {
-                alert(err.message);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #fca5a5;">${err.message}</td></tr>`;
             }
+        }
+
+        function renderTrashTable(items) {
+            const tbody = document.getElementById('trashTableBody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Trash is empty. No soft-deleted items found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td><span class="badge ${item.type === 'USER' ? 'badge-teacher' : 'badge-student'}">${item.type}</span></td>
+                    <td>#${item.id}</td>
+                    <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">${escapeHtml(item.details)}</td>
+                    <td><span style="color: #94a3b8; font-size: 0.82rem;">${item.deletedAt !== '-' ? new Date(item.deletedAt).toLocaleString() : '-'}</span></td>
+                    <td>
+                        <button class="btn-sm" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #6ee7b7; font-weight: 600;" onclick="restoreTrashItem('${escapeJs(item.type)}', ${item.id}, '${escapeJs(item.name)}')">♻️ Restore</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTrashTable() {
+            const q = (document.getElementById('trashSearch')?.value || '').toLowerCase().trim();
+            if (!q) {
+                renderTrashTable(cachedTrashItems);
+                return;
+            }
+            const filtered = cachedTrashItems.filter(item => 
+                (item.name && item.name.toLowerCase().includes(q)) ||
+                (item.details && item.details.toLowerCase().includes(q)) ||
+                (item.type && item.type.toLowerCase().includes(q))
+            );
+            renderTrashTable(filtered);
+        }
+
+        function restoreTrashItem(type, id, name) {
+            promptMasterPin(
+                `Restore ${type} (${name})`,
+                `Are you sure you want to restore '${name}' to active records? Enter Master PIN to confirm.`,
+                async (pin) => {
+                    const endpoint = type === 'USER' ? `/admin/users/${id}/restore` : `/admin/courses/${id}/restore`;
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'x-admin-master-pin': pin }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.message || 'Invalid Master PIN or restore operation failed.');
+                    }
+                    alert(`✅ Successfully restored '${name}'!`);
+                    loadStats();
+                    loadTrashItems();
+                }
+            );
+        }
+
+        /* ─── SECURITY & AUDIT LOGS MANAGEMENT ─── */
+        async function loadAuditLogs() {
+            const tbody = document.getElementById('auditTableBody');
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading system audit logs...</td></tr>`;
+
+            try {
+                const res = await fetch('/admin/audit-logs', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) throw new Error('Failed to load audit logs');
+
+                cachedAuditLogs = await res.json();
+                renderAuditTable(cachedAuditLogs);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #fca5a5;">${err.message}</td></tr>`;
+            }
+        }
+
+        function renderAuditTable(logs) {
+            const tbody = document.getElementById('auditTableBody');
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">No audit logs recorded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => {
+                let badgeClass = 'badge-active';
+                if (log.actionType && log.actionType.includes('DELETE')) badgeClass = 'badge-disabled';
+                else if (log.actionType && (log.actionType.includes('PIN') || log.actionType.includes('RESET'))) badgeClass = 'badge-teacher';
+
+                return `
+                    <tr>
+                        <td>#${log.id}</td>
+                        <td style="white-space: nowrap; color: #94a3b8; font-size: 0.82rem;">${log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}</td>
+                        <td><strong>${escapeHtml(log.adminEmail || 'Admin')}</strong></td>
+                        <td><span class="badge ${badgeClass}">${escapeHtml(log.actionType)}</span></td>
+                        <td><code>${escapeHtml(log.targetId || '-')}</code></td>
+                        <td><code style="color: #67e8f9;">${escapeHtml(log.ipAddress || '127.0.0.1')}</code></td>
+                        <td style="color: var(--text-primary); font-size: 0.85rem;">${escapeHtml(log.details || '-')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterAuditTable() {
+            const q = (document.getElementById('auditSearch')?.value || '').toLowerCase().trim();
+            if (!q) {
+                renderAuditTable(cachedAuditLogs);
+                return;
+            }
+            const filtered = cachedAuditLogs.filter(log => 
+                (log.adminEmail && log.adminEmail.toLowerCase().includes(q)) ||
+                (log.actionType && log.actionType.toLowerCase().includes(q)) ||
+                (log.targetId && log.targetId.toLowerCase().includes(q)) ||
+                (log.ipAddress && log.ipAddress.toLowerCase().includes(q)) ||
+                (log.details && log.details.toLowerCase().includes(q))
+            );
+            renderAuditTable(filtered);
+        }
+
+        function exportAuditLogsCSV() {
+            if (!cachedAuditLogs || cachedAuditLogs.length === 0) {
+                alert('No audit logs available to export.');
+                return;
+            }
+
+            let csvContent = '\uFEFF';
+            csvContent += 'Log ID,Timestamp,Admin Email,Action Type,Target Resource,Client IP,Details\n';
+
+            cachedAuditLogs.forEach(l => {
+                const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleString() : '-';
+                const row = [
+                    `"${l.id || ''}"`,
+                    `"${timeStr.replace(/"/g, '""')}"`,
+                    `"${(l.adminEmail || '').replace(/"/g, '""')}"`,
+                    `"${(l.actionType || '').replace(/"/g, '""')}"`,
+                    `"${(l.targetId || '').replace(/"/g, '""')}"`,
+                    `"${(l.ipAddress || '').replace(/"/g, '""')}"`,
+                    `"${(l.details || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            downloadCSV(csvContent, `Security_Audit_Logs_${new Date().toISOString().slice(0, 10)}.csv`);
         }
 
         async function loadSessions() {

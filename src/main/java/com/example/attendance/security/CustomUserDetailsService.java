@@ -28,6 +28,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .or(() -> userRepository.findByEmailIgnoreCase(cleanUsername))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username/email: " + username));
 
+        if (user.isDeleted()) {
+            throw new UsernameNotFoundException("User account not found or has been deactivated: " + username);
+        }
+
         Set<GrantedAuthority> authorities = java.util.Collections.singleton(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );

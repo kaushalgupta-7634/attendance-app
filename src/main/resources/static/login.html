@@ -359,6 +359,10 @@
             localStorage.removeItem('username');
             setCookie('attendx_username', '', -1);
 
+            if (urlParams.get('timeout') === 'true' || urlParams.get('reason') === 'timeout') {
+                showAlert('⚠️ Your session timed out due to 15 minutes of inactivity. Please sign in again.');
+            }
+
             const pendingQr = sessionStorage.getItem('pendingQrToken') || getCookie('pendingQrToken');
             if (pendingQr) {
                 const token = localStorage.getItem('jwtToken') || getCookie('attendx_student_token');

@@ -410,4 +410,96 @@ public class AdminDTOs {
         public List<ClassAnalyticsDTO> getClassBreakdown() { return classBreakdown; }
         public void setClassBreakdown(List<ClassAnalyticsDTO> classBreakdown) { this.classBreakdown = classBreakdown; }
     }
+
+    public static class SetMasterPinRequest {
+        private String currentPassword;
+        private String masterPin;
+
+        public SetMasterPinRequest() {}
+        public SetMasterPinRequest(String currentPassword, String masterPin) {
+            this.currentPassword = currentPassword;
+            this.masterPin = masterPin;
+        }
+
+        public String getCurrentPassword() {
+            return currentPassword;
+        }
+
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
+
+        public String getMasterPin() {
+            return masterPin;
+        }
+
+        public void setMasterPin(String masterPin) {
+            this.masterPin = masterPin;
+        }
+    }
+
+    public static class TrashItemDTO {
+        private String type; // "USER", "COURSE", "SUBJECT"
+        private Long id;
+        private String name;
+        private String details;
+        private String deletedAt;
+
+        public TrashItemDTO() {}
+        public TrashItemDTO(String type, Long id, String name, String details, String deletedAt) {
+            this.type = type;
+            this.id = id;
+            this.name = name;
+            this.details = details;
+            this.deletedAt = deletedAt;
+        }
+
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getDetails() { return details; }
+        public void setDetails(String details) { this.details = details; }
+        public String getDeletedAt() { return deletedAt; }
+        public void setDeletedAt(String deletedAt) { this.deletedAt = deletedAt; }
+    }
+
+    public static class AuditLogDTO {
+        private Long id;
+        private String adminEmail;
+        private String actionType;
+        private String targetId;
+        private String details;
+        private String timestamp;
+        private String ipAddress;
+
+        public AuditLogDTO() {}
+        public AuditLogDTO(Long id, String adminEmail, String actionType, String targetId, String details, String timestamp, String ipAddress) {
+            this.id = id;
+            this.adminEmail = adminEmail;
+            this.actionType = actionType;
+            this.targetId = targetId;
+            this.details = details;
+            this.timestamp = timestamp;
+            this.ipAddress = ipAddress;
+        }
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getAdminEmail() { return adminEmail; }
+        public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+        public String getActionType() { return actionType; }
+        public void setActionType(String actionType) { this.actionType = actionType; }
+        public String getTargetId() { return targetId; }
+        public void setTargetId(String targetId) { this.targetId = targetId; }
+        public String getDetails() { return details; }
+        public void setDetails(String details) { this.details = details; }
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+        public String getIpAddress() { return ipAddress; }
+        public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    }
 }
+
