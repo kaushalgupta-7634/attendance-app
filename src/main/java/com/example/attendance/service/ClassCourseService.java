@@ -234,6 +234,14 @@ public class ClassCourseService {
     public List<ClassWithSubjectsDTO> getAllAvailableClassesWithSubjects() {
         java.util.Map<String, java.util.Set<String>> map = new java.util.LinkedHashMap<>();
 
+        java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
+                .filter(ClassCourse::isDeleted)
+                .map(ClassCourse::getSubject)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toSet());
+
         // 1. Collect from ClassCourse entities (only active/non-deleted)
         List<ClassCourse> courses = classCourseRepository.findAll().stream()
                 .filter(c -> !c.isDeleted())
@@ -248,7 +256,20 @@ public class ClassCourseService {
             }
         }
 
-        // 2. Collect class names from User (Student) entities (only non-deleted)
+        // 2. Collect from active ClassSession entities
+        List<ClassSession> activeSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> s.getSubject() != null && !s.getSubject().isBlank())
+                .filter(s -> !deletedSubjectNames.contains(s.getSubject().trim().toLowerCase()))
+                .toList();
+        for (ClassSession s : activeSessions) {
+            if (s.getClassCourse() != null && s.getClassCourse().isDeleted()) continue;
+            String clsName = s.getClassName() != null && !s.getClassName().isBlank() ? s.getClassName().trim() : "BCA";
+            map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+            map.get(clsName).add(s.getSubject().trim());
+        }
+
+        // 3. Collect class names from User (Student) entities (only non-deleted)
         List<User> students = userRepository.findAll().stream()
                 .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || "STUDENT".equalsIgnoreCase(String.valueOf(u.getRole()))))
                 .toList();
