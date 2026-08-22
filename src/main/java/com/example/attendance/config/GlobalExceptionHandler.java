@@ -46,6 +46,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(com.example.attendance.exception.InvalidMasterPinException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMasterPinException(com.example.attendance.exception.InvalidMasterPinException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Invalid Master PIN",
+                ex.getMessage() != null ? ex.getMessage() : "Invalid Master PIN",
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(

@@ -272,4 +272,46 @@ public class User {
     public void setPinRequestWindowStart(java.time.LocalDateTime pinRequestWindowStart) {
         this.pinRequestWindowStart = pinRequestWindowStart;
     }
+
+    @Column(name = "master_pin")
+    private String masterPin;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
+
+    public String getMasterPin() {
+        return masterPin;
+    }
+
+    public void setMasterPin(String masterPin) {
+        this.masterPin = masterPin;
+    }
+
+    public boolean hasMasterPin() {
+        return masterPin != null && !masterPin.isBlank();
+    }
+
+    public Boolean getIsDeleted() {
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public boolean isDeleted() {
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted != null ? isDeleted : false;
+    }
+
+    public java.time.LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(java.time.LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 }
+

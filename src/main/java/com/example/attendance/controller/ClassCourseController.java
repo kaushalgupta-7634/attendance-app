@@ -112,25 +112,33 @@ public class ClassCourseController {
 
     /**
      * DELETE /classes/{id} (TEACHER and ADMIN)
-     * Deletes a ClassCourse by ID.
+     * Deletes a ClassCourse by ID (soft-delete).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
-    public ResponseEntity<Void> deleteClassCourse(@PathVariable("id") Long id, Principal principal) {
-        classCourseService.deleteClassCourse(id, principal.getName());
+    public ResponseEntity<Void> deleteClassCourse(
+            @PathVariable("id") Long id,
+            @RequestHeader(value = "x-admin-master-pin", required = false) String pinHeader,
+            Principal principal,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String ipAddress = com.example.attendance.service.AuditLogService.extractClientIp(request);
+        classCourseService.deleteClassCourse(id, principal.getName(), pinHeader, ipAddress);
         return ResponseEntity.noContent().build();
     }
 
     /**
      * DELETE /classes/subjects/by-name/{subjectName} (ADMIN only)
-     * Deletes all records associated with a subject by name.
+     * Deletes all records associated with a subject by name (soft-delete).
      */
     @DeleteMapping("/subjects/by-name/{subjectName}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteSubjectByName(
             @PathVariable("subjectName") String subjectName,
-            Principal principal) {
-        classCourseService.deleteSubjectByName(subjectName, principal.getName());
+            @RequestHeader(value = "x-admin-master-pin", required = false) String pinHeader,
+            Principal principal,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String ipAddress = com.example.attendance.service.AuditLogService.extractClientIp(request);
+        classCourseService.deleteSubjectByName(subjectName, principal.getName(), pinHeader, ipAddress);
         return ResponseEntity.noContent().build();
     }
 }

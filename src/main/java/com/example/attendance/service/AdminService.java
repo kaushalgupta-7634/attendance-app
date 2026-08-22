@@ -23,30 +23,33 @@ public class AdminService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     public AdminService(UserRepository userRepository,
                         ClassCourseRepository classCourseRepository,
                         ClassSessionRepository classSessionRepository,
                         AttendanceRecordRepository attendanceRecordRepository,
                         EnrollmentRepository enrollmentRepository,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.classCourseRepository = classCourseRepository;
         this.classSessionRepository = classSessionRepository;
         this.attendanceRecordRepository = attendanceRecordRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
     public AdminDTOs.SystemStatsDTO getSystemStats() {
-        long totalStudents = userRepository.findAll().stream().filter(u -> u.getRole() == Role.STUDENT).count();
-        long totalTeachers = userRepository.findAll().stream().filter(u -> u.getRole() == Role.TEACHER).count();
-        long totalCourses = classCourseRepository.count();
+        long totalStudents = userRepository.findAll().stream().filter(u -> !u.isDeleted() && u.getRole() == Role.STUDENT).count();
+        long totalTeachers = userRepository.findAll().stream().filter(u -> !u.isDeleted() && u.getRole() == Role.TEACHER).count();
+        long totalCourses = classCourseRepository.findAll().stream().filter(c -> !c.isDeleted()).count();
         long totalAttendanceRecords = attendanceRecordRepository.count();
         long activeSessionsCount = classSessionRepository.findByActiveTrue().size();
 
         java.util.Map<String, Long> classwiseCounts = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.STUDENT && u.getClassName() != null && !u.getClassName().isBlank())
+                .filter(u -> !u.isDeleted() && u.getRole() == Role.STUDENT && u.getClassName() != null && !u.getClassName().isBlank())
                 .collect(Collectors.groupingBy(
                         u -> u.getClassName().trim().toUpperCase(),
                         Collectors.counting()
@@ -63,7 +66,9 @@ public class AdminService {
     }
 
     public List<AdminDTOs.UserSummaryDTO> getUsers(String roleFilter, String query) {
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAll().stream()
+                .filter(u -> !u.isDeleted())
+                .collect(Collectors.toList());
 
         if (roleFilter != null && !roleFilter.isBlank() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
             users = users.stream()
@@ -92,8 +97,62 @@ public class AdminService {
         )).collect(Collectors.toList());
     }
 
+    public void validateMasterPin(String adminUsername, String pinHeader) {
+        if (adminUsername == null || adminUsername.isBlank()) {
+            throw new com.example.attendance.exception.InvalidMasterPinException("Admin authorization context missing.");
+        }
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername.trim())
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername.trim()))
+                .orElseThrow(() -> new com.example.attendance.exception.InvalidMasterPinException("Admin account not found."));
+
+        if (!admin.hasMasterPin()) {
+            throw new com.example.attendance.exception.InvalidMasterPinException("Master PIN is not configured yet. Please configure your 6-digit Master PIN in Admin Settings.");
+        }
+
+        if (pinHeader == null || pinHeader.isBlank() || !passwordEncoder.matches(pinHeader.trim(), admin.getMasterPin())) {
+            throw new com.example.attendance.exception.InvalidMasterPinException("Invalid Master PIN");
+        }
+    }
+
+    public boolean hasMasterPin(String adminUsername) {
+        if (adminUsername == null || adminUsername.isBlank()) return false;
+        return userRepository.findByUsernameIgnoreCase(adminUsername.trim())
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername.trim()))
+                .map(User::hasMasterPin)
+                .orElse(false);
+    }
+
     @Transactional
-    public void toggleUserStatus(Long userId, boolean enabled) {
+    public void setMasterPin(String adminUsername, AdminDTOs.SetMasterPinRequest request, String ipAddress) {
+        if (request == null || request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+            throw new IllegalArgumentException("Current password is required to set or update Master PIN.");
+        }
+        if (request.getMasterPin() == null || !request.getMasterPin().trim().matches("^\\d{6}$")) {
+            throw new IllegalArgumentException("Master PIN must be exactly 6 digits (0-9).");
+        }
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername.trim())
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername.trim()))
+                .orElseThrow(() -> new IllegalArgumentException("Admin account not found: " + adminUsername));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword().trim(), admin.getPassword())) {
+            throw new IllegalArgumentException("Current password verification failed.");
+        }
+
+        admin.setMasterPin(passwordEncoder.encode(request.getMasterPin().trim()));
+        userRepository.save(admin);
+
+        auditLogService.logAction(admin.getEmail(), "SET_MASTER_PIN", "Master PIN", "Updated 6-digit administrative Master Security PIN", ipAddress);
+        logger.info("Admin '{}' successfully set a new 6-digit Master PIN.", adminUsername);
+    }
+
+    @Transactional
+    public void toggleUserStatus(Long userId, boolean enabled, String adminUsername, String pinHeader, String ipAddress) {
+        // Step-up verification if disabling account
+        if (!enabled) {
+            validateMasterPin(adminUsername, pinHeader);
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
@@ -103,11 +162,18 @@ public class AdminService {
 
         user.setEnabled(enabled);
         userRepository.save(user);
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "TOGGLE_USER_STATUS", "User #" + userId + " (" + user.getUsername() + ")", "Status set to " + (enabled ? "Active" : "Disabled"), ipAddress);
         logger.info("Admin updated status for user '{}' (ID {}) to enabled={}", user.getUsername(), userId, enabled);
     }
 
     @Transactional
-    public void resetUserPassword(Long userId, String newPassword) {
+    public void resetUserPassword(Long userId, String newPassword, String adminUsername, String pinHeader, String ipAddress) {
+        validateMasterPin(adminUsername, pinHeader);
+
         if (newPassword == null || newPassword.isBlank() || newPassword.trim().length() < 6) {
             throw new IllegalArgumentException("New password must be at least 6 characters long.");
         }
@@ -120,11 +186,17 @@ public class AdminService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
 
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "RESET_PASSWORD", "User #" + userId + " (" + user.getUsername() + ")", "Admin performed direct password reset", ipAddress);
         logger.info("Admin reset password for user '{}' (ID {})", user.getUsername(), userId);
     }
 
     @Transactional
-    public void deleteUser(Long userId) {
+    public void deleteUser(Long userId, String adminUsername, String pinHeader, String ipAddress) {
+        validateMasterPin(adminUsername, pinHeader);
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
@@ -132,35 +204,42 @@ public class AdminService {
             throw new IllegalArgumentException("System Administrator account cannot be deleted.");
         }
 
-        logger.info("Admin deleting user '{}' (ID {}, Role {}) with cascade clean...", user.getUsername(), userId, user.getRole());
+        user.setIsDeleted(true);
+        user.setEnabled(false);
+        user.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        userRepository.save(user);
 
-        // Perform clean cascade deletes for related entity records
-        enrollmentRepository.deleteByStudent(user);
-        attendanceRecordRepository.deleteByStudent(user);
-        
-        List<ClassCourse> teacherCourses = classCourseRepository.findByTeacher(user);
-        for (ClassCourse cc : teacherCourses) {
-            enrollmentRepository.deleteByClassCourse(cc);
-            List<ClassSession> sessions = classSessionRepository.findByClassCourse(cc);
-            for (ClassSession cs : sessions) {
-                attendanceRecordRepository.deleteBySession(cs);
-                classSessionRepository.delete(cs);
-            }
-            classCourseRepository.delete(cc);
-        }
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
-        List<ClassSession> teacherSessions = classSessionRepository.findByTeacher(user);
-        for (ClassSession cs : teacherSessions) {
-            attendanceRecordRepository.deleteBySession(cs);
-            classSessionRepository.delete(cs);
-        }
+        auditLogService.logAction(adminEmail, "DELETE_USER", "User #" + userId + " (" + user.getUsername() + ")", "Soft-deleted user account (Moved to Trash)", ipAddress);
+        logger.info("Admin soft-deleted user '{}' (ID {}, Role {})", user.getUsername(), userId, user.getRole());
+    }
 
-        userRepository.delete(user);
-        logger.info("Successfully deleted user ID {} from database.", userId);
+    @Transactional
+    public void restoreUser(Long userId, String adminUsername, String pinHeader, String ipAddress) {
+        validateMasterPin(adminUsername, pinHeader);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        user.setIsDeleted(false);
+        user.setEnabled(true);
+        user.setDeletedAt(null);
+        userRepository.save(user);
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "RESTORE_USER", "User #" + userId + " (" + user.getUsername() + ")", "Restored soft-deleted user account from Trash", ipAddress);
+        logger.info("Admin restored user '{}' (ID {})", user.getUsername(), userId);
     }
 
     public List<AdminDTOs.CourseSummaryDTO> getAllCourses() {
-        List<ClassCourse> courses = classCourseRepository.findAll();
+        List<ClassCourse> courses = classCourseRepository.findAll().stream()
+                .filter(c -> !c.isDeleted())
+                .collect(Collectors.toList());
+
         return courses.stream().map(c -> {
             int enrolledCount = enrollmentRepository.findByClassCourse(c).size();
             String teacherName = c.getTeacher() != null ? c.getTeacher().getName() : "Unassigned";
@@ -176,18 +255,78 @@ public class AdminService {
     }
 
     @Transactional
-    public void deleteCourse(Long courseId) {
+    public void deleteCourse(Long courseId, String adminUsername, String pinHeader, String ipAddress) {
+        validateMasterPin(adminUsername, pinHeader);
+
         ClassCourse course = classCourseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found with ID: " + courseId));
 
-        enrollmentRepository.deleteByClassCourse(course);
-        List<ClassSession> sessions = classSessionRepository.findByClassCourse(course);
-        for (ClassSession s : sessions) {
-            s.setClassCourse(null);
-            classSessionRepository.save(s);
-        }
-        classCourseRepository.delete(course);
-        logger.info("Admin deleted course ID {} ({})", courseId, course.getClassName());
+        course.setIsDeleted(true);
+        course.setDeletedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        classCourseRepository.save(course);
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "DELETE_COURSE", "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")", "Soft-deleted class course (Moved to Trash)", ipAddress);
+        logger.info("Admin soft-deleted course ID {} ({})", courseId, course.getClassName());
+    }
+
+    @Transactional
+    public void restoreCourse(Long courseId, String adminUsername, String pinHeader, String ipAddress) {
+        validateMasterPin(adminUsername, pinHeader);
+
+        ClassCourse course = classCourseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found with ID: " + courseId));
+
+        course.setIsDeleted(false);
+        course.setDeletedAt(null);
+        classCourseRepository.save(course);
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername).or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "RESTORE_COURSE", "Course #" + courseId + " (" + course.getClassName() + " - " + course.getSubject() + ")", "Restored class course from Trash", ipAddress);
+        logger.info("Admin restored course ID {} ({})", courseId, course.getClassName());
+    }
+
+    public List<AdminDTOs.TrashItemDTO> getTrashItems() {
+        List<AdminDTOs.TrashItemDTO> trash = new java.util.ArrayList<>();
+
+        // Soft-deleted Users
+        userRepository.findAll().stream()
+                .filter(User::isDeleted)
+                .forEach(u -> {
+                    String deletedAtStr = u.getDeletedAt() != null ? u.getDeletedAt().toString() : "-";
+                    trash.add(new AdminDTOs.TrashItemDTO(
+                            "USER",
+                            u.getId(),
+                            u.getName() + " (@" + u.getUsername() + ")",
+                            "Role: " + u.getRole() + " | Email: " + u.getEmail() + (u.getClassName() != null ? " | Class: " + u.getClassName() : ""),
+                            deletedAtStr
+                    ));
+                });
+
+        // Soft-deleted Courses
+        classCourseRepository.findAll().stream()
+                .filter(ClassCourse::isDeleted)
+                .forEach(c -> {
+                    String deletedAtStr = c.getDeletedAt() != null ? c.getDeletedAt().toString() : "-";
+                    String teacherName = c.getTeacher() != null ? c.getTeacher().getName() : "Unassigned";
+                    trash.add(new AdminDTOs.TrashItemDTO(
+                            "COURSE",
+                            c.getId(),
+                            c.getClassName() + " - " + c.getSubject(),
+                            "Code: " + c.getClassCode() + " | Teacher: " + teacherName,
+                            deletedAtStr
+                    ));
+                });
+
+        return trash;
+    }
+
+    public List<AuditLog> getAuditLogs() {
+        return auditLogService.getAllAuditLogs();
     }
 
     public List<ClassSession> getActiveSessions() {

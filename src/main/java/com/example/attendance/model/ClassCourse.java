@@ -74,4 +74,31 @@ public class ClassCourse {
     public void setClassCode(String classCode) {
         this.classCode = classCode;
     }
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
+
+    public Boolean getIsDeleted() {
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public boolean isDeleted() {
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted != null ? isDeleted : false;
+    }
+
+    public java.time.LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(java.time.LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 }
+
