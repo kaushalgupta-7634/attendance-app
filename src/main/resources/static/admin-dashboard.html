@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,7 +26,9 @@
             --input-border: #334155;
         }
 
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -170,7 +173,8 @@
             flex-wrap: wrap;
         }
 
-        .search-input, .select-input {
+        .search-input,
+        .select-input {
             padding: 0.65rem 1rem;
             background: var(--input-bg);
             border: 1px solid var(--input-border);
@@ -201,7 +205,8 @@
             font-size: 0.9rem;
         }
 
-        th, td {
+        th,
+        td {
             padding: 0.85rem 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -225,12 +230,35 @@
             font-weight: 600;
         }
 
-        .badge-student { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
-        .badge-teacher { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.4); }
-        .badge-admin { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
-        
-        .badge-active { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
-        .badge-disabled { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .badge-student {
+            background: rgba(6, 182, 212, 0.2);
+            color: #67e8f9;
+            border: 1px solid rgba(6, 182, 212, 0.4);
+        }
+
+        .badge-teacher {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+        }
+
+        .badge-admin {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fda4af;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-disabled {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
 
         .btn-sm {
             padding: 0.35rem 0.75rem;
@@ -242,19 +270,48 @@
             transition: all 0.2s ease;
         }
 
-        .btn-toggle { background: rgba(234, 179, 8, 0.2); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.4); margin-right: 4px; }
-        .btn-toggle:hover { background: #eab308; color: black; }
+        .btn-toggle {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fef08a;
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            margin-right: 4px;
+        }
 
-        .btn-reset { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); margin-right: 4px; }
-        .btn-reset:hover { background: #6366f1; color: white; }
+        .btn-toggle:hover {
+            background: #eab308;
+            color: black;
+        }
 
-        .btn-delete { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
-        .btn-delete:hover { background: #f43f5e; color: white; }
+        .btn-reset {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            margin-right: 4px;
+        }
+
+        .btn-reset:hover {
+            background: #6366f1;
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fda4af;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        .btn-delete:hover {
+            background: #f43f5e;
+            color: white;
+        }
 
         /* Modal Styles */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(8px);
             display: flex;
@@ -287,7 +344,9 @@
             margin-top: 1.5rem;
         }
 
-        .hidden { display: none !important; }
+        .hidden {
+            display: none !important;
+        }
 
         /* ─── MOBILE RESPONSIVENESS (< 768px) ─── */
         @media (max-width: 768px) {
@@ -343,12 +402,19 @@
                 gap: 0.6rem;
             }
 
-            .search-input, .select-input, .logout-btn, button, input, select {
+            .search-input,
+            .select-input,
+            .logout-btn,
+            button,
+            input,
+            select {
                 width: 100%;
                 min-height: 44px;
             }
 
-            .table-wrapper, .table-container, div[style*="overflow-x: auto"] {
+            .table-wrapper,
+            .table-container,
+            div[style*="overflow-x: auto"] {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 width: 100%;
@@ -362,6 +428,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -372,9 +439,13 @@
             </div>
             <div class="user-info">
                 <span id="adminNameDisplay" style="font-weight: 600;">Hello, Admin</span>
-                <button id="masterPinBtn" class="btn-sm" style="background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.5); color: #93c5fd; display: inline-flex; align-items: center; gap: 0.45rem;" onclick="openMasterPinModal()">
+                <button id="masterPinBtn" class="btn-sm"
+                    style="background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.5); color: #93c5fd; display: inline-flex; align-items: center; gap: 0.45rem;"
+                    onclick="openMasterPinModal()">
                     🔒 <span>Master Security PIN</span>
-                    <span id="pinStatusDot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #eab308;" title="PIN Status"></span>
+                    <span id="pinStatusDot"
+                        style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #eab308;"
+                        title="PIN Status"></span>
                 </button>
                 <button class="logout-btn" onclick="handleLogout()">Logout</button>
             </div>
@@ -405,8 +476,10 @@
         </div>
 
         <!-- CLASS BREAKDOWN BAR -->
-        <div id="classBreakdownContainer" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <div style="font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+        <div id="classBreakdownContainer"
+            style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div
+                style="font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
                 🎓 <span>Classwise Student Counts:</span>
             </div>
             <div id="classBreakdownBadges" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
@@ -418,24 +491,31 @@
             <div class="nav-tabs">
                 <button id="tabUsersBtn" class="tab-btn active" onclick="switchSection('users')">👥 User Roster</button>
                 <button id="tabCoursesBtn" class="tab-btn" onclick="switchSection('courses')">📚 Class Courses</button>
-                <button id="tabSessionsBtn" class="tab-btn" onclick="switchSection('sessions')">⚡ Live QR Sessions</button>
-                <button id="tabAttendanceBtn" class="tab-btn" onclick="switchSection('attendance')">📋 Attendance Log</button>
-                <button id="tabAnalyticsBtn" class="tab-btn" onclick="switchSection('analytics')">📊 Month & Date Analytics</button>
+                <button id="tabSessionsBtn" class="tab-btn" onclick="switchSection('sessions')">⚡ Live QR
+                    Sessions</button>
+                <button id="tabAttendanceBtn" class="tab-btn" onclick="switchSection('attendance')">📋 Attendance
+                    Log</button>
+                <button id="tabAnalyticsBtn" class="tab-btn" onclick="switchSection('analytics')">📊 Month & Date
+                    Analytics</button>
                 <button id="tabTrashBtn" class="tab-btn" onclick="switchSection('trash')">🗑️ Trash / Inactive</button>
-                <button id="tabAuditBtn" class="tab-btn" onclick="switchSection('audit')">🛡️ Security & Audit Logs</button>
+                <button id="tabAuditBtn" class="tab-btn" onclick="switchSection('audit')">🛡️ Security & Audit
+                    Logs</button>
             </div>
 
             <!-- SECTION 1: USERS ROSTER -->
             <div id="usersSection">
                 <div class="filter-bar">
-                    <input type="text" id="userSearch" class="search-input" placeholder="Search by name, username, email or class..." oninput="loadUsers()">
+                    <input type="text" id="userSearch" class="search-input"
+                        placeholder="Search by name, username, email or class..." oninput="loadUsers()">
                     <select id="roleFilter" class="select-input" onchange="loadUsers()">
                         <option value="ALL">All Roles</option>
                         <option value="STUDENT">Students Only</option>
                         <option value="TEACHER">Teachers Only</option>
                         <option value="ADMIN">Admins Only</option>
                     </select>
-                    <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;" onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
+                    <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
                 </div>
 
                 <div class="table-responsive">
@@ -453,7 +533,10 @@
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading user accounts...</td></tr>
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">Loading user
+                                    accounts...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -462,8 +545,10 @@
             <!-- SECTION 2: COURSES & SUBJECTS -->
             <div id="coursesSection" class="hidden">
                 <!-- SUBJECT MANAGER BANNER (ADMIN EXCLUSIVE) -->
-                <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
-                    <div style="font-weight: 700; color: #ffffff; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <div
+                    style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                    <div
+                        style="font-weight: 700; color: #ffffff; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                         📚 <span>Registered Subjects Manager (Admin Delete Control)</span>
                     </div>
                     <div id="subjectManagerBadges" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
@@ -485,7 +570,10 @@
                             </tr>
                         </thead>
                         <tbody id="coursesTableBody">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading class courses...</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading class
+                                    courses...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -507,7 +595,10 @@
                             </tr>
                         </thead>
                         <tbody id="sessionsTableBody">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading active sessions...</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading active
+                                    sessions...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -515,11 +606,14 @@
 
             <!-- SECTION 4: ATTENDANCE LOGS -->
             <div id="attendanceSection" class="hidden">
-                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div class="filter-bar"
+                    style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">
                         📋 Detailed Attendance Records
                     </div>
-                    <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;" onclick="exportAttendanceCSV()">📥 Export Attendance (CSV)</button>
+                    <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="exportAttendanceCSV()">📥 Export Attendance (CSV)</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -534,7 +628,10 @@
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
-                            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading attendance logs...</td></tr>
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading
+                                    attendance logs...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -542,101 +639,172 @@
 
             <!-- SECTION 5: ANALYTICS & MONTH FILTER -->
             <div id="analyticsSection" class="hidden">
-                <div class="filter-bar" style="align-items: center; justify-content: space-between; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--card-border);">
+                <div class="filter-bar"
+                    style="align-items: center; justify-content: space-between; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--card-border);">
                     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Start Month:</label>
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Start
+                            Month:</label>
                         <input type="month" id="analyticsStartMonth" class="select-input" style="color-scheme: dark;">
-                        
-                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-left: 0.5rem;">End Month:</label>
+
+                        <label
+                            style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-left: 0.5rem;">End
+                            Month:</label>
                         <input type="month" id="analyticsEndMonth" class="select-input" style="color-scheme: dark;">
 
-                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-left: 0.5rem;">Class:</label>
+                        <label
+                            style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-left: 0.5rem;">Class:</label>
                         <select id="analyticsClassFilter" class="select-input">
                             <option value="ALL">All Classes</option>
                         </select>
                     </div>
-                    <button class="btn-sm" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;" onclick="loadAnalyticsReport()">
+                    <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="loadAnalyticsReport()">
                         🔍 Filter Analytics
                     </button>
                 </div>
 
                 <!-- ANALYTICS DASHBOARD GRID -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-                    
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+
                     <!-- CIRCULAR GRAPH CARD -->
-                    <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 16px; padding: 1.75rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 1rem;">Overall Attendance Rate</h3>
-                        
+                    <div
+                        style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 16px; padding: 1.75rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <h3
+                            style="font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Overall Attendance Rate</h3>
+
                         <!-- SVG CIRCLE DONUT GRAPH -->
                         <div style="position: relative; width: 210px; height: 210px;">
                             <svg width="210" height="210" viewBox="0 0 210 210">
                                 <!-- Track Circle -->
                                 <circle cx="105" cy="105" r="80" fill="none" stroke="#334155" stroke-width="14" />
                                 <!-- Progress Circle -->
-                                <circle id="circleProgressPath" cx="105" cy="105" r="80" fill="none" stroke="#10b981" stroke-width="14" 
-                                        stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65" 
-                                        style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
+                                <circle id="circleProgressPath" cx="105" cy="105" r="80" fill="none" stroke="#10b981"
+                                    stroke-width="14" stroke-linecap="round" stroke-dasharray="502.65"
+                                    stroke-dashoffset="502.65"
+                                    style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s ease, stroke 0.5s ease;" />
                             </svg>
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                                <div id="circlePercentageText" style="font-size: 2.3rem; font-weight: 800; color: #ffffff;">0.0%</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Attendance Rate</div>
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                <div id="circlePercentageText"
+                                    style="font-size: 2.3rem; font-weight: 800; color: #ffffff;">0.0%</div>
+                                <div
+                                    style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Attendance Rate</div>
                             </div>
                         </div>
 
-                        <div id="circleStatusBadge" style="margin-top: 1.25rem; font-size: 0.8rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
+                        <div id="circleStatusBadge"
+                            style="margin-top: 1.25rem; font-size: 0.8rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
                             Calculating...
                         </div>
                     </div>
 
                     <!-- STATS SUMMARY & SUBJECT BREAKDOWN CARD -->
                     <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                        
+
                         <!-- 4 METRIC TILES (CLICKABLE) -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
-                            <div onclick="showAnalyticsDetail('SESSIONS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Sessions Held</div>
-                                <div id="analyticsSessionsHeld" style="font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-top: 0.25rem;">0</div>
-                                <span style="font-size: 0.68rem; color: #38bdf8; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
+                            <div onclick="showAnalyticsDetail('SESSIONS')"
+                                style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div
+                                    style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">
+                                    Sessions Held</div>
+                                <div id="analyticsSessionsHeld"
+                                    style="font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-top: 0.25rem;">0
+                                </div>
+                                <span
+                                    style="font-size: 0.68rem; color: #38bdf8; display: block; margin-top: 0.2rem;">Click
+                                    for Details ➔</span>
                             </div>
-                            <div onclick="showAnalyticsDetail('PRESENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-green)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Present Check-ins</div>
-                                <div id="analyticsPresentCount" style="font-size: 1.5rem; font-weight: 700; color: #4ade80; margin-top: 0.25rem;">0</div>
-                                <span style="font-size: 0.68rem; color: #4ade80; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                            <div onclick="showAnalyticsDetail('PRESENT')"
+                                style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='var(--accent-green)'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div
+                                    style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">
+                                    Present Check-ins</div>
+                                <div id="analyticsPresentCount"
+                                    style="font-size: 1.5rem; font-weight: 700; color: #4ade80; margin-top: 0.25rem;">0
+                                </div>
+                                <span
+                                    style="font-size: 0.68rem; color: #4ade80; display: block; margin-top: 0.2rem;">Click
+                                    for Details ➔</span>
                             </div>
-                            <div onclick="showAnalyticsDetail('ABSENT')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-red)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Absences</div>
-                                <div id="analyticsAbsentCount" style="font-size: 1.5rem; font-weight: 700; color: #f87171; margin-top: 0.25rem;">0</div>
-                                <span style="font-size: 0.68rem; color: #f87171; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                            <div onclick="showAnalyticsDetail('ABSENT')"
+                                style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='var(--accent-red)'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div
+                                    style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">
+                                    Absences</div>
+                                <div id="analyticsAbsentCount"
+                                    style="font-size: 1.5rem; font-weight: 700; color: #f87171; margin-top: 0.25rem;">0
+                                </div>
+                                <span
+                                    style="font-size: 0.68rem; color: #f87171; display: block; margin-top: 0.2rem;">Click
+                                    for Details ➔</span>
                             </div>
-                            <div onclick="showAnalyticsDetail('STUDENTS')" style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Students Enrolled</div>
-                                <div id="analyticsStudentCount" style="font-size: 1.5rem; font-weight: 700; color: #c084fc; margin-top: 0.25rem;">0</div>
-                                <span style="font-size: 0.68rem; color: #c084fc; display: block; margin-top: 0.2rem;">Click for Details ➔</span>
+                            <div onclick="showAnalyticsDetail('STUDENTS')"
+                                style="cursor: pointer; background: #0f172a; border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.borderColor='var(--card-border)'; this.style.transform='none'">
+                                <div
+                                    style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">
+                                    Students Enrolled</div>
+                                <div id="analyticsStudentCount"
+                                    style="font-size: 1.5rem; font-weight: 700; color: #c084fc; margin-top: 0.25rem;">0
+                                </div>
+                                <span
+                                    style="font-size: 0.68rem; color: #c084fc; display: block; margin-top: 0.2rem;">Click
+                                    for Details ➔</span>
                             </div>
                         </div>
 
                         <!-- SUBJECT BREAKDOWN PROGRESS BARS -->
-                        <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; flex: 1;">
-                            <h4 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem;">Subject-wise Attendance Breakdown</h4>
+                        <div
+                            style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; flex: 1;">
+                            <h4 style="font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem;">
+                                Subject-wise Attendance Breakdown</h4>
                             <div id="analyticsSubjectBars" style="display: flex; flex-direction: column; gap: 0.85rem;">
-                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Select date range to view subject breakdown.</p>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Select date range to view
+                                    subject breakdown.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- DYNAMIC METRIC DETAIL PANEL -->
-                <div id="analyticsDetailPanel" style="display: none; margin-top: 1.5rem; background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+                <div id="analyticsDetailPanel"
+                    style="display: none; margin-top: 1.5rem; background: #0f172a; border: 1px solid var(--card-border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
                         <div>
-                            <h4 id="analyticsDetailTitle" style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0;">Detailed Report</h4>
-                            <span id="analyticsDetailSubtitle" style="font-size: 0.8rem; color: var(--text-secondary);">Filtered breakdown based on selected date range & class</span>
+                            <h4 id="analyticsDetailTitle"
+                                style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0;">Detailed Report
+                            </h4>
+                            <span id="analyticsDetailSubtitle"
+                                style="font-size: 0.8rem; color: var(--text-secondary);">Filtered breakdown based on
+                                selected date range & class</span>
                         </div>
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;" onclick="exportAnalyticsDetailCSV()">📥 Export CSV</button>
-                            <button class="btn-sm" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="exportAnalyticsDetailPDF()">📄 Export PDF</button>
-                            <button class="btn-sm" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;" onclick="triggerAdminLowAttendanceAlerts()">📧 Send Alerts (&lt;75%)</button>
-                            <button class="btn-sm" style="background: rgba(255,255,255,0.1); border: none; color: #ffffff;" onclick="closeAnalyticsDetail()">✖ Close</button>
+                            <button class="btn-sm"
+                                style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;"
+                                onclick="exportAnalyticsDetailCSV()">📥 Export CSV</button>
+                            <button class="btn-sm"
+                                style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;"
+                                onclick="exportAnalyticsDetailPDF()">📄 Export PDF</button>
+                            <button class="btn-sm"
+                                style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5;"
+                                onclick="triggerAdminLowAttendanceAlerts()">📧 Send Alerts (&lt;75%)</button>
+                            <button class="btn-sm"
+                                style="background: rgba(255,255,255,0.1); border: none; color: #ffffff;"
+                                onclick="closeAnalyticsDetail()">✖ Close</button>
                         </div>
                     </div>
 
@@ -655,11 +823,15 @@
 
             <!-- SECTION 6: TRASH / INACTIVE ITEMS -->
             <div id="trashSection" class="hidden">
-                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div class="filter-bar"
+                    style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                        <input type="text" id="trashSearch" class="search-input" placeholder="Search soft-deleted users and courses..." oninput="filterTrashTable()">
+                        <input type="text" id="trashSearch" class="search-input"
+                            placeholder="Search soft-deleted users and courses..." oninput="filterTrashTable()">
                     </div>
-                    <button class="btn-sm" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="loadTrashItems()">🔄 Refresh Trash</button>
+                    <button class="btn-sm"
+                        style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;"
+                        onclick="loadTrashItems()">🔄 Refresh Trash</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -674,7 +846,10 @@
                             </tr>
                         </thead>
                         <tbody id="trashTableBody">
-                            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading trash items...</td></tr>
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading trash
+                                    items...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -682,13 +857,20 @@
 
             <!-- SECTION 7: SECURITY & AUDIT LOGS -->
             <div id="auditSection" class="hidden">
-                <div class="filter-bar" style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div class="filter-bar"
+                    style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                        <input type="text" id="auditSearch" class="search-input" placeholder="Search audit logs by admin, action type, IP, or details..." oninput="filterAuditTable()">
+                        <input type="text" id="auditSearch" class="search-input"
+                            placeholder="Search audit logs by admin, action type, IP, or details..."
+                            oninput="filterAuditTable()">
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="exportAuditLogsCSV()">📥 Export CSV</button>
-                        <button class="btn-sm" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;" onclick="loadAuditLogs()">🔄 Refresh Logs</button>
+                        <button class="btn-sm"
+                            style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;"
+                            onclick="exportAuditLogsCSV()">📥 Export CSV</button>
+                        <button class="btn-sm"
+                            style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #f8fafc; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;"
+                            onclick="loadAuditLogs()">🔄 Refresh Logs</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -705,7 +887,10 @@
                             </tr>
                         </thead>
                         <tbody id="auditTableBody">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading audit logs...</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading audit
+                                    logs...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -720,45 +905,71 @@
                 🔒 <span>Set / Update 6-Digit Master PIN</span>
             </h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4;">
-                This Master PIN protects destructive operations (deletions, resets, status changes). It is securely encrypted with BCrypt in the database.
+                This Master PIN protects destructive operations (deletions, resets, status changes). It is securely
+                encrypted with BCrypt in the database.
             </p>
             <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Current Admin Password:</label>
-                <input type="password" id="masterPinCurrentPassword" class="search-input" style="width: 100%;" placeholder="Enter your current login password">
+                <label
+                    style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Current
+                    Admin Password:</label>
+                <input type="password" id="masterPinCurrentPassword" class="search-input" style="width: 100%;"
+                    placeholder="Enter your current login password">
             </div>
             <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">New 6-Digit Master Security PIN:</label>
-                <input type="password" id="masterPinNewInput" class="search-input" style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
+                <label
+                    style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">New
+                    6-Digit Master Security PIN:</label>
+                <input type="password" id="masterPinNewInput" class="search-input"
+                    style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;"
+                    placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
             </div>
             <div style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Confirm 6-Digit Master PIN:</label>
-                <input type="password" id="masterPinConfirmInput" class="search-input" style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
+                <label
+                    style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Confirm
+                    6-Digit Master PIN:</label>
+                <input type="password" id="masterPinConfirmInput" class="search-input"
+                    style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;"
+                    placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
             </div>
-            <div id="masterPinModalMsg" style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+            <div id="masterPinModalMsg"
+                style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem;">
+            </div>
             <div class="modal-actions">
                 <button class="btn-sm" onclick="closeModal('setMasterPinModal')">Cancel</button>
-                <button class="btn-sm" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;" onclick="saveMasterSecurityPin()">Save Master PIN</button>
+                <button class="btn-sm" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;"
+                    onclick="saveMasterSecurityPin()">Save Master PIN</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: STEP-UP MASTER PIN VERIFICATION PROMPT -->
     <div id="stepUpPinModal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 440px; border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25);">
+        <div class="modal-card"
+            style="max-width: 440px; border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25);">
             <h3 class="modal-title" style="color: #fca5a5; display: flex; align-items: center; gap: 0.5rem;">
                 🛡️ <span id="stepUpTitle">Step-Up Authorization</span>
             </h3>
-            <p id="stepUpDescription" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.25rem; line-height: 1.45;">
+            <p id="stepUpDescription"
+                style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.25rem; line-height: 1.45;">
                 This action is destructive and requires Master PIN authorization.
             </p>
             <div style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.5rem; text-align: center;">Enter 6-Digit Master Security PIN:</label>
-                <input type="password" id="stepUpPinInput" class="search-input" style="width: 100%; letter-spacing: 0.35em; font-weight: 800; font-size: 1.35rem; text-align: center; color: #60a5fa; border: 2px solid rgba(59, 130, 246, 0.5);" placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" onkeydown="if(event.key==='Enter') confirmStepUpAction()">
+                <label
+                    style="display: block; font-size: 0.8rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.5rem; text-align: center;">Enter
+                    6-Digit Master Security PIN:</label>
+                <input type="password" id="stepUpPinInput" class="search-input"
+                    style="width: 100%; letter-spacing: 0.35em; font-weight: 800; font-size: 1.35rem; text-align: center; color: #60a5fa; border: 2px solid rgba(59, 130, 246, 0.5);"
+                    placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
+                    onkeydown="if(event.key==='Enter') confirmStepUpAction()">
             </div>
-            <div id="stepUpErrorMsg" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;"></div>
+            <div id="stepUpErrorMsg"
+                style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
+            </div>
             <div class="modal-actions">
                 <button class="btn-sm" onclick="closeStepUpModal()">Cancel</button>
-                <button id="stepUpSubmitBtn" class="btn-sm" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;" onclick="confirmStepUpAction()">Authorize &amp; Proceed</button>
+                <button id="stepUpSubmitBtn" class="btn-sm"
+                    style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;"
+                    onclick="confirmStepUpAction()">Authorize &amp; Proceed</button>
             </div>
         </div>
     </div>
@@ -768,7 +979,8 @@
         <div class="modal-card">
             <h3 class="modal-title">Reset User Password</h3>
             <p id="resetModalSub" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;"></p>
-            <input type="password" id="newAdminPasswordInput" class="search-input" style="width: 100%; margin-bottom: 1rem;" placeholder="Enter new password (min 6 chars)" minlength="6">
+            <input type="password" id="newAdminPasswordInput" class="search-input"
+                style="width: 100%; margin-bottom: 1rem;" placeholder="Enter new password (min 6 chars)" minlength="6">
             <div class="modal-actions">
                 <button class="btn-sm" onclick="closeModal('resetPasswordModal')">Cancel</button>
                 <button class="btn-sm btn-reset" onclick="confirmResetPassword()">Update Password</button>
@@ -803,7 +1015,7 @@
 
         // Global fetch interceptor to handle 401 Unauthorized (session invalidated/expired)
         const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
+        window.fetch = async function (...args) {
             try {
                 const response = await originalFetch(...args);
                 if (response.status === 401) {
@@ -929,7 +1141,7 @@
                         dot.title = data.hasMasterPin ? '6-Digit Master PIN Configured' : 'Master PIN Not Configured';
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         function openMasterPinModal() {
@@ -1311,7 +1523,7 @@
                 renderTrashTable(cachedTrashItems);
                 return;
             }
-            const filtered = cachedTrashItems.filter(item => 
+            const filtered = cachedTrashItems.filter(item =>
                 (item.name && item.name.toLowerCase().includes(q)) ||
                 (item.details && item.details.toLowerCase().includes(q)) ||
                 (item.type && item.type.toLowerCase().includes(q))
@@ -1389,7 +1601,7 @@
                 renderAuditTable(cachedAuditLogs);
                 return;
             }
-            const filtered = cachedAuditLogs.filter(log => 
+            const filtered = cachedAuditLogs.filter(log =>
                 (log.adminEmail && log.adminEmail.toLowerCase().includes(q)) ||
                 (log.actionType && log.actionType.toLowerCase().includes(q)) ||
                 (log.targetId && log.targetId.toLowerCase().includes(q)) ||
@@ -1998,13 +2210,13 @@
                                 const sumData = await sumRes.json();
                                 percent = sumData.overallPercentage || 0.0;
                             }
-                        } catch (e) {}
+                        } catch (e) { }
                         return { ...s, attendancePercentage: percent };
                     }));
 
                     tbody.innerHTML = activeAnalyticsDetailData.map(s => {
                         const isLow = s.attendancePercentage < 75;
-                        const statusBadge = isLow 
+                        const statusBadge = isLow
                             ? `<span class="badge badge-teacher" style="background: rgba(239,68,68,0.2); color: #fca5a5;">⚠️ &lt;75% Low Warning</span>`
                             : `<span class="badge badge-active">OK (75%+)</span>`;
                         return `
@@ -2103,8 +2315,8 @@
                 }
             });
 
-            const fileNameLabel = activeSubjectName 
-                ? `${activeSubjectName}_${activeSubjectStatusFilter}_Report` 
+            const fileNameLabel = activeSubjectName
+                ? `${activeSubjectName}_${activeSubjectStatusFilter}_Report`
                 : `${activeAnalyticsMetric || 'Analytics'}_Detailed_Report`;
 
             downloadCSV(csvContent, `${fileNameLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -2148,4 +2360,5 @@
         }
     </script>
 </body>
+
 </html>

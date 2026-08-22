@@ -183,6 +183,14 @@ public class ClassCourseService {
             classCourseRepository.save(c);
         }
 
+        // 2. Clean up any active sessions for this subject
+        List<ClassSession> sessions = classSessionRepository.findAll().stream()
+                .filter(s -> s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subTrim))
+                .toList();
+        if (!sessions.isEmpty()) {
+            classSessionRepository.deleteAll(sessions);
+        }
+
         auditLogService.logAction(requester.getEmail(), "REMOVE_SUBJECT", "Subject '" + subTrim + "'", "Soft-deleted " + courses.size() + " course records associated with subject", ipAddress);
     }
 
@@ -220,21 +228,9 @@ public class ClassCourseService {
             }
         }
 
-        // 2. Collect from ClassSession entities
-        List<ClassSession> sessions = classSessionRepository.findAll();
-        for (ClassSession s : sessions) {
-            if (s.getClassName() != null && !s.getClassName().isBlank()) {
-                String clsName = s.getClassName().trim();
-                map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
-                if (s.getSubject() != null && !s.getSubject().isBlank()) {
-                    map.get(clsName).add(s.getSubject().trim());
-                }
-            }
-        }
-
-        // 3. Collect from User (Student) entities (only non-deleted)
-        List<User> students = userRepository.findByRole(Role.STUDENT).stream()
-                .filter(u -> !u.isDeleted())
+        // 2. Collect class names from User (Student) entities (only non-deleted)
+        List<User> students = userRepository.findAll().stream()
+                .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || "STUDENT".equalsIgnoreCase(String.valueOf(u.getRole()))))
                 .toList();
         for (User u : students) {
             if (u.getClassName() != null && !u.getClassName().isBlank()) {
@@ -243,12 +239,9 @@ public class ClassCourseService {
             }
         }
 
-        // Default fallback if database has no records yet
+        // Fallback default class structures without hardcoded subjects
         if (map.isEmpty()) {
-            java.util.Set<String> bcaSubs = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            bcaSubs.add("ai");
-            bcaSubs.add("Math");
-            map.put("BCA", bcaSubs);
+            map.put("BCA", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
             map.put("BBA", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
             map.put("CS101", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
         }
