@@ -42,6 +42,7 @@ public class AdminService {
     }
 
     public AdminDTOs.SystemStatsDTO getSystemStats() {
+        syncActiveSessionCourses();
         List<User> allUsers = userRepository.findAll();
         long totalStudents = allUsers.stream()
                 .filter(u -> !u.isDeleted() && (u.getRole() == Role.STUDENT || "STUDENT".equalsIgnoreCase(String.valueOf(u.getRole()))))
@@ -67,6 +68,49 @@ public class AdminService {
                 totalAttendanceRecords,
                 activeSessionsCount,
                 classwiseCounts);
+    }
+
+    private void syncActiveSessionCourses() {
+        java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
+                .filter(ClassCourse::isDeleted)
+                .map(ClassCourse::getSubject)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        List<ClassSession> activeSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> s.getSubject() != null && !s.getSubject().isBlank())
+                .filter(s -> !deletedSubjectNames.contains(s.getSubject().trim().toLowerCase()))
+                .toList();
+
+        for (ClassSession s : activeSessions) {
+            if (s.getClassCourse() == null || s.getClassCourse().isDeleted()) {
+                String sClass = s.getClassName() != null && !s.getClassName().isBlank() ? s.getClassName().trim() : "BCA";
+                String sSub = s.getSubject().trim();
+
+                ClassCourse found = classCourseRepository.findAll().stream()
+                        .filter(c -> !c.isDeleted())
+                        .filter(c -> c.getClassName().equalsIgnoreCase(sClass) && c.getSubject().equalsIgnoreCase(sSub))
+                        .findFirst().orElse(null);
+
+                if (found == null) {
+                    ClassCourse newCourse = new ClassCourse();
+                    newCourse.setClassName(sClass);
+                    newCourse.setSubject(sSub);
+                    String prefix = sSub.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                    if (prefix.length() > 4) prefix = prefix.substring(0, 4);
+                    if (prefix.isEmpty()) prefix = "CLS";
+                    newCourse.setClassCode(prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase());
+                    newCourse.setTeacher(s.getTeacher());
+                    newCourse.setIsDeleted(false);
+                    found = classCourseRepository.save(newCourse);
+                }
+                s.setClassCourse(found);
+                classSessionRepository.save(s);
+            }
+        }
     }
 
     public List<AdminDTOs.UserSummaryDTO> getUsers(String roleFilter, String query) {
@@ -255,6 +299,7 @@ public class AdminService {
     }
 
     public List<AdminDTOs.CourseSummaryDTO> getAllCourses() {
+        syncActiveSessionCourses();
         List<ClassCourse> courses = classCourseRepository.findAll().stream()
                 .filter(c -> !c.isDeleted())
                 .collect(Collectors.toList());
