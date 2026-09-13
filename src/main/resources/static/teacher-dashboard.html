@@ -1510,9 +1510,22 @@
                                 console.warn('High-accuracy GPS failed/timed out, falling back to standard accuracy...', err);
                                 tryGeolocation(false);
                             } else {
-                                console.error('GPS Error:', err);
-                                updateGpsBadgeStatus('error');
-                                resolve(null);
+                                console.warn('Standard GPS failed, attempting IP Geolocation fallback...', err);
+                                fetch('https://ipapi.co/json/')
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data && data.latitude && data.longitude) {
+                                            applyCoords(data.latitude, data.longitude, 2000); // 2000m estimated accuracy for IP
+                                            resolve({ lat: data.latitude, lng: data.longitude });
+                                        } else {
+                                            throw new Error('IP Geolocation invalid response');
+                                        }
+                                    })
+                                    .catch(ipErr => {
+                                        console.error('All Location Fallbacks Failed:', ipErr);
+                                        updateGpsBadgeStatus('error');
+                                        resolve(null);
+                                    });
                             }
                         },
                         { enableHighAccuracy: highAccuracy, timeout: highAccuracy ? 5000 : 10000, maximumAge: 0 }
