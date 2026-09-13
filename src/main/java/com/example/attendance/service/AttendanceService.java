@@ -108,11 +108,8 @@ public class AttendanceService {
             session = classSessionRepository.findByActiveTrue().stream()
                     .filter(s -> qrCodeService.validatePasscode(s.getId(), code) || code.equalsIgnoreCase(s.getPasscode()))
                     .findFirst()
-                    .orElseGet(() -> classSessionRepository.findTopByActiveTrueOrderByIdDesc().orElse(null));
-
-            if (session == null) {
-                throw new IllegalArgumentException("Invalid 6-digit passcode '" + code + "'. No active session found matching this passcode.");
-            }
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Invalid 6-digit passcode '" + code + "'. No active session found matching this passcode."));
         } else {
             session = classSessionRepository.findTopByActiveTrueOrderByIdDesc()
                     .orElseThrow(() -> new IllegalArgumentException("No active class session found. Please ask your teacher to launch a session first."));

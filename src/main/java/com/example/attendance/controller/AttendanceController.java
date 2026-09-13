@@ -39,14 +39,16 @@ public class AttendanceController {
                                             Principal principal,
                                             jakarta.servlet.http.HttpServletRequest httpRequest) {
 
-        // For TOKEN (manual passcode) submissions, GPS coordinates are mandatory.
-        // For QR scan submissions, coordinates are optional — geofence is bypassed in the service layer
-        // because scanning a live rotating QR on the teacher's screen proves physical presence.
-        boolean isQrMode = "QR".equalsIgnoreCase(request.getSubmissionMode());
-        if (!isQrMode && (request.getStudentLat() == null || request.getStudentLng() == null)) {
+        // GPS coordinates are mandatory for ALL submission modes (QR and TOKEN).
+        // QR token proves physical presence via rotating HMAC, but GPS enforces geofence too.
+        // This blocks screenshot/photo sharing attacks where a remote student scans a shared QR image.
+        if (request.getStudentLat() == null || request.getStudentLng() == null) {
             return ResponseEntity.badRequest()
-                    .body(java.util.Map.of("message", "Student GPS coordinates (studentLat, studentLng) are required for manual token attendance. Please allow location permission in your browser."));
+                    .body(java.util.Map.of("message", "Student GPS coordinates (studentLat, studentLng) are required. Please allow location permission in your browser."));
         }
+        // bypassLocation is ALWAYS false from student requests (enforced in controller).
+        // ManuallyOverridden is only set via teacher's /manual-override endpoint.
+        request.setBypassLocation(false);
 
         String clientIp = httpRequest != null ? httpRequest.getHeader("X-Forwarded-For") : null;
         if (clientIp == null || clientIp.isBlank()) {
