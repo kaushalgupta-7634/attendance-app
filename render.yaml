@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: attendance-app
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # Database (Aiven MySQL - fill in your values)
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://YOUR_AIVEN_HOST:YOUR_PORT/defaultdb?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+      - key: MYSQLUSER
+        value: avnadmin
+      - key: MYSQLPASSWORD
+        sync: false   # Render dashboard pe secret set karna
+
+      # JWT Secrets (Render dashboard pe set karna)
+      - key: APP_JWT_SECRET
+        sync: false
+      - key: APP_QR_SECRET
+        sync: false
+
+      # Email (Gmail SMTP)
+      - key: SPRING_MAIL_USERNAME
+        value: kaushalgupta9640016@gmail.com
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+
+      # App Base URL (Render automatically provides RENDER_EXTERNAL_URL)
+      - key: APP_BASE_URL
+        fromService:
+          type: web
+          name: attendance-app
+          property: host
+
+      # Spring Profile
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
