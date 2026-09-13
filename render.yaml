@@ -4,25 +4,25 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      # Database (Aiven MySQL)
+      # Database (set in Render Dashboard)
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://mysql-ad3913c-attendx-123.h.aivencloud.com:23223/defaultdb?useSSL=true&requireSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+        sync: false
       - key: MYSQLUSER
-        value: avnadmin
+        sync: false
       - key: MYSQLPASSWORD
-        value: AVNS_shZL_W32Nbun6gR0EZS
+        sync: false
 
-      # JWT Secrets
+      # JWT Secrets (set in Render Dashboard)
       - key: APP_JWT_SECRET
-        value: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+        sync: false
       - key: APP_QR_SECRET
-        value: 8f93a1c2b3d4e5f678901234567890abcdef1234567890abcdef1234567890ab
+        sync: false
 
-      # Email (Gmail SMTP)
+      # Email (set in Render Dashboard)
       - key: SPRING_MAIL_USERNAME
-        value: kaushalgupta9640016@gmail.com
+        sync: false
       - key: SPRING_MAIL_PASSWORD
-        value: xlogvttjhzyndoxa
+        sync: false
       - key: SPRING_MAIL_PORT
         value: "587"
 
