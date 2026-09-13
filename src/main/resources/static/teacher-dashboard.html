@@ -1458,7 +1458,7 @@
                 gpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
                 gpsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
                 if (gpsDot) { gpsDot.style.background = '#f59e0b'; gpsDot.style.boxShadow = '0 0 8px #f59e0b'; }
-                if (gpsText) gpsText.textContent = '⚠️ Location Blocked — Use "Pick on Map" or enter coordinates manually.';
+                if (gpsText) gpsText.textContent = '⚠️ Location Blocked — Please enter coordinates manually.';
             }
         }
 
@@ -1809,12 +1809,10 @@
             // Only auto-fetch GPS if coords are missing AND not in testing mode.
             const hasManualCoords = latVal !== 0.0 && lngVal !== 0.0 && !isNaN(latVal) && !isNaN(lngVal);
             if (!isTestingMode && !hasManualCoords) {
-                btn.textContent = '🛰️ Acquiring High-Accuracy GPS...';
-                const detected = await detectGPSLocation(true);
-                if (detected) {
-                    latVal = parseFloat(Number(detected.lat).toFixed(7));
-                    lngVal = parseFloat(Number(detected.lng).toFixed(7));
-                }
+                alert('Classroom Latitude and Longitude are required! Please enter them manually or click "Auto-Detect GPS".');
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-icons-outlined" style="font-size: 1.2rem;">rocket_launch</span> Start Live Session`;
+                return;
             }
 
             const payload = {
