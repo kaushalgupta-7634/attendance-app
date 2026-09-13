@@ -4,3 +4,16 @@ target/
 .idea/
 *.iml
 .DS_Store
+
+# Local tools (JDK, Maven downloads)
+.tools/
+
+# Local data and uploads
+uploads/
+data/
+scratch/
+
+# Build artifacts
+BOOT-INF/
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
