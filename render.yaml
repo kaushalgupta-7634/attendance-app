@@ -23,6 +23,8 @@ services:
         value: kaushalgupta9640016@gmail.com
       - key: SPRING_MAIL_PASSWORD
         value: xlogvttjhzyndoxa
+      - key: SPRING_MAIL_PORT
+        value: "587"
 
       # Spring Profile
       - key: SPRING_PROFILES_ACTIVE
