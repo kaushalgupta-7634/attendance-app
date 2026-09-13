@@ -22,7 +22,7 @@ services:
       - key: SPRING_MAIL_USERNAME
         value: kaushalgupta9640016@gmail.com
       - key: SPRING_MAIL_PASSWORD
-        sync: false
+        value: xlogvttjhzyndoxa
 
       # App Base URL (Render automatically provides RENDER_EXTERNAL_URL)
       - key: APP_BASE_URL
