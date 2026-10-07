@@ -38,6 +38,12 @@ public class DatabaseConfig {
         String password = dbUri.getUserInfo() != null && dbUri.getUserInfo().contains(":") ? dbUri.getUserInfo().split(":")[1] : "";
         
         String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + (dbUri.getPort() != -1 ? dbUri.getPort() : 5432) + dbUri.getPath();
+        if (dbUri.getQuery() != null) {
+            dbUrl += "?" + dbUri.getQuery();
+        } else {
+            // Render often requires SSL for external connections
+            dbUrl += "?sslmode=require";
+        }
 
         HikariConfig basicConfig = new HikariConfig();
         basicConfig.setJdbcUrl(dbUrl);
