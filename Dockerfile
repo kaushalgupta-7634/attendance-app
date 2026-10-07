@@ -17,4 +17,4 @@ COPY --from=build /app/target/attendance-0.0.1-SNAPSHOT.jar app.jar
 ENV PORT=8080
 EXPOSE ${PORT}
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
