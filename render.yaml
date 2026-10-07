@@ -5,11 +5,7 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       # Database (set in Render Dashboard)
-      - key: SPRING_DATASOURCE_URL
-        sync: false
-      - key: MYSQLUSER
-        sync: false
-      - key: MYSQLPASSWORD
+      - key: DATABASE_URL
         sync: false
 
       # JWT Secrets (set in Render Dashboard)
