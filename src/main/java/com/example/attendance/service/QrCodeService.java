@@ -13,6 +13,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import org.springframework.core.io.ClassPathResource;
 
 @Service
 public class QrCodeService {
@@ -117,13 +121,41 @@ public class QrCodeService {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
             java.util.Map<com.google.zxing.EncodeHintType, Object> hints = new java.util.HashMap<>();
-            hints.put(com.google.zxing.EncodeHintType.ERROR_CORRECTION, com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M);
+            // Use High Error Correction so the logo doesn't ruin readability
+            hints.put(com.google.zxing.EncodeHintType.ERROR_CORRECTION, com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H);
             hints.put(com.google.zxing.EncodeHintType.MARGIN, 1);
             hints.put(com.google.zxing.EncodeHintType.CHARACTER_SET, "UTF-8");
 
             BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height, hints);
+            
+            // Convert to BufferedImage
+            BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
+            
+            // Read the logo from classpath
+            ClassPathResource logoResource = new ClassPathResource("static/images/icon.png");
+            if (logoResource.exists()) {
+                BufferedImage logo = ImageIO.read(logoResource.getInputStream());
+                
+                // Calculate size and position (e.g. 25% of QR size to be safe)
+                int logoWidth = width / 4;
+                int logoHeight = (logo.getHeight() * logoWidth) / logo.getWidth();
+                
+                int x = (width - logoWidth) / 2;
+                int y = (height - logoHeight) / 2;
+                
+                // Draw logo over QR code
+                Graphics2D g2 = qrImage.createGraphics();
+                
+                // Fill a white background for the logo so it pops and doesn't conflict with QR dots
+                g2.setColor(java.awt.Color.WHITE);
+                g2.fillRoundRect(x - 5, y - 5, logoWidth + 10, logoHeight + 10, 15, 15);
+                
+                g2.drawImage(logo, x, y, logoWidth, logoHeight, null);
+                g2.dispose();
+            }
+
             ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
+            ImageIO.write(qrImage, "png", pngOutputStream);
             return pngOutputStream.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("Error generating QR code image", e);
