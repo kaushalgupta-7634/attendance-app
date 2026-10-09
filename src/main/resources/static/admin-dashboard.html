@@ -427,28 +427,9 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="modern-theme.css">
 </head>
 
 <body>
-    <!-- Sidebar -->
-    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
-        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
-            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
-                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
-                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
-                </div>
-                <div class="user-info">
-                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Administrator</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
-                </div>
-            </div>
-            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
-                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
-            </ul>
-        </aside>
-        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
-
 
     <div class="container">
         <header>
@@ -472,23 +453,23 @@
 
         <!-- MASTER STATS GRID -->
         <div class="stats-grid">
-            <div class="stat-card glass-panel">
+            <div class="stat-card">
                 <div class="stat-label">Total Students</div>
                 <div class="stat-value" id="statStudents">0</div>
             </div>
-            <div class="stat-card glass-panel">
+            <div class="stat-card">
                 <div class="stat-label">Total Teachers</div>
                 <div class="stat-value" id="statTeachers">0</div>
             </div>
-            <div class="stat-card glass-panel">
+            <div class="stat-card">
                 <div class="stat-label">Active Courses</div>
                 <div class="stat-value" id="statCourses">0</div>
             </div>
-            <div class="stat-card glass-panel">
+            <div class="stat-card">
                 <div class="stat-label">Attendance Records</div>
                 <div class="stat-value" id="statAttendance">0</div>
             </div>
-            <div class="stat-card glass-panel">
+            <div class="stat-card">
                 <div class="stat-label">Live QR Sessions</div>
                 <div class="stat-value" id="statActiveSessions">0</div>
             </div>
@@ -524,7 +505,7 @@
             <!-- SECTION 1: USERS ROSTER -->
             <div id="usersSection">
                 <div class="filter-bar">
-                    <input type="text" id="userSearch" class="search-input modern-input"
+                    <input type="text" id="userSearch" class="search-input"
                         placeholder="Search by name, username, email or class..." oninput="loadUsers()">
                     <select id="roleFilter" class="select-input" onchange="loadUsers()">
                         <option value="ALL">All Roles</option>
@@ -845,7 +826,7 @@
                 <div class="filter-bar"
                     style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                        <input type="text" id="trashSearch" class="search-input modern-input"
+                        <input type="text" id="trashSearch" class="search-input"
                             placeholder="Search soft-deleted users and courses..." oninput="filterTrashTable()">
                     </div>
                     <button class="btn-sm"
@@ -879,7 +860,7 @@
                 <div class="filter-bar"
                     style="justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                        <input type="text" id="auditSearch" class="search-input modern-input"
+                        <input type="text" id="auditSearch" class="search-input"
                             placeholder="Search audit logs by admin, action type, IP, or details..."
                             oninput="filterAuditTable()">
                     </div>
@@ -931,14 +912,14 @@
                 <label
                     style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Current
                     Admin Password:</label>
-                <input type="password" id="masterPinCurrentPassword" class="search-input modern-input" style="width: 100%;"
+                <input type="password" id="masterPinCurrentPassword" class="search-input" style="width: 100%;"
                     placeholder="Enter your current login password">
             </div>
             <div style="margin-bottom: 1rem;">
                 <label
                     style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">New
                     6-Digit Master Security PIN:</label>
-                <input type="password" id="masterPinNewInput" class="search-input modern-input"
+                <input type="password" id="masterPinNewInput" class="search-input"
                     style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;"
                     placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
             </div>
@@ -946,7 +927,7 @@
                 <label
                     style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Confirm
                     6-Digit Master PIN:</label>
-                <input type="password" id="masterPinConfirmInput" class="search-input modern-input"
+                <input type="password" id="masterPinConfirmInput" class="search-input"
                     style="width: 100%; letter-spacing: 0.25em; font-weight: 700; font-size: 1.1rem; text-align: center;"
                     placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric">
             </div>
@@ -976,7 +957,7 @@
                 <label
                     style="display: block; font-size: 0.8rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.5rem; text-align: center;">Enter
                     6-Digit Master Security PIN:</label>
-                <input type="password" id="stepUpPinInput" class="search-input modern-input"
+                <input type="password" id="stepUpPinInput" class="search-input"
                     style="width: 100%; letter-spacing: 0.35em; font-weight: 800; font-size: 1.35rem; text-align: center; color: #60a5fa; border: 2px solid rgba(59, 130, 246, 0.5);"
                     placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
                     onkeydown="if(event.key==='Enter') confirmStepUpAction()">
@@ -998,7 +979,7 @@
         <div class="modal-card">
             <h3 class="modal-title">Reset User Password</h3>
             <p id="resetModalSub" style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;"></p>
-            <input type="password" id="newAdminPasswordInput" class="search-input modern-input"
+            <input type="password" id="newAdminPasswordInput" class="search-input"
                 style="width: 100%; margin-bottom: 1rem;" placeholder="Enter new password (min 6 chars)" minlength="6">
             <div class="modal-actions">
                 <button class="btn-sm" onclick="closeModal('resetPasswordModal')">Cancel</button>
@@ -2319,27 +2300,8 @@
                         tr:nth-child(even) { background-color: #f8fafc; }
                         .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: right; }
                     </style>
-                    <link rel="stylesheet" href="modern-theme.css">
-</head>
+                </head>
                 <body>
-    <!-- Sidebar -->
-    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
-        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
-            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
-                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
-                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
-                </div>
-                <div class="user-info">
-                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Administrator</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
-                </div>
-            </div>
-            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
-                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
-            </ul>
-        </aside>
-        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
-
                     <h2>${escapeHtml(title)}</h2>
                     <p>${escapeHtml(subtitle)} | Generated on: ${new Date().toLocaleString()}</p>
                     <table>
@@ -2347,9 +2309,7 @@
                         <tbody>${tbody.innerHTML}</tbody>
                     </table>
                     <div class="footer">Smart Attendance Management System • Official Admin PDF Report</div>
-                        </main>
-    </div>
-</body>
+                </body>
                 </html>
             `);
             printWin.document.close();
@@ -2428,8 +2388,6 @@
             return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
     </script>
-        </main>
-    </div>
 </body>
 
 </html>

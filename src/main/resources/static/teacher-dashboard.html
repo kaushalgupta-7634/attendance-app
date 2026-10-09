@@ -512,28 +512,9 @@
             detectGPSLocation(true);
         }
     </script>
-    <link rel="stylesheet" href="modern-theme.css">
 </head>
 
 <body>
-    <!-- Sidebar -->
-    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
-        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
-            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
-                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
-                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
-                </div>
-                <div class="user-info">
-                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Faculty Member</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
-                </div>
-            </div>
-            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
-                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
-            </ul>
-        </aside>
-        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
-
 
     <div class="navbar">
         <div class="user-info">
@@ -690,7 +671,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="startBtn" class="btn-primary glass-panel">Launch Active Session</button>
+                    <button type="submit" id="startBtn" class="btn-primary">Launch Active Session</button>
                 </form>
 
                 <!-- ACTIVE QR DISPLAY PANEL -->
@@ -854,7 +835,7 @@
                                     placeholder="Leave blank to auto-generate e.g. CS101-A"
                                     style="text-transform: uppercase;">
                             </div>
-                            <button type="submit" id="createCourseBtn" class="btn-primary glass-panel"
+                            <button type="submit" id="createCourseBtn" class="btn-primary"
                                 style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));">
                                 ➕ Create Class & Generate Unique Code
                             </button>
@@ -1147,7 +1128,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="uploadAssignBtn" class="btn-primary glass-panel"
+                    <button type="submit" id="uploadAssignBtn" class="btn-primary"
                         style="margin-top: 0.5rem; background: linear-gradient(135deg, #10b981, #06b6d4);">📤 Upload
                         Assignment for Students</button>
                 </form>
@@ -1238,7 +1219,7 @@
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" class="btn-secondary" style="padding: 0.6rem 1rem; font-size: 0.85rem;"
                         onclick="closeOverrideModal()">Cancel</button>
-                    <button type="submit" id="submitOverrideBtn" class="btn-primary glass-panel"
+                    <button type="submit" id="submitOverrideBtn" class="btn-primary"
                         style="padding: 0.6rem 1.25rem; font-size: 0.85rem; width: auto;">Save Override</button>
                 </div>
             </form>
@@ -1623,7 +1604,7 @@
                                     ${escapeHtml(c.classCode)}
                                 </span>
                                 <button type="button" class="btn-excel" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="copyClassCode('${escapeHtml(c.classCode)}')">📋 Copy Code</button>
-                                <button type="button" class="btn-primary glass-panel" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; width: auto;" onclick="selectCourseToLaunch(${c.id}, '${escapeJsString(c.className)}', '${escapeJsString(c.subject)}')">🚀 Launch Session</button>
+                                <button type="button" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; width: auto;" onclick="selectCourseToLaunch(${c.id}, '${escapeJsString(c.className)}', '${escapeJsString(c.subject)}')">🚀 Launch Session</button>
                                 <button type="button" class="btn-secondary" style="background: rgba(239, 68, 68, 0.25); border-color: var(--accent-red); color: #fca5a5; padding: 0.3rem 0.65rem; font-size: 0.75rem; font-weight: 600;" onclick="deleteFacultySubject(${c.id}, '${escapeJsString(c.subject)}', '${escapeJsString(c.className)}')">🗑️ Delete Subject</button>
                             </div>
                         `;
@@ -3135,34 +3116,13 @@
                         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 35px; color: #1e293b; text-align: center; }
                         .loading-box { padding: 40px 20px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; margin-top: 30px; }
                     </style>
-                    <link rel="stylesheet" href="modern-theme.css">
-</head>
+                </head>
                 <body>
-    <!-- Sidebar -->
-    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
-        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
-            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
-                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
-                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
-                </div>
-                <div class="user-info">
-                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Faculty Member</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
-                </div>
-            </div>
-            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
-                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
-            </ul>
-        </aside>
-        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
-
                     <div class="loading-box">
                         <h2 style="color: #3b82f6; margin-bottom: 10px;">⏳ Generating Attendance PDF Report...</h2>
                         <p style="color: #64748b; font-size: 14px;">Retrieving student rosters, attendance percentages, subject breakdowns, and daily records for <strong>${escapeHtml(targetClass)}</strong>...</p>
                     </div>
-                        </main>
-    </div>
-</body>
+                </body>
                 </html>
             `);
 
@@ -3370,7 +3330,7 @@
                                 <strong>Email:</strong> ${email}<br>
                                 <strong>Export Date:</strong> ${exportTime}
                             </div>
-                            <div class="stat-card glass-panel">
+                            <div class="stat-card">
                                 <div>
                                     <span style="font-size:11px;color:#64748b;display:block;">Overall Attendance Rate</span>
                                     <span style="font-size:2rem;font-weight:800;color:${isEligible ? '#1d4ed8' : '#dc2626'};">${overall}%</span>
@@ -3980,30 +3940,9 @@
             printWin.document.write(`<!DOCTYPE html><html><head><title>Generating Student Report...</title>
                 <style>body{font-family:'Segoe UI',sans-serif;padding:35px;color:#1e293b;text-align:center;}
                 .box{padding:40px 20px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;margin-top:30px;}</style>
-                    <link rel="stylesheet" href="modern-theme.css">
-</head><body>
-    <!-- Sidebar -->
-    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
-        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
-            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
-                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
-                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
-                </div>
-                <div class="user-info">
-                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Faculty Member</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
-                </div>
-            </div>
-            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
-                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
-            </ul>
-        </aside>
-        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
-<div class="box"><h2 style="color:#3b82f6;">⏳ Generating Student PDF Report...</h2>
+                </head><body><div class="box"><h2 style="color:#3b82f6;">⏳ Generating Student PDF Report...</h2>
                 <p style="color:#64748b;">Fetching attendance data for <strong>${escapeHtml(studentName || 'Student')}</strong>...</p>
-                </div>        </main>
-    </div>
-</body></html>`);
+                </div></body></html>`);
 
             try {
                 const res = await fetch(`/students/${studentId}/attendance-summary`, {
@@ -4101,7 +4040,7 @@
                         <strong>System:</strong> Smart Attendance Management System
                     </div>
 
-                    <div class="stat-card glass-panel">
+                    <div class="stat-card">
                         <div>
                             <span style="font-size:12px;color:#64748b;display:block;">Overall Attendance Rate</span>
                             <span class="stat-pct">${overall}%</span>
@@ -4257,8 +4196,6 @@
                     <span id="zoomModalTimerText">Rotating in 15s</span>
                 </div>
         </div>
-    </div>
-        </main>
     </div>
 </body>
 </html>
