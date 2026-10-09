@@ -518,8 +518,27 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="modern-theme.css">
 </head>
 <body>
+    <!-- Sidebar -->
+    <div style="display: flex; height: 100vh; overflow: hidden; width: 100%;">
+        <aside class="sidebar" style="width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(16px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column;">
+            <div class="user-profile" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem;">
+                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); padding: 2px;">
+                    <div style="width:100%; height:100%; border-radius:50%; background:#1e293b; display:flex; align-items:center; justify-content:center; font-size: 24px;">👤</div>
+                </div>
+                <div class="user-info">
+                    <h3 style="font-size: 1rem; font-weight: 600; color: white;">Student</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">ATTENDX Portal</p>
+                </div>
+            </div>
+            <ul class="nav-menu" style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; padding: 0;">
+                <li class="nav-item active" style="padding: 0.8rem 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 1rem; color: white; background: linear-gradient(90deg, rgba(79, 172, 254, 0.2), transparent); border-left: 3px solid var(--accent-cyan); font-weight: 500;">Dashboard</li>
+            </ul>
+        </aside>
+        <main class="main-content" style="flex: 1; padding: 1.5rem; overflow-y: auto; background: transparent;">
+
 
     <div class="navbar">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -1832,5 +1851,7 @@
             }
         }
     </script>
+        </main>
+    </div>
 </body>
 </html>
