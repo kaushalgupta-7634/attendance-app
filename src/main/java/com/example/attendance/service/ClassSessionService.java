@@ -168,9 +168,6 @@ public class ClassSessionService {
         }
 
         ClassSession savedSession = classSessionRepository.save(session);
-        savedSession.setStatus("PENDING_LOCATION");
-        savedSession = classSessionRepository.save(savedSession);
-        
         savedSession.setPasscode(qrCodeService.generateCurrentPasscode(savedSession.getId()));
         if (savedSession.isActive()) {
             notifyStudentsOfActiveSession(savedSession);
@@ -189,17 +186,6 @@ public class ClassSessionService {
         if (session.getTeacher() != null && !session.getTeacher().getId().equals(requester.getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: You are not the teacher for this session.");
         }
-    }
-
-    public ClassSession setLocation(Long sessionId, Double lat, Double lng, String teacherUsername) {
-        ClassSession session = classSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("ClassSession not found with ID: " + sessionId));
-        verifyTeacherAccess(session, teacherUsername);
-        
-        session.setClassroomLat(lat);
-        session.setClassroomLng(lng);
-        session.setStatus("ACTIVE");
-        return classSessionRepository.save(session);
     }
 
     public ClassSession endSession(Long sessionId, String teacherUsername) {

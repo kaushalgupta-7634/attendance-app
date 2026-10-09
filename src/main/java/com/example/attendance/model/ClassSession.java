@@ -50,9 +50,6 @@ public class ClassSession {
     @Column(length = 10)
     private String passcode;
 
-    @Column(length = 30)
-    private String status = "ACTIVE";
-
     public ClassSession() {
     }
 
@@ -68,7 +65,6 @@ public class ClassSession {
         this.radiusMeters = radiusMeters;
         this.active = active;
         this.passcode = passcode;
-        this.status = "ACTIVE";
     }
 
     public String getEffectiveSubject() {
@@ -104,7 +100,6 @@ public class ClassSession {
         this.radiusMeters = radiusMeters;
         this.active = active;
         this.passcode = passcode;
-        this.status = "ACTIVE";
     }
 
     public Long getId() {
@@ -223,13 +218,5 @@ public class ClassSession {
 
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

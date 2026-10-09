@@ -1875,27 +1875,8 @@
                     document.getElementById('endSessionBtn').style.display = 'block';
                     document.getElementById('rotationTimerBadge').style.display = 'inline-flex';
 
-                    const img = document.getElementById('qrImageDisplay');
-                    const setupUrl = window.location.origin + `/teacher-setup.html?sessionId=${activeSessionId}`;
-                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(setupUrl)}`;
-                    
-                    const passcodeEl = document.getElementById('activePasscodeDisplay');
-                    passcodeEl.innerHTML = "<span style='color:#ef4444; font-size:14px; letter-spacing:0;'>SCAN WITH PHONE TO SET LOCATION</span>";
-
-                    const statusCheckInterval = setInterval(async () => {
-                        try {
-                            const statusRes = await fetch(`/sessions/active`, { headers: { 'Authorization': 'Bearer ' + token } });
-                            if (statusRes.ok) {
-                                const activeSession = await statusRes.json();
-                                if (activeSession && activeSession.status === 'ACTIVE') {
-                                    clearInterval(statusCheckInterval);
-                                    passcodeEl.textContent = activeSession.passcode || '------';
-                                    startLiveQrRotation();
-                                    startLiveAttendancePolling();
-                                }
-                            }
-                        } catch(e) { console.error(e); }
-                    }, 2000);
+                    startLiveQrRotation();
+                    startLiveAttendancePolling();
                 } else {
                     const startStr = session.startTime ? new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'scheduled time';
                     const endStr = session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'end time';
