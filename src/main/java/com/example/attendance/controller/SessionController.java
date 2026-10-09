@@ -41,6 +41,13 @@ public class SessionController {
         return ResponseEntity.ok(endedSession);
     }
 
+    @PostMapping("/{id}/set-location")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ClassSession> setLocation(@PathVariable("id") Long id, @RequestParam Double lat, @RequestParam Double lng, Principal principal) {
+        ClassSession session = classSessionService.setLocation(id, lat, lng, principal.getName());
+        return ResponseEntity.ok(session);
+    }
+
     @GetMapping("/{id}/qr")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<byte[]> getSessionQrCode(@PathVariable("id") Long id, Principal principal) {
