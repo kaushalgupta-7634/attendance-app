@@ -3094,8 +3094,11 @@
         async function loadStudentLeaves() {
             const container = document.getElementById('studentLeavesListContainer');
             if (!container) return;
-            const token = getCookie('token') || localStorage.getItem('token');
-            if (!token) return;
+            const authToken = localStorage.getItem('jwtToken') || getCookie('attendx_student_token') || (typeof token !== 'undefined' ? token : '');
+            if (!authToken) {
+                container.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">Please log in to view leave applications.</p>`;
+                return;
+            }
 
             const classInput = document.getElementById('leaveClassNameInput');
             if (classInput && !classInput.value && currentStudentClassName) {
@@ -3104,10 +3107,15 @@
 
             try {
                 const res = await fetch('/leaves/my-leaves', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + authToken }
                 });
-                if (!res.ok) throw new Error('Failed to load leaves');
-                const leaves = await res.json();
+                let leaves = [];
+                try {
+                    leaves = await res.json();
+                } catch(je) {
+                    leaves = [];
+                }
+                if (!res.ok) throw new Error((leaves && leaves.message) || 'Failed to load leaves');
 
                 if (!leaves || leaves.length === 0) {
                     container.innerHTML = `
@@ -3160,7 +3168,7 @@
 
         async function handleApplyLeave(event) {
             event.preventDefault();
-            const token = getCookie('token') || localStorage.getItem('token');
+            const authToken = localStorage.getItem('jwtToken') || getCookie('attendx_student_token') || (typeof token !== 'undefined' ? token : '');
             const alertBox = document.getElementById('leaveAlert');
             const submitBtn = document.getElementById('btnSubmitLeave');
 
@@ -3171,6 +3179,15 @@
                 endDate: document.getElementById('leaveEndDateInput').value,
                 reason: document.getElementById('leaveReasonInput').value.trim()
             };
+
+            if (!authToken) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239,68,68,0.2)';
+                alertBox.style.color = '#f87171';
+                alertBox.style.border = '1px solid #ef4444';
+                alertBox.textContent = '❌ Error: Session expired. Please log in again.';
+                return;
+            }
 
             if (!payload.startDate || !payload.endDate) {
                 alert('Please select both start and end dates');
@@ -3189,13 +3206,18 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
+                        'Authorization': 'Bearer ' + authToken
                     },
                     body: JSON.stringify(payload)
                 });
-                const data = await res.json();
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch(je) {
+                    data = {};
+                }
                 if (!res.ok) {
-                    throw new Error(data.message || 'Failed to submit leave');
+                    throw new Error(data.message || (res.status === 401 ? 'Session expired or unauthorized. Please re-login.' : 'Failed to submit leave'));
                 }
                 alertBox.style.display = 'block';
                 alertBox.style.background = 'rgba(16,185,129,0.2)';

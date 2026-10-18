@@ -4153,15 +4153,20 @@
             const tbody = document.getElementById('teacherLeaveTableBody');
             const badge = document.getElementById('pendingLeaveBadge');
             if (!tbody) return;
-            const token = getCookie('token') || localStorage.getItem('token');
-            if (!token) return;
+            const authToken = localStorage.getItem('jwtToken') || (typeof token !== 'undefined' ? token : '');
+            if (!authToken) return;
 
             try {
                 const res = await fetch('/leaves/pending', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + authToken }
                 });
-                if (!res.ok) throw new Error('Failed to fetch pending leaves');
-                const leaves = await res.json();
+                let leaves = [];
+                try {
+                    leaves = await res.json();
+                } catch(je) {
+                    leaves = [];
+                }
+                if (!res.ok) throw new Error((leaves && leaves.message) || 'Failed to fetch pending leaves');
 
                 if (badge) {
                     if (leaves && leaves.length > 0) {
@@ -4226,7 +4231,7 @@
             const remarks = prompt(approve ? "Optional remarks for approval:" : "Reason for rejecting leave:");
             if (remarks === null) return;
 
-            const token = getCookie('token') || localStorage.getItem('token');
+            const authToken = localStorage.getItem('jwtToken') || (typeof token !== 'undefined' ? token : '');
             const alertBox = document.getElementById('teacherLeaveAlert');
 
             try {
@@ -4234,14 +4239,19 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
+                        'Authorization': 'Bearer ' + authToken
                     },
                     body: JSON.stringify({
                         approve: approve,
                         remarks: remarks || (approve ? "Approved by teacher" : "Rejected by teacher")
                     })
                 });
-                const data = await res.json();
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch(je) {
+                    data = {};
+                }
                 if (!res.ok) throw new Error(data.message || 'Review action failed');
 
                 if (alertBox) {
