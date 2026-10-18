@@ -243,8 +243,30 @@ public class ClassCourseService {
         return code;
     }
 
+    public static String canonicalClassName(String raw) {
+        if (raw == null || raw.isBlank()) return raw;
+        String s = raw.trim();
+        String lower = s.toLowerCase();
+        return switch (lower) {
+            case "bca" -> "BCA";
+            case "mca" -> "MCA";
+            case "btech", "b-tech", "b.tech" -> "B.Tech";
+            case "mtech", "m-tech", "m.tech" -> "M.Tech";
+            case "bba" -> "BBA";
+            case "mba" -> "MBA";
+            case "bsc", "b.sc" -> "B.Sc";
+            case "msc", "m.sc" -> "M.Sc";
+            case "bcom", "b.com" -> "B.Com";
+            case "mcom", "m.com" -> "M.Com";
+            case "ai/ml", "aiml", "ai-ml" -> "AI/ML";
+            case "cs" -> "CS";
+            case "it" -> "IT";
+            default -> s;
+        };
+    }
+
     public List<ClassWithSubjectsDTO> getAllAvailableClassesWithSubjects() {
-        java.util.Map<String, java.util.Set<String>> map = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.Set<String>> map = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
                 .filter(ClassCourse::isDeleted)
@@ -260,7 +282,7 @@ public class ClassCourseService {
                 .toList();
         for (ClassCourse c : courses) {
             if (c.getClassName() != null && !c.getClassName().isBlank()) {
-                String clsName = c.getClassName().trim();
+                String clsName = canonicalClassName(c.getClassName());
                 map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
                 if (c.getSubject() != null && !c.getSubject().isBlank()) {
                     map.get(clsName).add(c.getSubject().trim());
@@ -276,7 +298,7 @@ public class ClassCourseService {
                 .toList();
         for (ClassSession s : activeSessions) {
             if (s.getClassCourse() != null && s.getClassCourse().isDeleted()) continue;
-            String clsName = s.getClassName() != null && !s.getClassName().isBlank() ? s.getClassName().trim() : "BCA";
+            String clsName = canonicalClassName(s.getClassName() != null && !s.getClassName().isBlank() ? s.getClassName() : "BCA");
             map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
             map.get(clsName).add(s.getSubject().trim());
         }
@@ -287,21 +309,19 @@ public class ClassCourseService {
                 .toList();
         for (User u : students) {
             if (u.getClassName() != null && !u.getClassName().isBlank()) {
-                String clsName = u.getClassName().trim();
+                String clsName = canonicalClassName(u.getClassName());
                 map.putIfAbsent(clsName, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
             }
         }
 
-        // Fallback default class structures without hardcoded subjects
-        if (map.isEmpty()) {
-            map.put("BCA", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
-            map.put("BBA", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
-            map.put("CS101", new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+        // 4. Ensure standard popular academic courses are included in available list
+        for (String stdCourse : java.util.List.of("BCA", "MCA", "B.Tech", "M.Tech", "BBA", "MBA", "B.Sc", "M.Sc", "B.Com", "M.Com", "AI/ML", "CS", "IT")) {
+            map.putIfAbsent(stdCourse, new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER));
         }
 
         List<ClassWithSubjectsDTO> result = new java.util.ArrayList<>();
         for (java.util.Map.Entry<String, java.util.Set<String>> entry : map.entrySet()) {
-            result.add(new ClassWithSubjectsDTO(entry.getKey(), new java.util.ArrayList<>(entry.getValue())));
+            result.add(new ClassWithSubjectsDTO(canonicalClassName(entry.getKey()), new java.util.ArrayList<>(entry.getValue())));
         }
         return result;
     }

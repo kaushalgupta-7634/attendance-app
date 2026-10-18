@@ -294,7 +294,7 @@ public class AdminService {
         user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
         user.setRole(request.getRole());
 
-        String cName = request.getClassName() != null ? request.getClassName().trim() : null;
+        String cName = request.getClassName() != null ? ClassCourseService.canonicalClassName(request.getClassName()) : null;
         if (cName != null && !cName.isBlank()) {
             user.setClassName(cName);
         }
@@ -314,6 +314,18 @@ public class AdminService {
                 List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
                         .filter(c -> !c.isDeleted() && c.getClassName() != null && c.getClassName().equalsIgnoreCase(cName))
                         .toList();
+                if (matchingCourses.isEmpty()) {
+                    ClassCourse defaultCourse = new ClassCourse();
+                    defaultCourse.setClassName(cName);
+                    defaultCourse.setSubject("General");
+                    String prefix = cName.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                    if (prefix.length() > 4) prefix = prefix.substring(0, 4);
+                    if (prefix.isEmpty()) prefix = "CLS";
+                    defaultCourse.setClassCode(prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase());
+                    defaultCourse.setIsDeleted(false);
+                    defaultCourse = classCourseRepository.save(defaultCourse);
+                    matchingCourses = List.of(defaultCourse);
+                }
                 for (ClassCourse course : matchingCourses) {
                     if (!enrollmentRepository.existsByStudentAndClassCourse(studentRef, course)) {
                         Enrollment enrollment = new Enrollment(studentRef, course, java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));

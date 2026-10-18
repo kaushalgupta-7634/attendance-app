@@ -1031,10 +1031,27 @@
                         </select>
                     </div>
                     <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Class / Course *</label>
-                        <select id="createUserClass" class="select-input" style="width: 100%;" required>
-                            <option value="">Loading classes...</option>
-                        </select>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Class / Course *</label>
+                            <span style="font-size: 0.72rem; color: #94a3b8;">(Select or type custom)</span>
+                        </div>
+                        <input type="text" id="createUserClass" list="classCourseDatalist" class="search-input" style="width: 100%;" placeholder="Select or type (e.g. BCA, MCA, B.Tech)" required autocomplete="off">
+                        <datalist id="classCourseDatalist">
+                            <option value="BCA"></option>
+                            <option value="MCA"></option>
+                            <option value="B.Tech"></option>
+                            <option value="M.Tech"></option>
+                            <option value="BBA"></option>
+                            <option value="MBA"></option>
+                            <option value="B.Sc"></option>
+                            <option value="M.Sc"></option>
+                            <option value="B.Com"></option>
+                            <option value="M.Com"></option>
+                            <option value="AI/ML"></option>
+                            <option value="CS"></option>
+                            <option value="IT"></option>
+                            <option value="Data Science"></option>
+                        </datalist>
                     </div>
                 </div>
 
@@ -1484,13 +1501,33 @@
             document.getElementById('createUserId').value = '';
             document.getElementById('createUserEmail').value = '';
             document.getElementById('createUserRole').value = 'STUDENT';
+            document.getElementById('createUserClass').value = '';
             generateRandomTempPassword();
 
             const msgBox = document.getElementById('createUserModalMsg');
             msgBox.style.display = 'none';
 
-            const classSelect = document.getElementById('createUserClass');
-            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            const datalist = document.getElementById('classCourseDatalist');
+            const defaultCourses = [
+                'BCA', 'MCA', 'B.Tech', 'M.Tech', 'BBA', 'MBA',
+                'B.Sc', 'M.Sc', 'B.Com', 'M.Com', 'BA', 'MA',
+                'AI/ML', 'Data Science', 'Cyber Security', 'CS', 'IT'
+            ];
+
+            const canonicalMap = {
+                'bca': 'BCA', 'mca': 'MCA',
+                'btech': 'B.Tech', 'b-tech': 'B.Tech', 'b.tech': 'B.Tech',
+                'mtech': 'M.Tech', 'm-tech': 'M.Tech', 'm.tech': 'M.Tech',
+                'bba': 'BBA', 'mba': 'MBA',
+                'bsc': 'B.Sc', 'b.sc': 'B.Sc',
+                'msc': 'M.Sc', 'm.sc': 'M.Sc',
+                'bcom': 'B.Com', 'b.com': 'B.Com',
+                'mcom': 'M.Com', 'm.com': 'M.Com',
+                'ai/ml': 'AI/ML', 'aiml': 'AI/ML', 'ai-ml': 'AI/ML',
+                'cs': 'CS', 'it': 'IT'
+            };
+
+            const courseSet = new Set(defaultCourses);
 
             try {
                 const res = await fetch('/classes/available-classes', {
@@ -1498,16 +1535,24 @@
                 });
                 if (res.ok) {
                     const classes = await res.json();
-                    if (classes && classes.length > 0) {
-                        classSelect.innerHTML = classes.map(c => `<option value="${escapeHtml(c.className)}">${escapeHtml(c.className)}</option>`).join('');
-                    } else {
-                        classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                    if (classes && Array.isArray(classes)) {
+                        classes.forEach(c => {
+                            if (c && c.className && c.className.trim()) {
+                                const raw = c.className.trim();
+                                const lower = raw.toLowerCase();
+                                const canonical = canonicalMap[lower] || raw;
+                                courseSet.add(canonical);
+                            }
+                        });
                     }
-                } else {
-                    classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
                 }
             } catch (e) {
-                classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                console.warn('Could not fetch classes for modal suggestions:', e);
+            }
+
+            if (datalist) {
+                const sortedCourses = Array.from(courseSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+                datalist.innerHTML = sortedCourses.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
             }
 
             document.getElementById('createUserModal').style.display = 'flex';
