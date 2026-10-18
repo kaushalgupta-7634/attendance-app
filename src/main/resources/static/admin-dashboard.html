@@ -521,6 +521,9 @@
                         style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
                         onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
                     <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="openAdminDebarredModal()">🚫 Debarred List (&lt;75%)</button>
+                    <button class="btn-sm"
                         style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
                         onclick="openBulkImportModal()">📂 Bulk Import (CSV)</button>
                     <button class="btn-sm"
@@ -773,6 +776,19 @@
                                 <span
                                     style="font-size: 0.68rem; color: #c084fc; display: block; margin-top: 0.2rem;">Click
                                     for Details ➔</span>
+                            </div>
+                            <div onclick="openAdminDebarredModal()"
+                                style="cursor: pointer; background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 1rem; text-align: center; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='var(--accent-red)'; this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.4)'; this.style.transform='none'">
+                                <div
+                                    style="font-size: 0.75rem; color: #fca5a5; text-transform: uppercase; font-weight: 700;">
+                                    Debarred (&lt;75%)</div>
+                                <div id="analyticsDebarredCount"
+                                    style="font-size: 1.5rem; font-weight: 700; color: #ef4444; margin-top: 0.25rem;">0
+                                </div>
+                                <span
+                                    style="font-size: 0.68rem; color: #f87171; display: block; margin-top: 0.2rem;">View &amp; Export Notice ➔</span>
                             </div>
                         </div>
 
@@ -1110,6 +1126,62 @@
                     <button type="submit" id="bulkImportSubmitBtn" class="btn-sm" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; font-weight: 600; cursor: pointer;">Upload & Import</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: DEBARRED STUDENTS LIST (<75%) -->
+    <div id="adminDebarredModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 920px; width: 95%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+                <h3 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem; color: #f87171;">
+                    <span>🚫</span> <span>Debarred Students List (&lt;75% Attendance Shortage)</span>
+                </h3>
+                <button type="button" class="btn-sm" onclick="closeModal('adminDebarredModal')" style="background: rgba(255,255,255,0.1); color: white; border: none; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.6rem; border-radius: 6px;">✕</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 250px;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; font-weight: 600;">Filter Class:</label>
+                    <select id="adminDebarredClassSelect" class="select-input" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;" onchange="loadAdminDebarredList()">
+                        <option value="all">All Classes (Overall)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.45rem 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer;" onclick="exportAdminDebarredCSV()">📥 Export CSV</button>
+                    <button type="button" class="btn-sm" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 0.45rem 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer;" onclick="printAdminDebarredNotice()">🖨️ Print Notice</button>
+                </div>
+            </div>
+
+            <!-- SUMMARY STATS -->
+            <div id="adminDebarredStatsBar" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-around; font-size: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div><span style="color: var(--text-secondary);">Total Evaluated:</span> <strong id="adminDebarredTotalEvaluated" style="color: #fff;">0</strong></div>
+                <div><span style="color: #fca5a5;">Debarred (&lt;75%):</span> <strong id="adminDebarredShortageCount" style="color: #ef4444;">0</strong></div>
+                <div><span style="color: #86efac;">Exam Eligible (&ge;75%):</span> <strong id="adminDebarredEligibleCount" style="color: #22c55e;">0</strong></div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Roll No / Username</th>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Class</th>
+                            <th>Attendance %</th>
+                            <th>Shortage</th>
+                            <th>Recovery</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminDebarredTableBody">
+                        <tr><td colspan="8" class="empty-state">Loading debarred students...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1.25rem;">
+                <button type="button" class="btn-sm" style="background: rgba(255, 255, 255, 0.1); color: white;" onclick="closeModal('adminDebarredModal')">Close</button>
+            </div>
         </div>
     </div>
 
@@ -2302,6 +2374,9 @@
                 document.getElementById('analyticsPresentCount').textContent = data.totalPresentRecords || 0;
                 document.getElementById('analyticsAbsentCount').textContent = data.totalAbsentRecords || 0;
                 document.getElementById('analyticsStudentCount').textContent = data.totalStudents || 0;
+                if (document.getElementById('analyticsDebarredCount')) {
+                    fetchAdminDebarredCountForAnalytics(classFilter);
+                }
 
                 const barsContainer = document.getElementById('analyticsSubjectBars');
                 if (data.subjectBreakdown && data.subjectBreakdown.length > 0) {
@@ -2734,6 +2809,268 @@
         function escapeJs(str) {
             if (!str) return '';
             return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        /* ─── ADMIN DEBARRED STUDENTS SYSTEM ─── */
+        let adminCachedDebarredList = [];
+
+        async function fetchAdminDebarredCountForAnalytics(classFilter) {
+            try {
+                const targetClass = (!classFilter || classFilter === 'ALL') ? 'all' : classFilter;
+                const rosterUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/roster`;
+                const rRes = await fetch(rosterUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (rRes.ok) {
+                    const rData = await rRes.json();
+                    const students = rData.students || [];
+                    let count = 0;
+                    await Promise.all(students.map(async s => {
+                        try {
+                            const sRes = await fetch(`/students/${s.id}/attendance-summary`, { headers: { 'Authorization': 'Bearer ' + token } });
+                            if (sRes.ok) {
+                                const sum = await sRes.json();
+                                if (sum.totalSessions > 0 && sum.overallPercentage < 75.0) {
+                                    count++;
+                                }
+                            }
+                        } catch (e) { }
+                    }));
+                    const el = document.getElementById('analyticsDebarredCount');
+                    if (el) el.textContent = count;
+                }
+            } catch (e) { }
+        }
+
+        async function openAdminDebarredModal() {
+            const modal = document.getElementById('adminDebarredModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+
+            const classSelect = document.getElementById('adminDebarredClassSelect');
+            if (classSelect && classSelect.options.length <= 1) {
+                try {
+                    const cRes = await fetch('/admin/courses', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (cRes.ok) {
+                        const courses = await cRes.json();
+                        const distinctClasses = [...new Set(courses.map(c => c.className).filter(Boolean))];
+                        distinctClasses.forEach(cls => {
+                            const opt = document.createElement('option');
+                            opt.value = cls;
+                            opt.textContent = cls;
+                            classSelect.appendChild(opt);
+                        });
+                    }
+                } catch (e) { }
+            }
+
+            await loadAdminDebarredList();
+        }
+
+        async function loadAdminDebarredList() {
+            const classSelect = document.getElementById('adminDebarredClassSelect');
+            const targetClass = classSelect ? classSelect.value : 'all';
+            const tbody = document.getElementById('adminDebarredTableBody');
+            const totEl = document.getElementById('adminDebarredTotalEvaluated');
+            const shortEl = document.getElementById('adminDebarredShortageCount');
+            const eligEl = document.getElementById('adminDebarredEligibleCount');
+
+            if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Calculating student attendance and checking shortage criteria...</td></tr>';
+            adminCachedDebarredList = [];
+
+            try {
+                const rosterUrl = `/classes/by-name/${encodeURIComponent(targetClass)}/roster`;
+                const rRes = await fetch(rosterUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+                let students = [];
+                if (rRes.ok) {
+                    const rData = await rRes.json();
+                    students = rData.students || [];
+                } else {
+                    const uRes = await fetch('/admin/users?role=STUDENT', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (uRes.ok) {
+                        const allSt = await uRes.json();
+                        students = (targetClass === 'all') ? allSt : allSt.filter(s => s.className && s.className.toLowerCase() === targetClass.toLowerCase());
+                    }
+                }
+
+                if (!students || students.length === 0) {
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No students found for this class.</td></tr>';
+                    if (totEl) totEl.textContent = '0';
+                    if (shortEl) shortEl.textContent = '0';
+                    if (eligEl) eligEl.textContent = '0';
+                    return;
+                }
+
+                const totalEvaluated = students.length;
+                let debarredList = [];
+
+                await Promise.all(students.map(async s => {
+                    try {
+                        const sRes = await fetch(`/students/${s.id}/attendance-summary`, { headers: { 'Authorization': 'Bearer ' + token } });
+                        if (sRes.ok) {
+                            const sum = await sRes.json();
+                            const pct = sum.overallPercentage !== undefined ? sum.overallPercentage : 0.0;
+                            const hasSessions = sum.totalSessions > 0;
+                            if (hasSessions && pct < 75.0) {
+                                debarredList.push({
+                                    id: s.id,
+                                    username: s.username || '-',
+                                    name: s.name || s.username || '-',
+                                    email: s.email || '-',
+                                    className: s.className || targetClass || 'General',
+                                    percent: pct,
+                                    shortage: Math.max(0, 75.0 - pct).toFixed(1),
+                                    classesNeeded: sum.classesNeededFor75 || Math.max(1, Math.ceil((75.0 - pct) / 2))
+                                });
+                            }
+                        }
+                    } catch (e) { }
+                }));
+
+                debarredList.sort((a, b) => a.percent - b.percent);
+                adminCachedDebarredList = debarredList;
+
+                if (totEl) totEl.textContent = totalEvaluated;
+                if (shortEl) shortEl.textContent = debarredList.length;
+                if (eligEl) eligEl.textContent = Math.max(0, totalEvaluated - debarredList.length);
+
+                const analyticsDebarred = document.getElementById('analyticsDebarredCount');
+                if (analyticsDebarred && targetClass === 'all') {
+                    analyticsDebarred.textContent = debarredList.length;
+                }
+
+                if (!tbody) return;
+
+                if (debarredList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">🎉 All students have 75%+ attendance! No students are debarred.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = debarredList.map(d => `
+                    <tr>
+                        <td><span style="font-family: monospace; font-weight: 600;">${escapeHtml(d.username)}</span></td>
+                        <td><strong>${escapeHtml(d.name)}</strong></td>
+                        <td>${escapeHtml(d.email)}</td>
+                        <td><span class="badge badge-student">${escapeHtml(d.className)}</span></td>
+                        <td><span style="font-weight: 800; color: #f87171; font-size: 1.05rem;">${d.percent}%</span></td>
+                        <td><span style="color: #fca5a5; font-weight: 700;">-${d.shortage}%</span></td>
+                        <td><span style="background: rgba(234, 179, 8, 0.15); color: #fde047; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">+${d.classesNeeded} class(es)</span></td>
+                        <td><span class="badge" style="background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid #ef4444; font-weight: 800;">🚫 DEBARRED</span></td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error("Admin Debarred Fetch Error:", err);
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color: #fca5a5;">Failed to load debarred records: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function exportAdminDebarredCSV() {
+            const classSelect = document.getElementById('adminDebarredClassSelect');
+            const targetClass = classSelect ? classSelect.value : 'all';
+            const url = `/classes/by-name/${encodeURIComponent(targetClass)}/debarred/export`;
+            window.location.href = url;
+        }
+
+        function printAdminDebarredNotice() {
+            if (!adminCachedDebarredList || adminCachedDebarredList.length === 0) {
+                alert("🎉 No students are debarred for the selected class. 100% of students meet or exceed 75% attendance criteria!");
+                return;
+            }
+
+            const classSelect = document.getElementById('adminDebarredClassSelect');
+            const className = classSelect ? (classSelect.options[classSelect.selectedIndex]?.text || classSelect.value) : 'All Classes';
+            const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const rowsHtml = adminCachedDebarredList.map((d, idx) => `
+                <tr>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace;">${escapeHtml(d.username)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1;"><strong>${escapeHtml(d.name)}</strong></td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${escapeHtml(d.email)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">${escapeHtml(d.className)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; color: #dc2626; font-weight: bold;">${d.percent}%</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; color: #dc2626; font-weight: 600;">-${d.shortage}%</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">+${d.classesNeeded} class(es)</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #b91c1c;">DEBARRED</td>
+                </tr>
+            `).join('');
+
+            const printWindow = window.open('', '_blank', 'width=950,height=750');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Official Debarred Candidates List - ${escapeHtml(className)}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; }
+                        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
+                        .header h2 { margin: 0; font-size: 20px; text-transform: uppercase; color: #1e3a8a; }
+                        .header h3 { margin: 5px 0; font-size: 15px; color: #dc2626; letter-spacing: 0.5px; }
+                        .meta-table { width: 100%; margin-bottom: 15px; font-size: 13px; border-collapse: collapse; }
+                        .meta-table td { padding: 4px 6px; }
+                        .notice-box { background: #fee2e2; border: 1px solid #f87171; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #7f1d1d; margin-bottom: 18px; }
+                        table.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        table.data-table th { background: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; }
+                        .footer { margin-top: 60px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+                        .sig-box { text-align: center; width: 200px; border-top: 1px solid #333; padding-top: 6px; }
+                        @media print {
+                            .no-print { display: none !important; }
+                            body { margin: 12mm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="text-align: right; margin-bottom: 15px;">
+                        <button onclick="window.print()" style="padding: 8px 18px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">🖨️ Print This Notice</button>
+                    </div>
+                    <div class="header">
+                        <h2>ATTENDX ACADEMIC PORTAL &bull; EXAMINATION CELL</h2>
+                        <h3>OFFICIAL NOTIFICATION: LIST OF DEBARRED CANDIDATES</h3>
+                        <div style="font-size: 12px; color: #475569; margin-top: 2px;">Shortage of Attendance Criteria (&lt; 75.0% Mandatory Rule)</div>
+                    </div>
+
+                    <table class="meta-table">
+                        <tr>
+                            <td><strong>Class / Course:</strong> ${escapeHtml(className)}</td>
+                            <td style="text-align: right;"><strong>Date of Issue:</strong> ${currentDate}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Evaluated:</strong> ${document.getElementById('adminDebarredTotalEvaluated')?.textContent || '0'}</td>
+                            <td style="text-align: right;"><strong>Total Debarred Candidates:</strong> <span style="color: #dc2626; font-weight: bold;">${adminCachedDebarredList.length}</span></td>
+                        </tr>
+                    </table>
+
+                    <div class="notice-box">
+                        <strong>ACADEMIC CLAUSE NOTICE:</strong> In accordance with University Examination Ordinance Clause 14.1, any student securing less than <strong>75.0% cumulative attendance</strong> in the semester is strictly <strong>DEBARRED</strong> from appearing in the End-Semester Examination. The hall tickets of the candidates listed below stand withheld. Candidates seeking condonation on valid medical grounds must submit a formal appeal endorsed by the HOD within 3 days.
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">#</th>
+                                <th>Roll No / Username</th>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th style="text-align: center;">Class</th>
+                                <th style="text-align: center;">Attendance %</th>
+                                <th style="text-align: center;">Shortage</th>
+                                <th style="text-align: center;">Recovery Needed</th>
+                                <th style="text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        <div class="sig-box">Academic Registrar</div>
+                        <div class="sig-box">Head of Department (HOD)</div>
+                        <div class="sig-box">Controller of Examinations</div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
     </script>
 </body>

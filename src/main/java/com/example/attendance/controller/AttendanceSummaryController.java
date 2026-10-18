@@ -149,6 +149,21 @@ public class AttendanceSummaryController {
         return new ResponseEntity<>(csvData, headers, org.springframework.http.HttpStatus.OK);
     }
 
+    @GetMapping("/classes/by-name/{className}/debarred/export")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<byte[]> exportDebarredListByName(
+            @PathVariable("className") String className,
+            @org.springframework.web.bind.annotation.RequestParam(value = "subject", required = false) String subject,
+            Principal principal) {
+
+        byte[] csvData = attendanceService.exportDebarredListByNameCsv(className, subject, principal.getName());
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.parseMediaType("text/csv"));
+        String subName = (subject != null && !subject.isBlank() && !"all".equalsIgnoreCase(subject)) ? subject.trim() : "All_Subjects";
+        headers.setContentDispositionFormData("attachment", "Class_" + className + "_" + subName + "_Debarred_Students_List.csv");
+        return new ResponseEntity<>(csvData, headers, org.springframework.http.HttpStatus.OK);
+    }
+
     @GetMapping("/classes/attendance-analytics")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<AdminDTOs.DateRangeAnalyticsDTO> getAttendanceAnalytics(

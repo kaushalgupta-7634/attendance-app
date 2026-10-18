@@ -13,6 +13,9 @@ public class StudentAttendanceSummaryDTO {
     private boolean defaulter;
     private String defaulterMessage;
     private int classesNeededFor75;
+    private boolean debarred;
+    private String debarmentNotice;
+    private String examEligibilityStatus;
     private List<SubjectSummaryDTO> subjectBreakdown;
     private List<AttendanceRecordItemDTO> recentRecords;
 
@@ -132,6 +135,30 @@ public class StudentAttendanceSummaryDTO {
 
     public void setClassesNeededFor75(int classesNeededFor75) {
         this.classesNeededFor75 = classesNeededFor75;
+    }
+
+    public boolean isDebarred() {
+        return debarred;
+    }
+
+    public void setDebarred(boolean debarred) {
+        this.debarred = debarred;
+    }
+
+    public String getDebarmentNotice() {
+        return debarmentNotice;
+    }
+
+    public void setDebarmentNotice(String debarmentNotice) {
+        this.debarmentNotice = debarmentNotice;
+    }
+
+    public String getExamEligibilityStatus() {
+        return examEligibilityStatus;
+    }
+
+    public void setExamEligibilityStatus(String examEligibilityStatus) {
+        this.examEligibilityStatus = examEligibilityStatus;
     }
 
     public static class SubjectSummaryDTO {

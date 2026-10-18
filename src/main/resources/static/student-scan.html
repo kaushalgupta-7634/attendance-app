@@ -2017,20 +2017,15 @@
             text.textContent = validPercent.toFixed(1) + '%';
 
             let strokeColor = '#10b981';
-            let label = 'Good Attendance (>=75%)';
+            let label = '✅ ELIGIBLE FOR EXAMS (>=75%)';
             let badgeBg = 'rgba(16, 185, 129, 0.2)';
             let badgeColor = '#6ee7b7';
 
-            if (validPercent < 60) {
+            if (validPercent < 75) {
                 strokeColor = '#ef4444';
-                label = 'Low Attendance Warning (<60%)';
-                badgeBg = 'rgba(239, 68, 68, 0.2)';
+                label = '🚫 STATUS: DEBARRED (<75% Attendance)';
+                badgeBg = 'rgba(239, 68, 68, 0.25)';
                 badgeColor = '#fca5a5';
-            } else if (validPercent < 75) {
-                strokeColor = '#eab308';
-                label = 'Average Attendance (60%-74%)';
-                badgeBg = 'rgba(234, 179, 8, 0.2)';
-                badgeColor = '#fef08a';
             }
 
             circle.style.stroke = strokeColor;
@@ -2202,9 +2197,35 @@
 
                 const defaulterAlert = document.getElementById('defaulterWarningAlert');
                 if (defaulterAlert) {
-                    if (data.defaulter && data.defaulterMessage) {
+                    if (data.debarred || (data.defaulter && data.defaulterMessage)) {
                         defaulterAlert.style.display = 'block';
-                        defaulterAlert.innerHTML = `<strong>⚠️ Defaulter Alert (&lt;75% Attendance):</strong><br>${escapeHtml(data.defaulterMessage)}`;
+                        defaulterAlert.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(185, 28, 28, 0.25))';
+                        defaulterAlert.style.border = '1px solid rgba(239, 68, 68, 0.6)';
+                        defaulterAlert.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.25)';
+                        defaulterAlert.innerHTML = `
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 800; font-size: 0.95rem; color: #f87171; margin-bottom: 0.35rem;">
+                                <span>🚫</span> <span>OFFICIAL EXAMINATION DEBARMENT NOTICE</span>
+                            </div>
+                            <div style="font-size: 0.83rem; color: #fecaca; line-height: 1.5; margin-bottom: 0.5rem;">
+                                ${escapeHtml(data.debarmentNotice || data.defaulterMessage)}
+                            </div>
+                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.74rem; background: rgba(0,0,0,0.35); padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; flex-wrap: wrap; justify-content: center;">
+                                <span>⚠️ Status: <strong>DEBARRED</strong></span> |
+                                <span>Criteria: 75.0%</span> |
+                                <span>Shortage: ${(Math.max(0, 75.0 - percent)).toFixed(1)}%</span> |
+                                <span>Need +${data.classesNeededFor75 || 1} Classes</span>
+                            </div>
+                        `;
+                    } else if (hasSessions) {
+                        defaulterAlert.style.display = 'block';
+                        defaulterAlert.style.background = 'rgba(16, 185, 129, 0.12)';
+                        defaulterAlert.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+                        defaulterAlert.style.boxShadow = 'none';
+                        defaulterAlert.innerHTML = `
+                            <div style="color: #6ee7b7; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                                <span>✅</span> <span>Official Status: <strong>ELIGIBLE FOR EXAMINATIONS</strong> (Attendance ${percent}% &ge; 75% Criteria)</span>
+                            </div>
+                        `;
                     } else {
                         defaulterAlert.style.display = 'none';
                     }

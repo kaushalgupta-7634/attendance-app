@@ -579,12 +579,16 @@ public class AttendanceService {
         double roundedOverall = Math.round(overallPercentage * 10.0) / 10.0;
 
         boolean isDefaulter = totalSessionsAll > 0 && roundedOverall < 75.0;
+        boolean isDebarred = isDefaulter;
+        String examEligibility = totalSessionsAll == 0 ? "NOT_APPLICABLE" : (isDebarred ? "DEBARRED" : "ELIGIBLE");
         int classesNeeded = 0;
         String defaulterMsg = null;
+        String debarNotice = null;
         if (isDefaulter) {
             long needed = (3L * totalSessionsAll) - (4L * totalPresentAll);
             classesNeeded = (int) Math.max(1, needed);
             defaulterMsg = "⚠️ Low Attendance Alert: Your overall rate is " + roundedOverall + "% (below the mandatory 75% college criteria). You must attend the next " + classesNeeded + " consecutive class(es) to recover to 75%.";
+            debarNotice = "🚫 OFFICIAL DEBARMENT MEMO: Your overall attendance is " + roundedOverall + "% (Shortage: below mandatory 75% criteria). As per university/college academic regulations, you are marked DEBARRED from upcoming semester examinations and your hall ticket is withheld. Attend the next " + classesNeeded + " consecutive class(es) to recover your attendance to 75% or consult your HOD/Faculty Advisor immediately.";
         }
 
         StudentAttendanceSummaryDTO summary = new StudentAttendanceSummaryDTO(
@@ -600,6 +604,9 @@ public class AttendanceService {
         summary.setDefaulter(isDefaulter);
         summary.setClassesNeededFor75(classesNeeded);
         summary.setDefaulterMessage(defaulterMsg);
+        summary.setDebarred(isDebarred);
+        summary.setDebarmentNotice(debarNotice);
+        summary.setExamEligibilityStatus(examEligibility);
         return summary;
     }
 
@@ -996,7 +1003,7 @@ public class AttendanceService {
             String name = student.getName() != null ? student.getName() : student.getUsername();
             String username = student.getUsername() != null ? student.getUsername() : "-";
             String email = student.getEmail() != null ? student.getEmail() : "-";
-            String statusStr = percent < 75.0 ? "LOW ATTENDANCE WARNING (<75%)" : "OK";
+            String statusStr = percent < 75.0 ? "DEBARRED (<75% Shortage)" : "ELIGIBLE";
 
             csv.append("\"").append(name.replace("\"", "\"\"")).append("\",")
                .append("\"").append(username.replace("\"", "\"\"")).append("\",")
@@ -1017,6 +1024,127 @@ public class AttendanceService {
                    .append(sa.getAveragePercentage()).append("%,")
                    .append(sa.getStudentCount()).append("\n");
             }
+        }
+
+        return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    public byte[] exportDebarredListByNameCsv(String className, String selectedSubject, String teacherUsername) {
+        User requester = userRepository.findByUsernameIgnoreCase(teacherUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Requesting user not found: " + teacherUsername));
+
+        if (requester.getRole() != Role.TEACHER && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Only teachers or admins can export debarred list.");
+        }
+
+        String subHeader = (selectedSubject != null && !selectedSubject.isBlank() && !"all".equalsIgnoreCase(selectedSubject))
+                ? selectedSubject.trim()
+                : "All Subjects (Combined)";
+
+        boolean filterSubject = selectedSubject != null && !selectedSubject.isBlank() && !"all".equalsIgnoreCase(selectedSubject.trim());
+        String searchSub = filterSubject ? selectedSubject.trim() : "";
+
+        boolean isAllClass = className == null || className.isBlank() || "all".equalsIgnoreCase(className);
+        String searchClass = className != null ? className.trim() : "";
+
+        List<User> distinctStudents = new java.util.ArrayList<>();
+        if (!isAllClass) {
+            List<User> direct = userRepository.findByRoleAndClassNameIgnoreCase(Role.STUDENT, searchClass);
+            if (direct != null) {
+                direct.stream().filter(u -> !u.isDeleted()).forEach(distinctStudents::add);
+            }
+
+            List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
+                    .filter(c -> (c.getClassName() != null && c.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (c.getSubject() != null && c.getSubject().equalsIgnoreCase(searchClass)) ||
+                                 (c.getClassCode() != null && c.getClassCode().equalsIgnoreCase(searchClass)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassCourse course : matchingCourses) {
+                List<Enrollment> enrollments = enrollmentRepository.findByClassCourse(course);
+                for (Enrollment e : enrollments) {
+                    if (e.getStudent() != null && !e.getStudent().isDeleted() && !distinctStudents.contains(e.getStudent())) {
+                        distinctStudents.add(e.getStudent());
+                    }
+                }
+            }
+
+            List<ClassSession> matchingSessions = classSessionRepository.findAll().stream()
+                    .filter(s -> !s.isCancelled())
+                    .filter(s -> (s.getClassName() != null && s.getClassName().equalsIgnoreCase(searchClass)) ||
+                                 (s.getSubject() != null && s.getSubject().equalsIgnoreCase(searchClass)) ||
+                                 (s.getClassCourse() != null && !s.getClassCourse().isDeleted() && s.getClassCourse().getClassName() != null && s.getClassCourse().getClassName().equalsIgnoreCase(searchClass)))
+                    .collect(java.util.stream.Collectors.toList());
+
+            for (ClassSession session : matchingSessions) {
+                List<AttendanceRecord> records = attendanceRecordRepository.findBySession(session);
+                for (AttendanceRecord r : records) {
+                    if (r.getStudent() != null && !r.getStudent().isDeleted() && !distinctStudents.contains(r.getStudent())) {
+                        distinctStudents.add(r.getStudent());
+                    }
+                }
+            }
+
+            if (distinctStudents.isEmpty()) {
+                distinctStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
+            }
+        } else {
+            distinctStudents = userRepository.findByRole(Role.STUDENT).stream().filter(u -> !u.isDeleted()).collect(Collectors.toList());
+        }
+
+        List<java.util.Map<String, Object>> debarredList = new java.util.ArrayList<>();
+        for (User student : distinctStudents) {
+            StudentAttendanceSummaryDTO studentSummary = getStudentAttendanceSummary(student.getId(), teacherUsername);
+            double percent = 0.0;
+            if (filterSubject && studentSummary.getSubjectBreakdown() != null) {
+                StudentAttendanceSummaryDTO.SubjectSummaryDTO subMatch = studentSummary.getSubjectBreakdown().stream()
+                        .filter(sb -> sb.getSubject() != null && sb.getSubject().equalsIgnoreCase(searchSub))
+                        .findFirst().orElse(null);
+                percent = subMatch != null ? subMatch.getPercentage() : 0.0;
+            } else {
+                percent = studentSummary.getOverallPercentage();
+            }
+
+            if (percent < 75.0) {
+                java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+                map.put("name", student.getName() != null ? student.getName() : student.getUsername());
+                map.put("username", student.getUsername() != null ? student.getUsername() : "-");
+                map.put("email", student.getEmail() != null ? student.getEmail() : "-");
+                map.put("percent", percent);
+                map.put("shortage", Math.round((75.0 - percent) * 10.0) / 10.0);
+                map.put("classesNeeded", studentSummary.getClassesNeededFor75());
+                debarredList.add(map);
+            }
+        }
+
+        // Sort descending by shortage (lowest attendance first)
+        debarredList.sort((a, b) -> Double.compare((Double) a.get("percent"), (Double) b.get("percent")));
+
+        StringBuilder csv = new StringBuilder("\uFEFF");
+        csv.append("OFFICIAL NOTIFICATION: DEBARRED STUDENTS LIST (ATTENDANCE SHORTAGE)\n");
+        csv.append("Class / Section,\"").append(className != null ? className : "General").append("\"\n");
+        csv.append("Subject Filter,\"").append(subHeader).append("\"\n");
+        csv.append("Minimum Required Criteria,\"75.0% Mandatory Attendance\"\n");
+        csv.append("Total Enrolled Students,").append(distinctStudents.size()).append("\n");
+        csv.append("Total Debarred Students,").append(debarredList.size()).append("\n");
+        csv.append("Notification Date,\"").append(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy, hh:mm:ss a"))).append("\"\n");
+        csv.append("Academic Regulation,\"Students with overall attendance below 75% are DEBARRED from appearing in End-Semester Examinations as per Academic Guidelines.\"\n\n");
+
+        if (debarredList.isEmpty()) {
+            csv.append("Result,\"CONGRATULATIONS: No students are debarred. 100% of students have 75% or higher attendance.\"\n");
+        } else {
+            csv.append("Roll No / Username,Student Name,Email,Attendance %,Shortage %,Classes Needed To Regain 75%,Exam Eligibility Status\n");
+            for (java.util.Map<String, Object> d : debarredList) {
+                csv.append("\"").append(d.get("username").toString().replace("\"", "\"\"")).append("\",")
+                   .append("\"").append(d.get("name").toString().replace("\"", "\"\"")).append("\",")
+                   .append("\"").append(d.get("email").toString().replace("\"", "\"\"")).append("\",")
+                   .append(d.get("percent")).append("%,")
+                   .append(d.get("shortage")).append("%,")
+                   .append(d.get("classesNeeded")).append(",")
+                   .append("\"DEBARRED (Exam Ineligible)\"\n");
+            }
+            csv.append("\nNote,\"Debarred students must submit a formal condonation request with medical/valid documentation to the HOD/Dean before the commencement of examination.\"\n");
         }
 
         return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);

@@ -992,7 +992,7 @@
                             onclick="switchSmartSubTab('history')">📅 Everyday Attendance Log</button>
                         <button type="button" id="subTabDefaultersBtn" class="btn-secondary"
                             style="background: rgba(30, 41, 59, 0.6); color: #cbd5e1; border-color: rgba(255,255,255,0.15); padding: 0.5rem 1rem; font-size: 0.85rem;"
-                            onclick="switchSmartSubTab('defaulters')">⚠️ Defaulters (&lt;75% Attendance)</button>
+                            onclick="switchSmartSubTab('defaulters')">🚫 Debarred List (&lt;75% Attendance)</button>
                     </div>
 
                     <!-- SUB-TAB 1: ENROLLED STUDENT ROSTER VIEW -->
@@ -1040,30 +1040,61 @@
                         </div>
                     </div>
 
-                    <!-- SUB-TAB 3: DEFAULTERS WARNING VIEW -->
+                    <!-- SUB-TAB 3: DEBARRED STUDENTS WARNING VIEW -->
                     <div id="smartSubTabDefaultersView" style="display: none;">
-                        <div
-                            style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                            <span style="font-size: 0.85rem; color: #fca5a5; font-weight: 600;">⚠️ Students below
-                                mandatory 75% attendance threshold:</span>
-                            <button type="button" class="btn-secondary"
-                                style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem;"
-                                onclick="triggerLowAttendanceAlerts()">📧 Send Warning Alerts to All Defaulters</button>
+                        <!-- DEBARRED SUMMARY STATS BAR -->
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+                                <div>
+                                    <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; display: block;">Total Enrolled</span>
+                                    <span id="debarredTotalCount" style="font-size: 1.25rem; font-weight: 800; color: #f8fafc;">0</span>
+                                </div>
+                                <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1.5rem;">
+                                    <span style="font-size: 0.72rem; text-transform: uppercase; color: #fca5a5; font-weight: 700; display: block;">Debarred (&lt;75%)</span>
+                                    <span id="debarredShortageCount" style="font-size: 1.25rem; font-weight: 800; color: #ef4444;">0</span>
+                                </div>
+                                <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1.5rem;">
+                                    <span style="font-size: 0.72rem; text-transform: uppercase; color: #86efac; font-weight: 700; display: block;">Eligible for Exams</span>
+                                    <span id="debarredEligibleCount" style="font-size: 1.25rem; font-weight: 800; color: #22c55e;">0</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                                <button type="button" class="btn-sm"
+                                    style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;"
+                                    onclick="exportDebarredListCSV()">
+                                    📥 <span>Export Debarred List (CSV)</span>
+                                </button>
+                                <button type="button" class="btn-sm"
+                                    style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;"
+                                    onclick="printDebarredNotice()">
+                                    🖨️ <span>Print Debarment Notice</span>
+                                </button>
+                                <button type="button" class="btn-sm"
+                                    style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;"
+                                    onclick="triggerLowAttendanceAlerts()">
+                                    📧 <span>Send Warning Emails</span>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Student Name</th>
-                                        <th>Username</th>
+                                        <th>Roll No / Username</th>
                                         <th>Email</th>
-                                        <th>Attendance %</th>
+                                        <th>Overall Attendance</th>
+                                        <th>Shortage %</th>
+                                        <th>Recovery Needed</th>
+                                        <th>Exam Status</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="defaultersTableBody">
                                     <tr>
-                                        <td colspan="5" class="empty-state">Select a class above to view defaulters.
+                                        <td colspan="8" class="empty-state">Select a class above to view debarred students.
                                         </td>
                                     </tr>
                                 </tbody>
@@ -3529,7 +3560,8 @@
             }, 300);
         }
 
-        lastFetchedDefaulters = [];
+        var lastFetchedDefaulters = [];
+        var lastFetchedRosterStudentCount = 0;
 
         function switchSmartSubTab(tabName) {
             const rosterBtn = document.getElementById('subTabRosterBtn');
@@ -3617,25 +3649,156 @@
 
         function populateDefaultersTable() {
             const tbody = document.getElementById('defaultersTableBody');
+            const totalCountEl = document.getElementById('debarredTotalCount');
+            const shortageCountEl = document.getElementById('debarredShortageCount');
+            const eligibleCountEl = document.getElementById('debarredEligibleCount');
+
+            const totalStudents = lastFetchedRosterStudentCount || (lastFetchedDefaulters ? lastFetchedDefaulters.length : 0);
+            const debarredCount = lastFetchedDefaulters ? lastFetchedDefaulters.length : 0;
+            const eligibleCount = Math.max(0, totalStudents - debarredCount);
+
+            if (totalCountEl) totalCountEl.textContent = totalStudents;
+            if (shortageCountEl) shortageCountEl.textContent = debarredCount;
+            if (eligibleCountEl) eligibleCountEl.textContent = eligibleCount;
+
+            const subTabDefaultersBtn = document.getElementById('subTabDefaultersBtn');
+            if (subTabDefaultersBtn) {
+                subTabDefaultersBtn.innerHTML = `🚫 Debarred List (&lt;75%) ${debarredCount > 0 ? `<span style="background: #ef4444; color: white; padding: 0.1rem 0.45rem; border-radius: 10px; font-size: 0.72rem; font-weight: 800; margin-left: 0.35rem;">${debarredCount}</span>` : ''}`;
+            }
+
             if (!tbody) return;
 
             if (!lastFetchedDefaulters || lastFetchedDefaulters.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">🎉 All students in this class have 75%+ attendance! No defaulters.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">🎉 All students in this class have 75%+ attendance! No students are debarred.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = lastFetchedDefaulters.map(d => `
                 <tr>
                     <td><strong>${escapeHtml(d.name)}</strong></td>
-                    <td>${escapeHtml(d.username)}</td>
+                    <td><span style="font-family: monospace; font-weight: 600;">${escapeHtml(d.username)}</span></td>
                     <td>${escapeHtml(d.email)}</td>
                     <td><span style="font-weight: 800; color: #f87171; font-size: 1.05rem;">${d.percent}%</span></td>
+                    <td><span style="color: #fca5a5; font-weight: 700;">-${d.shortage}%</span></td>
+                    <td><span style="background: rgba(234, 179, 8, 0.15); color: #fde047; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">+${d.classesNeeded} class(es)</span></td>
+                    <td><span class="status-badge status-absent" style="font-size: 0.72rem; font-weight: 800; padding: 0.25rem 0.55rem; border-radius: 6px; background: rgba(239,68,68,0.25); color: #fca5a5; border: 1px solid #ef4444; display: inline-flex; align-items: center; gap: 0.2rem;">🚫 DEBARRED</span></td>
                     <td>
-                        <span class="status-badge status-absent" style="font-size: 0.75rem; margin-right: 0.5rem;">⚠️ Defaulter (&lt;75%)</span>
-                        <button class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;" onclick="triggerLowAttendanceAlerts()">📧 Send Alert</button>
+                        <button class="btn-excel" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="viewStudentBreakdown(${d.id}, '${escapeHtml(d.name)}')">📊 Full Report</button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function exportDebarredListCSV() {
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || 'all';
+            const targetClass = searchVal || classSelectVal || 'all';
+            const subFilter = currentSubjectFilter || 'all';
+
+            const url = `/classes/by-name/${encodeURIComponent(targetClass)}/debarred/export?subject=${encodeURIComponent(subFilter)}`;
+            window.location.href = url;
+        }
+
+        function printDebarredNotice() {
+            if (!lastFetchedDefaulters || lastFetchedDefaulters.length === 0) {
+                alert("🎉 No students are debarred in this class. All students have 75%+ attendance!");
+                return;
+            }
+            const searchVal = document.getElementById('teacherClassNameSearch')?.value.trim() || '';
+            const classSelectVal = document.getElementById('teacherClassSelect')?.value.trim() || 'all';
+            const className = searchVal || (classSelectVal !== 'all' ? classSelectVal : 'All Classes');
+            const subjectName = (currentSubjectFilter && currentSubjectFilter !== 'all') ? currentSubjectFilter : 'All Subjects Combined';
+            const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const rowsHtml = lastFetchedDefaulters.map((d, idx) => `
+                <tr>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: bold; font-family: monospace;">${escapeHtml(d.username)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1;"><strong>${escapeHtml(d.name)}</strong></td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${escapeHtml(d.email)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; color: #dc2626; font-weight: bold;">${d.percent}%</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; color: #dc2626; font-weight: 600;">-${d.shortage}%</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">+${d.classesNeeded} class(es)</td>
+                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #b91c1c;">DEBARRED</td>
+                </tr>
+            `).join('');
+
+            const printWindow = window.open('', '_blank', 'width=950,height=750');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Official Debarred Candidates List - ${escapeHtml(className)}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; }
+                        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
+                        .header h2 { margin: 0; font-size: 20px; text-transform: uppercase; color: #1e3a8a; }
+                        .header h3 { margin: 5px 0; font-size: 15px; color: #dc2626; letter-spacing: 0.5px; }
+                        .meta-table { width: 100%; margin-bottom: 15px; font-size: 13px; border-collapse: collapse; }
+                        .meta-table td { padding: 4px 6px; }
+                        .notice-box { background: #fee2e2; border: 1px solid #f87171; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #7f1d1d; margin-bottom: 18px; }
+                        table.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        table.data-table th { background: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; }
+                        .footer { margin-top: 60px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+                        .sig-box { text-align: center; width: 200px; border-top: 1px solid #333; padding-top: 6px; }
+                        @media print {
+                            .no-print { display: none !important; }
+                            body { margin: 12mm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="text-align: right; margin-bottom: 15px;">
+                        <button onclick="window.print()" style="padding: 8px 18px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">🖨️ Print This Notice</button>
+                    </div>
+                    <div class="header">
+                        <h2>ATTENDX ACADEMIC PORTAL &bull; EXAMINATION CELL</h2>
+                        <h3>OFFICIAL NOTIFICATION: LIST OF DEBARRED CANDIDATES</h3>
+                        <div style="font-size: 12px; color: #475569; margin-top: 2px;">Shortage of Attendance Criteria (&lt; 75.0% Mandatory Rule)</div>
+                    </div>
+
+                    <table class="meta-table">
+                        <tr>
+                            <td><strong>Class / Course:</strong> ${escapeHtml(className)}</td>
+                            <td style="text-align: right;"><strong>Date of Issue:</strong> ${currentDate}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Subject Filter:</strong> ${escapeHtml(subjectName)}</td>
+                            <td style="text-align: right;"><strong>Total Debarred Candidates:</strong> <span style="color: #dc2626; font-weight: bold;">${lastFetchedDefaulters.length}</span></td>
+                        </tr>
+                    </table>
+
+                    <div class="notice-box">
+                        <strong>ACADEMIC CLAUSE NOTICE:</strong> In accordance with University Examination Ordinance Clause 14.1, any student securing less than <strong>75.0% cumulative attendance</strong> in the semester is strictly <strong>DEBARRED</strong> from appearing in the End-Semester Examination. The hall tickets of the candidates listed below stand withheld. Candidates seeking condonation on valid medical grounds must submit a formal appeal endorsed by the HOD within 3 days.
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">#</th>
+                                <th>Roll No / Username</th>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th style="text-align: center;">Attendance %</th>
+                                <th style="text-align: center;">Shortage</th>
+                                <th style="text-align: center;">Recovery Needed</th>
+                                <th style="text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        <div class="sig-box">Course Coordinator</div>
+                        <div class="sig-box">Head of Department (HOD)</div>
+                        <div class="sig-box">Dean / Controller of Exams</div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
         async function loadSelectedClassAnalytics(selectedSubject = 'all') {
@@ -3801,14 +3964,17 @@
                     } else {
                         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Calculating student attendance stats...</td></tr>';
 
+                        lastFetchedRosterStudentCount = roster.students.length;
+
                         // Fetch individual attendance summary for each student
                         const studentRows = await Promise.all(roster.students.map(async s => {
                             let percent = 0.0;
                             let subjectBadges = '';
+                            let sSum = null;
                             try {
                                 const sRes = await fetch(`/students/${s.id}/attendance-summary`, { headers });
                                 if (sRes.ok) {
-                                    const sSum = await sRes.json();
+                                    sSum = await sRes.json();
 
                                     if (currentSubjectFilter && currentSubjectFilter !== 'all' && sSum.subjectBreakdown) {
                                         const subMatch = sSum.subjectBreakdown.find(sb => sb.subject && sb.subject.toLowerCase().trim() === currentSubjectFilter.toLowerCase().trim());
@@ -3844,23 +4010,35 @@
                             } catch (e) { }
 
                             const isGood = percent >= 75;
+                            const shortageVal = Math.max(0, 75.0 - percent).toFixed(1);
+                            const neededClasses = (sSum && sSum.classesNeededFor75) ? sSum.classesNeededFor75 : Math.max(1, Math.ceil((75.0 - percent) / 2));
+
                             if (!isGood) {
                                 lastFetchedDefaulters.push({
                                     id: s.id,
                                     name: s.name,
                                     username: s.username,
                                     email: s.email,
-                                    percent: percent
+                                    percent: percent,
+                                    shortage: shortageVal,
+                                    classesNeeded: neededClasses
                                 });
                             }
+
+                            const eligibilityBadge = isGood
+                                ? `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; font-weight: 700; margin-left: 0.4rem; display: inline-flex; align-items: center; gap: 0.2rem;">✅ ELIGIBLE</span>`
+                                : `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; font-weight: 700; margin-left: 0.4rem; display: inline-flex; align-items: center; gap: 0.2rem;">🚫 DEBARRED</span>`;
 
                             return `
                                 <tr>
                                     <td><strong>${escapeHtml(s.name)}</strong></td>
-                                    <td>${escapeHtml(s.username)}</td>
+                                    <td><span style="font-family: monospace; font-weight: 600;">${escapeHtml(s.username)}</span></td>
                                     <td>${escapeHtml(s.email)}</td>
                                     <td>
-                                        <div style="font-weight: 700; font-size: 1.05rem; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</div>
+                                        <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                            <span style="font-weight: 700; font-size: 1.05rem; color: ${isGood ? 'var(--accent-green)' : 'var(--accent-red)'};">${percent}%</span>
+                                            ${eligibilityBadge}
+                                        </div>
                                         <div style="margin-top: 0.25rem;">${subjectBadges || '<span style="font-size: 0.72rem; color: var(--text-secondary);">No subject records</span>'}</div>
                                     </td>
                                     <td>
@@ -3870,6 +4048,7 @@
                             `;
                         }));
 
+                        lastFetchedDefaulters.sort((a, b) => a.percent - b.percent);
                         tbody.innerHTML = studentRows.join('');
                         populateDefaultersTable();
                     }
