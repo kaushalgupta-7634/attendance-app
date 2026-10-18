@@ -879,6 +879,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             Assignments
         </button>
+        <button id="studentTabLeaves" class="portal-tab-btn" onclick="switchStudentTab('leaves')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Apply Leave
+        </button>
     </div>
 
     <!-- TAB 1: LOCATION & ATTENDANCE SCAN CHECK-IN -->
@@ -968,6 +972,7 @@
                 <div id="studentCircleBadge" style="margin-top: 0.75rem; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">
                     Calculating...
                 </div>
+                <div id="defaulterWarningAlert" style="display: none; margin-top: 0.85rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; max-width: 500px; text-align: center; line-height: 1.45;"></div>
             </div>
 
             <!-- SUBJECT WISE BREAKDOWN GRID -->
@@ -1179,6 +1184,66 @@
         </div>
     </div>
 
+    <!-- TAB 6: APPLY FOR LEAVE / OD -->
+    <div id="sectionLeaves" class="tab-content-section">
+        <div class="card">
+            <h3 class="card-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Apply for Leave / On-Duty (OD)
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                Submit a leave application for medical, on-duty, or personal reasons. Once approved by your teacher, attendance for those dates will automatically reflect as <strong>Leave (L)</strong> in your attendance ledger.
+            </p>
+
+            <form id="applyLeaveForm" onsubmit="handleApplyLeave(event)">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Leave Type</label>
+                        <select id="leaveTypeInput" class="form-input" required>
+                            <option value="MEDICAL">🏥 Medical Leave</option>
+                            <option value="ON_DUTY">🏆 On-Duty (OD / Sports / Event)</option>
+                            <option value="CASUAL" selected>📝 Casual Leave</option>
+                            <option value="FAMILY">👨‍👩‍👦 Family Emergency</option>
+                            <option value="OTHER">📌 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Class / Course</label>
+                        <input type="text" id="leaveClassNameInput" class="form-input" placeholder="e.g. CSE-A" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">From Date</label>
+                        <input type="date" id="leaveStartDateInput" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">To Date</label>
+                        <input type="date" id="leaveEndDateInput" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reason / Purpose of Leave</label>
+                    <textarea id="leaveReasonInput" class="form-input" rows="3" placeholder="Explain reason for leave..." required style="resize: vertical;"></textarea>
+                </div>
+
+                <button type="submit" id="btnSubmitLeave" class="btn-action" style="margin-bottom: 1rem;">
+                    🚀 Submit Leave Application
+                </button>
+            </form>
+
+            <div id="leaveAlert" style="display: none; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 1.25rem;"></div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <h4 style="margin: 0; font-size: 1rem; color: #f8fafc; font-weight: 700;">My Leave Applications</h4>
+                <button type="button" class="btn-green-action" onclick="loadStudentLeaves()" style="font-size: 0.75rem;">🔄 Refresh</button>
+            </div>
+
+            <div id="studentLeavesListContainer" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">Loading your leaves...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         function switchStudentTab(tabId) {
             if (tabId !== 'scan') {
@@ -1208,6 +1273,10 @@
                 activeBtn = document.getElementById('studentTabAssignments');
                 document.getElementById('sectionAssignments').classList.add('active');
                 autoLoadActiveAssignments();
+            } else if (tabId === 'leaves') {
+                activeBtn = document.getElementById('studentTabLeaves');
+                document.getElementById('sectionLeaves').classList.add('active');
+                loadStudentLeaves();
             }
 
             if (activeBtn) {
@@ -1327,6 +1396,7 @@
             studentHeader.textContent = `Hello, ${displayName}`;
         }
 
+        let currentStudentClassName = null;
         // Fetch latest profile to ensure actual user full name is displayed
         fetch('/auth/me', {
             headers: { 'Authorization': 'Bearer ' + token }
@@ -1335,6 +1405,13 @@
                 localStorage.setItem('userName', profile.name);
                 if (studentHeader) {
                     studentHeader.textContent = `Hello, ${profile.name}`;
+                }
+            }
+            if (profile && profile.className) {
+                currentStudentClassName = profile.className;
+                const classInput = document.getElementById('leaveClassNameInput');
+                if (classInput && !classInput.value) {
+                    classInput.value = profile.className;
                 }
             }
         }).catch(err => console.log("Profile fetch failed:", err));
@@ -2122,6 +2199,16 @@
 
                 cachedSubjectBreakdown = data.subjectBreakdown || [];
                 allStudentRecentRecords = data.recentRecords || [];
+
+                const defaulterAlert = document.getElementById('defaulterWarningAlert');
+                if (defaulterAlert) {
+                    if (data.defaulter && data.defaulterMessage) {
+                        defaulterAlert.style.display = 'block';
+                        defaulterAlert.innerHTML = `<strong>⚠️ Defaulter Alert (&lt;75% Attendance):</strong><br>${escapeHtml(data.defaulterMessage)}`;
+                    } else {
+                        defaulterAlert.style.display = 'none';
+                    }
+                }
 
                 renderSubjectBreakdownCards();
                 renderFilteredAttendanceHistory();
@@ -3002,6 +3089,136 @@
 
         function exportMonthlyReportPDF() {
             window.print();
+        }
+
+        async function loadStudentLeaves() {
+            const container = document.getElementById('studentLeavesListContainer');
+            if (!container) return;
+            const token = getCookie('token') || localStorage.getItem('token');
+            if (!token) return;
+
+            const classInput = document.getElementById('leaveClassNameInput');
+            if (classInput && !classInput.value && currentStudentClassName) {
+                classInput.value = currentStudentClassName;
+            }
+
+            try {
+                const res = await fetch('/leaves/my-leaves', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to load leaves');
+                const leaves = await res.json();
+
+                if (!leaves || leaves.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-secondary); padding: 2rem 1rem; font-size: 0.85rem; background: rgba(15,23,42,0.4); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
+                            No leave applications submitted yet.
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                leaves.forEach(l => {
+                    let statusBadge = '';
+                    if (l.status === 'APPROVED') {
+                        statusBadge = '<span style="background: rgba(16,185,129,0.2); color:#4ade80; border:1px solid #10b981; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">✅ APPROVED</span>';
+                    } else if (l.status === 'REJECTED') {
+                        statusBadge = '<span style="background: rgba(239,68,68,0.2); color:#f87171; border:1px solid #ef4444; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">❌ REJECTED</span>';
+                    } else {
+                        statusBadge = '<span style="background: rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">⏳ PENDING</span>';
+                    }
+
+                    html += `
+                        <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <strong style="color: #f8fafc; font-size: 0.95rem;">${escapeHtml(l.leaveType)} LEAVE</strong>
+                                    <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 0.5rem;">(${escapeHtml(l.className || '')})</span>
+                                </div>
+                                <div>${statusBadge}</div>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+                                📅 <strong>${escapeHtml(l.startDate)}</strong> to <strong>${escapeHtml(l.endDate)}</strong>
+                            </div>
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.4rem;">
+                                💬 <em>${escapeHtml(l.reason)}</em>
+                            </div>
+                            ${l.reviewRemarks ? `
+                                <div style="font-size: 0.78rem; color: #93c5fd; padding-top: 0.25rem;">
+                                    📝 <strong>Teacher Remarks:</strong> ${escapeHtml(l.reviewRemarks)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<p style="color: #f87171; text-align: center; padding: 1rem;">Failed to load leaves: ${escapeHtml(e.message)}</p>`;
+            }
+        }
+
+        async function handleApplyLeave(event) {
+            event.preventDefault();
+            const token = getCookie('token') || localStorage.getItem('token');
+            const alertBox = document.getElementById('leaveAlert');
+            const submitBtn = document.getElementById('btnSubmitLeave');
+
+            const payload = {
+                leaveType: document.getElementById('leaveTypeInput').value,
+                className: document.getElementById('leaveClassNameInput').value.trim(),
+                startDate: document.getElementById('leaveStartDateInput').value,
+                endDate: document.getElementById('leaveEndDateInput').value,
+                reason: document.getElementById('leaveReasonInput').value.trim()
+            };
+
+            if (!payload.startDate || !payload.endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            if (payload.startDate > payload.endDate) {
+                alert('Start date cannot be after end date');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const res = await fetch('/leaves/apply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Failed to submit leave');
+                }
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(16,185,129,0.2)';
+                alertBox.style.color = '#4ade80';
+                alertBox.style.border = '1px solid #10b981';
+                alertBox.textContent = '✅ Leave application submitted successfully! It is now pending teacher review.';
+                setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
+
+                document.getElementById('applyLeaveForm').reset();
+                if (currentStudentClassName) {
+                    document.getElementById('leaveClassNameInput').value = currentStudentClassName;
+                }
+                loadStudentLeaves();
+            } catch(e) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239,68,68,0.2)';
+                alertBox.style.color = '#f87171';
+                alertBox.style.border = '1px solid #ef4444';
+                alertBox.textContent = '❌ Error: ' + e.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Submit Leave Application';
+            }
         }
     </script>
 </body>

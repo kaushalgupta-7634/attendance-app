@@ -69,6 +69,16 @@ public class AdminController {
         ));
     }
 
+    @PostMapping(value = "/users/bulk-import", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<AdminDTOs.BulkImportResultDTO> bulkImportUsers(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            Principal principal,
+            HttpServletRequest httpRequest) {
+        String ipAddress = AuditLogService.extractClientIp(httpRequest);
+        AdminDTOs.BulkImportResultDTO result = adminService.bulkImportUsers(file, principal.getName(), ipAddress);
+        return ResponseEntity.ok(result);
+    }
+
     @PutMapping("/users/{id}/status")
     public ResponseEntity<Map<String, String>> toggleUserStatus(
             @PathVariable Long id,

@@ -10,6 +10,9 @@ public class StudentAttendanceSummaryDTO {
     private String studentEmail;
     private double overallPercentage;
     private long totalSessions;
+    private boolean defaulter;
+    private String defaulterMessage;
+    private int classesNeededFor75;
     private List<SubjectSummaryDTO> subjectBreakdown;
     private List<AttendanceRecordItemDTO> recentRecords;
 
@@ -105,6 +108,30 @@ public class StudentAttendanceSummaryDTO {
 
     public void setRecentRecords(List<AttendanceRecordItemDTO> recentRecords) {
         this.recentRecords = recentRecords;
+    }
+
+    public boolean isDefaulter() {
+        return defaulter;
+    }
+
+    public void setDefaulter(boolean defaulter) {
+        this.defaulter = defaulter;
+    }
+
+    public String getDefaulterMessage() {
+        return defaulterMessage;
+    }
+
+    public void setDefaulterMessage(String defaulterMessage) {
+        this.defaulterMessage = defaulterMessage;
+    }
+
+    public int getClassesNeededFor75() {
+        return classesNeededFor75;
+    }
+
+    public void setClassesNeededFor75(int classesNeededFor75) {
+        this.classesNeededFor75 = classesNeededFor75;
     }
 
     public static class SubjectSummaryDTO {

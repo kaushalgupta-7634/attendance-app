@@ -61,7 +61,6 @@ class ClassCourseServiceTest {
     void testCreateClassCourse_Success() {
         CreateClassCourseRequest request = new CreateClassCourseRequest("Data Structures", "CS", "CS101-A");
         when(userRepository.findByUsernameIgnoreCase("teacher1")).thenReturn(Optional.of(teacher));
-        when(classCourseRepository.existsByClassCode("CS101-A")).thenReturn(false);
         when(classCourseRepository.save(any(ClassCourse.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ClassCourse created = classCourseService.createClassCourse(request, "teacher1");
@@ -115,7 +114,7 @@ class ClassCourseServiceTest {
         when(classCourseRepository.findByClassCodeIgnoreCase("CS101-A")).thenReturn(Optional.of(classCourse));
         when(enrollmentRepository.existsByStudentAndClassCourse(student, classCourse)).thenReturn(true);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 classCourseService.joinClass(request, "student1")
         );
         assertTrue(ex.getMessage().contains("already enrolled"));

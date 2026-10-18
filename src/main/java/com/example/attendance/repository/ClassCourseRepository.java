@@ -14,4 +14,5 @@ public interface ClassCourseRepository extends JpaRepository<ClassCourse, Long> 
     Optional<ClassCourse> findByClassCodeIgnoreCase(String classCode);
     boolean existsByClassCode(String classCode);
     List<ClassCourse> findByTeacher(User teacher);
+    List<ClassCourse> findByTeacherId(Long teacherId);
 }

@@ -37,4 +37,9 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
     List<ClassSession> findScheduledSessionsToStart(@org.springframework.data.repository.query.Param("now") java.time.LocalDateTime now);
 
     long countByClassNameAndCancelledFalse(String className);
+
+    @Query("SELECT c FROM ClassSession c WHERE LOWER(c.className) = LOWER(:className) AND c.startTime >= :start AND c.startTime <= :end AND c.cancelled = false")
+    List<ClassSession> findSessionsForClassInDateRange(@org.springframework.data.repository.query.Param("className") String className,
+                                                      @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start,
+                                                      @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
 }

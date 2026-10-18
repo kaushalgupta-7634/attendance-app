@@ -312,11 +312,11 @@ class AuthServiceTest {
         request.setPassword("password123");
         request.setRole(Role.ADMIN);
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
+        org.springframework.security.access.AccessDeniedException ex = assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
                 () -> authService.register(request)
         );
 
-        assertTrue(ex.getMessage().contains("Public registration for ADMIN role is strictly prohibited"));
+        assertTrue(ex.getMessage().contains("Public self-registration is disabled"));
     }
 }

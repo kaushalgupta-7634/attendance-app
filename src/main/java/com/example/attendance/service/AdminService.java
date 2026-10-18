@@ -378,6 +378,64 @@ public class AdminService {
     }
 
     @Transactional
+    public AdminDTOs.BulkImportResultDTO bulkImportUsers(org.springframework.web.multipart.MultipartFile file, String adminUsername, String ipAddress) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("CSV file must not be empty.");
+        }
+
+        List<String> errors = new java.util.ArrayList<>();
+        int processed = 0;
+        int success = 0;
+
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(file.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+
+            String line;
+            int lineNum = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNum++;
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                if (lineNum == 1 && line.toLowerCase().contains("username")) {
+                    // Skip header line
+                    continue;
+                }
+
+                processed++;
+                String[] parts = line.split(",", -1);
+                if (parts.length < 5) {
+                    errors.add("Line " + lineNum + ": Incomplete row. Expected format: name,username,email,password,role[,className]");
+                    continue;
+                }
+
+                String name = parts[0].trim();
+                String username = parts[1].trim();
+                String email = parts[2].trim();
+                String password = parts[3].trim();
+                String roleStr = parts[4].trim().toUpperCase();
+                String className = parts.length >= 6 ? parts[5].trim() : null;
+
+                try {
+                    Role role = Role.valueOf(roleStr);
+                    AdminDTOs.CreateUserRequest req = new AdminDTOs.CreateUserRequest(name, username, email, role, className, password);
+                    createUser(req, adminUsername, ipAddress);
+                    success++;
+                } catch (IllegalArgumentException e) {
+                    errors.add("Line " + lineNum + " (" + username + "): " + e.getMessage());
+                } catch (Exception e) {
+                    errors.add("Line " + lineNum + " (" + username + "): " + e.getMessage());
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read CSV file: " + e.getMessage(), e);
+        }
+
+        auditLogService.logAction(adminUsername, "BULK_IMPORT_USERS", "Users",
+                "Processed: " + processed + ", Success: " + success + ", Errors: " + errors.size(), ipAddress);
+        return new AdminDTOs.BulkImportResultDTO(processed, success, errors.size(), errors);
+    }
+
+    @Transactional
     public void deleteUser(Long userId, String adminUsername, String pinHeader, String ipAddress) {
         validateMasterPin(adminUsername, pinHeader);
 

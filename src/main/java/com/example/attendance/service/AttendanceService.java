@@ -156,18 +156,10 @@ public class AttendanceService {
         // Testing / Anywhere Mode (radiusMeters >= 99999 or <= 0) bypasses checks for testing.
         // JUnit / Spring test suite calls also bypass geofencing.
 
-        boolean isRunningTest = false;
-        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-            if (element.getClassName().startsWith("org.junit.") || element.getClassName().startsWith("org.springframework.test.")) {
-                isRunningTest = true;
-                break;
-            }
-        }
-
         boolean isTestingAnywhereMode = (session.getRadiusMeters() != null &&
                 (session.getRadiusMeters() >= 99999 || session.getRadiusMeters() <= 0.0));
 
-        if (!isTestingAnywhereMode && !isRunningTest) {
+        if (!isTestingAnywhereMode) {
             // Strict Haversine geofence for both QR and TOKEN
             boolean hasValidClassroomCoords = session.getClassroomLat() != null && session.getClassroomLng() != null
                     && (session.getClassroomLat() != 0.0 || session.getClassroomLng() != 0.0);
@@ -213,7 +205,7 @@ public class AttendanceService {
 
             } else if (!gpsPass && !wifiPass) {
                 // Both configured checks failed → reject with required error message
-                StringBuilder rejectMsg = new StringBuilder("You are outside allowed classroom radius.");
+                StringBuilder rejectMsg = new StringBuilder("Attendance rejected: Distance limit! You are outside allowed classroom radius.");
                 if (hasValidClassroomCoords && distanceMeters != Double.MAX_VALUE) {
                     rejectMsg.append(" Your distance: ").append((int) distanceMeters)
                              .append("m (allowed: ").append(session.getRadiusMeters().intValue()).append("m).");
@@ -584,17 +576,31 @@ public class AttendanceService {
         });
 
         double overallPercentage = totalSessionsAll > 0 ? ((double) totalPresentAll / totalSessionsAll) * 100.0 : 0.0;
+        double roundedOverall = Math.round(overallPercentage * 10.0) / 10.0;
 
-        return new StudentAttendanceSummaryDTO(
+        boolean isDefaulter = totalSessionsAll > 0 && roundedOverall < 75.0;
+        int classesNeeded = 0;
+        String defaulterMsg = null;
+        if (isDefaulter) {
+            long needed = (3L * totalSessionsAll) - (4L * totalPresentAll);
+            classesNeeded = (int) Math.max(1, needed);
+            defaulterMsg = "⚠️ Low Attendance Alert: Your overall rate is " + roundedOverall + "% (below the mandatory 75% college criteria). You must attend the next " + classesNeeded + " consecutive class(es) to recover to 75%.";
+        }
+
+        StudentAttendanceSummaryDTO summary = new StudentAttendanceSummaryDTO(
                 targetStudent.getId(),
                 targetStudent.getName(),
                 targetStudent.getUsername(),
                 targetStudent.getEmail(),
-                Math.round(overallPercentage * 10.0) / 10.0,
+                roundedOverall,
                 totalSessionsAll,
                 breakdown,
                 recentRecords
         );
+        summary.setDefaulter(isDefaulter);
+        summary.setClassesNeededFor75(classesNeeded);
+        summary.setDefaulterMessage(defaulterMsg);
+        return summary;
     }
 
     public ClassAttendanceSummaryDTO getClassAttendanceSummary(Long classId, String teacherUsername) {

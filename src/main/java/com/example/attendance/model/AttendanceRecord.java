@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
             name = "uk_session_student",
             columnNames = {"session_id", "student_id"}
         )
+    },
+    indexes = {
+        @Index(name = "idx_att_student_marked", columnList = "student_id, marked_at"),
+        @Index(name = "idx_att_session_status", columnList = "session_id, status")
     }
 )
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

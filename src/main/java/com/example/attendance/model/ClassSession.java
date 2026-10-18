@@ -5,7 +5,13 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "class_sessions")
+@Table(
+    name = "class_sessions",
+    indexes = {
+        @Index(name = "idx_session_teacher_active", columnList = "teacher_id, active"),
+        @Index(name = "idx_session_class_name", columnList = "class_name")
+    }
+)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ClassSession {
 

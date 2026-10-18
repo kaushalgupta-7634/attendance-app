@@ -534,6 +534,30 @@ public class AdminDTOs {
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
     }
+
+    public static class BulkImportResultDTO {
+        private int totalProcessed;
+        private int successCount;
+        private int errorCount;
+        private List<String> errors = new java.util.ArrayList<>();
+
+        public BulkImportResultDTO() {}
+        public BulkImportResultDTO(int totalProcessed, int successCount, int errorCount, List<String> errors) {
+            this.totalProcessed = totalProcessed;
+            this.successCount = successCount;
+            this.errorCount = errorCount;
+            this.errors = errors != null ? errors : new java.util.ArrayList<>();
+        }
+
+        public int getTotalProcessed() { return totalProcessed; }
+        public void setTotalProcessed(int totalProcessed) { this.totalProcessed = totalProcessed; }
+        public int getSuccessCount() { return successCount; }
+        public void setSuccessCount(int successCount) { this.successCount = successCount; }
+        public int getErrorCount() { return errorCount; }
+        public void setErrorCount(int errorCount) { this.errorCount = errorCount; }
+        public List<String> getErrors() { return errors; }
+        public void setErrors(List<String> errors) { this.errors = errors; }
+    }
 }
 
 

@@ -8,10 +8,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,6 +34,9 @@ public class FacultyEmailVerificationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @MockBean
     private EmailService emailService;
 
@@ -43,7 +46,7 @@ public class FacultyEmailVerificationTest {
     }
 
     @Test
-    void testFacultyRegistration_AutoVerifiedByDefault() {
+    void testPublicRegistration_DisabledForFaculty() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Prof. Sharma");
         request.setUsername("prof_sharma");
@@ -52,28 +55,21 @@ public class FacultyEmailVerificationTest {
         request.setRole(Role.TEACHER);
         request.setSecurityPin("1234");
 
-        String result = authService.register(request);
-        assertTrue(result.contains("successful"));
-
-        User savedUser = userRepository.findByUsernameIgnoreCase("prof_sharma").orElseThrow();
-        assertFalse(savedUser.getVerified(), "Accounts should not be verified until email link is clicked");
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class, () -> authService.register(request));
+        assertTrue(ex.getMessage().contains("Public self-registration is disabled"));
     }
 
     @Test
-    void testDirectLogin_SucceedsAfterRegistration() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Dr. Gupta");
-        request.setUsername("dr_gupta");
-        request.setEmail("gupta@faculty.com");
-        request.setPassword("password123");
-        request.setRole(Role.TEACHER);
-        request.setSecurityPin("1234");
-
-        authService.register(request);
+    void testDirectLogin_SucceedsAfterEmailVerification() {
+        User user = new User("Dr. Gupta", "dr_gupta", "gupta@faculty.com", passwordEncoder.encode("password123"), Role.TEACHER);
+        user.setVerificationToken(java.util.UUID.randomUUID().toString());
+        user.setVerified(false);
+        user.setEnabled(true);
+        userRepository.save(user);
 
         // Simulate email verification link click to activate the account
-        User registeredUser = userRepository.findByUsernameIgnoreCase("dr_gupta").orElseThrow();
-        authService.verifyEmail(registeredUser.getVerificationToken());
+        String verifyResult = authService.verifyEmail(user.getVerificationToken());
+        assertTrue(verifyResult.contains("Email verified successfully"));
 
         com.example.attendance.model.LoginRequest loginRequest = new com.example.attendance.model.LoginRequest();
         loginRequest.setUsername("dr_gupta");

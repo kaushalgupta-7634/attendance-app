@@ -521,6 +521,9 @@
                         style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
                         onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
                     <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="openBulkImportModal()">📂 Bulk Import (CSV)</button>
+                    <button class="btn-sm"
                         style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
                         onclick="openCreateUserModal()">➕ Create User</button>
                 </div>
@@ -1073,6 +1076,43 @@
         </div>
     </div>
 
+    <!-- MODAL: BULK IMPORT USERS VIA CSV -->
+    <div id="bulkImportModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 540px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                    📂 <span>Bulk Import Users (CSV)</span>
+                </h3>
+                <button type="button" class="btn-sm" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #93c5fd; padding: 0.35rem 0.65rem; font-size: 0.78rem; cursor: pointer;" onclick="downloadSampleCSV()">
+                    📥 Template CSV
+                </button>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4;">
+                Upload a CSV spreadsheet to batch-provision student or teacher accounts. Accounts are activated immediately.
+            </p>
+
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed var(--card-border); border-radius: 10px; padding: 0.85rem; margin-bottom: 1.25rem;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.35rem; text-transform: uppercase;">Required CSV Header Format:</div>
+                <code style="display: block; font-size: 0.8rem; color: #38bdf8; background: #0b1120; padding: 0.4rem 0.6rem; border-radius: 6px; word-break: break-all;">name,username,email,password,role,className</code>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.35rem;">Roles supported: <strong style="color: #f8fafc;">STUDENT</strong>, <strong style="color: #f8fafc;">TEACHER</strong></div>
+            </div>
+
+            <form id="bulkImportForm" onsubmit="handleBulkImportSubmit(event)">
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Choose CSV File *</label>
+                    <input type="file" id="bulkImportFileInput" accept=".csv,text/csv" class="search-input" style="width: 100%; padding: 0.5rem;" required>
+                </div>
+
+                <div id="bulkImportResultMsg" style="display: none; font-size: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 8px; margin-bottom: 1rem; max-height: 180px; overflow-y: auto;"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-sm" onclick="closeModal('bulkImportModal')">Cancel</button>
+                    <button type="submit" id="bulkImportSubmitBtn" class="btn-sm" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; font-weight: 600; cursor: pointer;">Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function parseJwtPayload(token) {
             try {
@@ -1613,6 +1653,102 @@
             }
         }
 
+        function openBulkImportModal() {
+            document.getElementById('bulkImportFileInput').value = '';
+            const msgBox = document.getElementById('bulkImportResultMsg');
+            msgBox.style.display = 'none';
+            msgBox.innerHTML = '';
+            document.getElementById('bulkImportModal').style.display = 'flex';
+        }
+
+        function downloadSampleCSV() {
+            const csvContent = "name,username,email,password,role,className\n" +
+                "Rahul Sharma,rahul.sharma,rahul@example.com,Pass@1234,STUDENT,BCA\n" +
+                "Priya Verma,priya.verma,priya@example.com,Pass@1234,STUDENT,BCA\n" +
+                "Prof. Amit Singh,amit.prof,amit@example.com,Pass@1234,TEACHER,BCA\n";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'users_sample_template.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        async function handleBulkImportSubmit(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('bulkImportFileInput');
+            const btn = document.getElementById('bulkImportSubmitBtn');
+            const msgBox = document.getElementById('bulkImportResultMsg');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a CSV file first.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            btn.disabled = true;
+            btn.textContent = 'Importing users...';
+            msgBox.style.display = 'none';
+            msgBox.innerHTML = '';
+
+            try {
+                const res = await fetch('/admin/users/bulk-import', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.message || 'Bulk import failed.');
+                }
+
+                msgBox.style.display = 'block';
+                if (data.errorCount === 0) {
+                    msgBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                    msgBox.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                    msgBox.style.color = '#6ee7b7';
+                    msgBox.innerHTML = `<strong>✅ Success!</strong> ${data.successCount} of ${data.totalProcessed} user accounts imported successfully.`;
+                } else {
+                    msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                    msgBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                    msgBox.style.color = '#fca5a5';
+                    let errHtml = `<strong>⚠️ Completed with warnings:</strong> ${data.successCount} succeeded, ${data.errorCount} failed out of ${data.totalProcessed}.<ul style="margin-top: 0.5rem; padding-left: 1.25rem;">`;
+                    if (data.errors && Array.isArray(data.errors)) {
+                        data.errors.slice(0, 10).forEach(err => {
+                            errHtml += `<li style="margin-bottom: 0.2rem;">${escapeHtml(err)}</li>`;
+                        });
+                        if (data.errors.length > 10) {
+                            errHtml += `<li>...and ${data.errors.length - 10} more errors.</li>`;
+                        }
+                    }
+                    errHtml += `</ul>`;
+                    msgBox.innerHTML = errHtml;
+                }
+
+                if (data.successCount > 0) {
+                    loadUsers();
+                    loadStats();
+                }
+            } catch (err) {
+                msgBox.style.display = 'block';
+                msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                msgBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                msgBox.style.color = '#fca5a5';
+                msgBox.textContent = err.message || 'An error occurred during bulk import.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Upload & Import';
+            }
+        }
 
         async function loadSubjectsManager() {
             const container = document.getElementById('subjectManagerBadges');
