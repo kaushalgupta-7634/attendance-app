@@ -1002,7 +1002,7 @@
                 👤 <span>Create User Account</span>
             </h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4;">
-                Issue new credentials for a student or teacher. Accounts are activated immediately with mandatory password change on first login.
+                Issue new credentials for a student or teacher. Accounts are activated immediately and users can log in directly with their credentials.
             </p>
 
             <form id="adminCreateUserForm" onsubmit="handleCreateUser(event)">
@@ -1204,15 +1204,6 @@
             loadStats();
             loadUsers();
             checkMasterPinStatus();
-
-            // Check if admin is required to change password
-            fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
-                .then(r => r.ok ? r.json() : null)
-                .then(profile => {
-                    if (profile && profile.mustChangePassword) {
-                        window.location.href = '/change-password.html?required=true';
-                    }
-                }).catch(() => {});
         });
 
         function handleLogout() {

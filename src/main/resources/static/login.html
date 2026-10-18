@@ -410,25 +410,10 @@
                 setCookie('attendx_student_token', data.accessToken, 365);
                 setCookie('attendx_user_role', role, 365);
 
-                let mustChangePassword = false;
-                try {
-                    const meRes = await fetch('/auth/me', {
-                        headers: { 'Authorization': 'Bearer ' + data.accessToken }
-                    });
-                    if (meRes.ok) {
-                        const meProfile = await meRes.json();
-                        mustChangePassword = Boolean(meProfile.mustChangePassword);
-                    }
-                } catch (e) {
-                    console.warn('Could not verify profile password status:', e);
-                }
-
                 showAlert('Login successful! Redirecting...', true);
 
                 setTimeout(() => {
-                    if (mustChangePassword) {
-                        window.location.href = '/change-password.html?required=true';
-                    } else if (role === 'ADMIN') {
+                    if (role === 'ADMIN') {
                         window.location.href = '/admin-dashboard.html';
                     } else if (role === 'TEACHER') {
                         window.location.href = '/teacher-dashboard.html';

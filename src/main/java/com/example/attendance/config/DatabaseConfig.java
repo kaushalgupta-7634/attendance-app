@@ -55,6 +55,7 @@ public class DatabaseConfig {
         try (java.sql.Connection conn = ds.getConnection();
              java.sql.Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE");
+            stmt.execute("UPDATE users SET must_change_password = FALSE WHERE must_change_password = TRUE");
         } catch (Exception ex) {
             org.slf4j.LoggerFactory.getLogger(DatabaseConfig.class).warn("Automatic column migration check note: {}", ex.getMessage());
         }

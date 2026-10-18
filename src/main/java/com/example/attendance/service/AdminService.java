@@ -241,7 +241,7 @@ public class AdminService {
         user.setPassword(passwordEncoder.encode(newPassword.trim()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
-        user.setMustChangePassword(true);
+        user.setMustChangePassword(false);
         userRepository.save(user);
 
         User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
@@ -249,7 +249,7 @@ public class AdminService {
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
         auditLogService.logAction(adminEmail, "RESET_PASSWORD", "User #" + userId + " (" + user.getUsername() + ")",
-                "Admin performed direct password reset (mustChangePassword=true)", ipAddress);
+                "Admin performed direct password reset", ipAddress);
         logger.info("Admin reset password for user '{}' (ID {})", user.getUsername(), userId);
     }
 
@@ -299,10 +299,10 @@ public class AdminService {
             user.setClassName(cName);
         }
 
-        // Admin-issued credentials: mark email verified and active immediately, require password change on first login
+        // Admin-issued credentials: mark email verified and active immediately (direct login enabled)
         user.setVerified(true);
         user.setEnabled(true);
-        user.setMustChangePassword(true);
+        user.setMustChangePassword(false);
         user.setSecurityPin(String.format("%04d", new java.security.SecureRandom().nextInt(10000)));
 
         user = userRepository.save(user);
@@ -363,7 +363,7 @@ public class AdminService {
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
         auditLogService.logAction(adminEmail, "CREATE_USER", "User #" + user.getId() + " (" + user.getUsername() + ")",
-                "Admin created account with role=" + user.getRole() + ", class=" + (user.getClassName() != null ? user.getClassName() : "N/A") + ", active=true, verified=true, mustChangePassword=true", ipAddress);
+                "Admin created account with role=" + user.getRole() + ", class=" + (user.getClassName() != null ? user.getClassName() : "N/A") + ", active=true, verified=true", ipAddress);
         logger.info("Admin '{}' successfully created user '{}' (ID {}, Role {})", adminUsername, user.getUsername(), user.getId(), user.getRole());
 
         return new AdminDTOs.UserSummaryDTO(

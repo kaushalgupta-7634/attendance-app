@@ -44,7 +44,8 @@ public class DataInitializer implements CommandLineRunner {
                 try (java.sql.Connection conn = dataSource.getConnection();
                      java.sql.Statement stmt = conn.createStatement()) {
                     stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE");
-                    logger.info("Auto-migration: successfully verified/added must_change_password column to users table.");
+                    stmt.execute("UPDATE users SET must_change_password = FALSE WHERE must_change_password = TRUE");
+                    logger.info("Auto-migration: successfully verified must_change_password column and reset to false.");
                 } catch (Exception ddlEx) {
                     logger.info("Auto-migration note for must_change_password column: {}", ddlEx.getMessage());
                 }
