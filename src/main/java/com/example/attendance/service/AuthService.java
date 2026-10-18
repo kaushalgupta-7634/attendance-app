@@ -437,7 +437,7 @@ public class AuthService {
                 throw new IllegalArgumentException("The OTP code has expired.");
             }
         } else {
-            throw new IllegalArgumentException("Please provide a valid 4-Digit Private Security PIN to reset password.");
+            throw new IllegalArgumentException("Please provide a valid 6-digit Email OTP to reset password.");
         }
 
         if (user != null && user.getRole() == Role.ADMIN) {
