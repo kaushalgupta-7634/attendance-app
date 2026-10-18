@@ -501,5 +501,39 @@ public class AdminDTOs {
         public String getIpAddress() { return ipAddress; }
         public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
     }
+
+    public static class CreateUserRequest {
+        private String name;
+        private String username;
+        private String email;
+        private Role role;
+        private String className;
+        private String password;
+
+        public CreateUserRequest() {}
+
+        public CreateUserRequest(String name, String username, String email, Role role, String className, String password) {
+            this.name = name;
+            this.username = username;
+            this.email = email;
+            this.role = role;
+            this.className = className;
+            this.password = password;
+        }
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public Role getRole() { return role; }
+        public void setRole(Role role) { this.role = role; }
+        public String getClassName() { return className; }
+        public void setClassName(String className) { this.className = className; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
 }
+
 

@@ -84,7 +84,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/admin-info").hasRole("ADMIN")
-                        .requestMatchers("/", "/index.html", "/login.html", "/verify.html", "/verify", "/verify-email", "/verify-otp", "/resend-otp", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/favicon-32x32.png", "/apple-touch-icon.png", "/manifest.json", "/robots.txt", "/sitemap.xml", "/.well-known/**", "/ai/**", "/images/**", "/about.html", "/contact.html", "/privacy.html", "/terms.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/login.html", "/change-password.html", "/verify.html", "/verify", "/verify-email", "/verify-otp", "/resend-otp", "/resend-verification", "/forgot-password.html", "/reset-password.html", "/teacher-dashboard.html", "/student-scan.html", "/admin-dashboard.html", "/auth/**", "/api/auth/**", "/api/info", "/favicon.ico", "/favicon-32x32.png", "/apple-touch-icon.png", "/manifest.json", "/robots.txt", "/sitemap.xml", "/.well-known/**", "/ai/**", "/images/**", "/about.html", "/contact.html", "/privacy.html", "/terms.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/assignments/download/**", "/assignments/class/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );

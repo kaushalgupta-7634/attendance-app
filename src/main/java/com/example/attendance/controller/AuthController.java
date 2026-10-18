@@ -37,9 +37,10 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
-        String response = authService.register(registerRequest);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("Public registration is disabled. Accounts can only be created by the System Administrator.");
     }
+
 
     @GetMapping("/verify-email")
     public ResponseEntity<String> verifyEmail(@RequestParam(name = "token", required = false) String token) {
@@ -119,5 +120,16 @@ public class AuthController {
     @GetMapping("/admin-info")
     public ResponseEntity<java.util.Map<String, Object>> getAdminInfo() {
         return ResponseEntity.ok(authService.getAdminInfo());
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<java.util.Map<String, String>> changePassword(
+            @RequestBody com.example.attendance.model.ChangePasswordRequest request,
+            java.security.Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized. Please log in first.");
+        }
+        authService.changePassword(principal.getName(), request);
+        return ResponseEntity.ok(java.util.Map.of("message", "Password has been successfully changed."));
     }
 }

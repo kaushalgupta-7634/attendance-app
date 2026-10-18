@@ -80,71 +80,11 @@ public class AuthService {
     }
 
     public String register(RegisterRequest registerRequest) {
-        String cleanUsername = registerRequest.getUsername() != null ? registerRequest.getUsername().trim() : "";
-        String cleanEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().trim().toLowerCase() : "";
-
-        if (userRepository.existsByUsernameIgnoreCase(cleanUsername)) {
-            throw new IllegalArgumentException("Username is already taken!");
-        }
-
-        if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
-            throw new IllegalArgumentException("Email is already in use!");
-        }
-
-        User user = new User();
-        user.setName(registerRequest.getName() != null && !registerRequest.getName().isBlank() ? registerRequest.getName().trim() : cleanUsername);
-        user.setUsername(cleanUsername);
-        user.setEmail(cleanEmail);
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        
-        Role role = registerRequest.getRole() != null ? registerRequest.getRole() : Role.STUDENT;
-        if (role == Role.ADMIN) {
-            throw new IllegalArgumentException("Public registration for ADMIN role is strictly prohibited. New Admin accounts can only be created directly by System Administrator.");
-        }
-        user.setRole(role);
-        if (registerRequest.getClassName() != null && !registerRequest.getClassName().isBlank()) {
-            user.setClassName(registerRequest.getClassName().trim());
-        }
-        if (registerRequest.getSecurityPin() != null && !registerRequest.getSecurityPin().isBlank()) {
-            String cleanPin = registerRequest.getSecurityPin().trim();
-            if (!cleanPin.matches("\\d{4}")) {
-                throw new IllegalArgumentException("Security PIN must be exactly 4 digits (e.g. 1234).");
-            }
-            user.setSecurityPin(cleanPin);
-            user.setPinGeneratedAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
-        } else {
-            throw new IllegalArgumentException("Please enter a 4-digit Security PIN to protect your account.");
-        }
-
-        // Local dev mode: skip email verification — auto-verify user immediately
-        if (skipEmailVerification) {
-            user.setVerified(true);
-            user.setEnabled(true);
-            userRepository.save(user);
-            logger.info("[LOCAL MODE] Auto-verified user '{}' — email verification skipped.", cleanUsername);
-            return "User registered successfully! (Local mode: email verification skipped — you can log in directly.)";
-        }
-
-        // Generate email verification token and 6-digit OTP for new accounts
-        String verificationToken = java.util.UUID.randomUUID().toString();
-        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
-
-        user.setVerified(false);
-        user.setVerificationToken(verificationToken);
-        user.setVerificationTokenExpiry(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
-        user.setOtp(otp);
-        user.setOtpExpiresAt(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).plusHours(24));
-        userRepository.save(user);
-        // Send verification email with the generated token and OTP
-        // Email failure should NOT block registration — log and continue
-        try {
-            emailService.sendEmailVerificationLink(user.getEmail(), user.getName(), verificationToken, otp);
-        } catch (Exception emailEx) {
-            logger.warn("Could not send verification email to {} (registration still succeeded): {}", user.getEmail(), emailEx.getMessage());
-        }
-
-        return "User registered successfully! Please check your email to verify your account.";
+        throw new org.springframework.security.access.AccessDeniedException(
+                "Public self-registration is disabled. Accounts can only be created by the System Administrator."
+        );
     }
+
 
     public String verifyOtp(String emailOrUsername, String otp) {
         if (emailOrUsername == null || emailOrUsername.isBlank() || otp == null || otp.isBlank()) {
@@ -512,6 +452,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
+        user.setMustChangePassword(false);
         userRepository.save(user);
 
         return "Password has been successfully reset. You may now log in with your new password.";
@@ -526,8 +467,41 @@ public class AuthService {
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
-                user.getClassName()
+                user.getClassName(),
+                user.getMustChangePassword()
         );
+    }
+
+    public void changePassword(String username, com.example.attendance.model.ChangePasswordRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Password change request cannot be empty.");
+        }
+        if (request.getOldPassword() == null || request.getOldPassword().isBlank()) {
+            throw new IllegalArgumentException("Current password is required.");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("New password is required.");
+        }
+        if (request.getNewPassword().trim().length() < 8) {
+            throw new IllegalArgumentException("New password must be at least 8 characters long.");
+        }
+        if (request.getConfirmPassword() == null || !request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation password do not match.");
+        }
+
+        User user = userRepository.findByUsernameIgnoreCase(username)
+                .or(() -> userRepository.findByEmailIgnoreCase(username))
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Incorrect current password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
+        user.setMustChangePassword(false);
+        userRepository.save(user);
+
+        logger.info("User '{}' successfully changed their password. mustChangePassword set to false.", user.getUsername());
     }
 
     public java.util.Map<String, Object> getAdminInfo() {

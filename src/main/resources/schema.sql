@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     class_name VARCHAR(255),
     current_session_id VARCHAR(255),
     reset_token VARCHAR(255),
-    reset_token_expiry TIMESTAMP
+    reset_token_expiry TIMESTAMP,
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS class_courses (

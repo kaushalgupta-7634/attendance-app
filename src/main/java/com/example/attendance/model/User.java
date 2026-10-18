@@ -313,5 +313,20 @@ public class User {
     public void setDeletedAt(java.time.LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
+
+    @Column(name = "must_change_password", nullable = false)
+    private Boolean mustChangePassword = false;
+
+    public Boolean getMustChangePassword() {
+        return Boolean.TRUE.equals(mustChangePassword);
+    }
+
+    public boolean isMustChangePassword() {
+        return Boolean.TRUE.equals(mustChangePassword);
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword != null ? mustChangePassword : false;
+    }
 }
 

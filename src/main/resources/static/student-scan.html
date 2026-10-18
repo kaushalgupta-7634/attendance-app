@@ -529,7 +529,10 @@
                 <span class="role-badge">STUDENT</span>
             </div>
         </div>
-        <button class="btn-logout" onclick="logout()">Logout</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="/change-password.html" class="btn-logout" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-color); color: #f8fafc;">🔑 Change Password</a>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
     </div>
 
     <!-- SEPARATE QUICK ACCESS TAB BUTTONS -->
@@ -848,10 +851,16 @@
         fetch('/auth/me', {
             headers: { 'Authorization': 'Bearer ' + token }
         }).then(res => res.ok ? res.json() : null).then(profile => {
-            if (profile && profile.name) {
-                localStorage.setItem('userName', profile.name);
-                if (studentHeader) {
-                    studentHeader.textContent = `Hello, ${profile.name}`;
+            if (profile) {
+                if (profile.mustChangePassword) {
+                    window.location.href = '/change-password.html?required=true';
+                    return;
+                }
+                if (profile.name) {
+                    localStorage.setItem('userName', profile.name);
+                    if (studentHeader) {
+                        studentHeader.textContent = `Hello, ${profile.name}`;
+                    }
                 }
             }
         }).catch(err => console.log("Profile fetch failed:", err));

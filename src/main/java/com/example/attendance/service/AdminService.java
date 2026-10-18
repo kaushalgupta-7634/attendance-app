@@ -241,6 +241,7 @@ public class AdminService {
         user.setPassword(passwordEncoder.encode(newPassword.trim()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
+        user.setMustChangePassword(true);
         userRepository.save(user);
 
         User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
@@ -248,8 +249,120 @@ public class AdminService {
         String adminEmail = admin != null ? admin.getEmail() : adminUsername;
 
         auditLogService.logAction(adminEmail, "RESET_PASSWORD", "User #" + userId + " (" + user.getUsername() + ")",
-                "Admin performed direct password reset", ipAddress);
+                "Admin performed direct password reset (mustChangePassword=true)", ipAddress);
         logger.info("Admin reset password for user '{}' (ID {})", user.getUsername(), userId);
+    }
+
+    @Transactional
+    public AdminDTOs.UserSummaryDTO createUser(AdminDTOs.CreateUserRequest request, String adminUsername, String ipAddress) {
+        if (request == null) {
+            throw new IllegalArgumentException("User creation request cannot be empty.");
+        }
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new IllegalArgumentException("Full name is required.");
+        }
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            throw new IllegalArgumentException("User ID / Username is required.");
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email address is required.");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Temporary password is required.");
+        }
+        if (request.getPassword().trim().length() < 6) {
+            throw new IllegalArgumentException("Temporary password must be at least 6 characters long.");
+        }
+        if (request.getRole() == null || (request.getRole() != Role.TEACHER && request.getRole() != Role.STUDENT)) {
+            throw new IllegalArgumentException("Role must be either TEACHER or STUDENT.");
+        }
+
+        String cleanUsername = request.getUsername().trim();
+        String cleanEmail = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByUsernameIgnoreCase(cleanUsername)) {
+            throw new IllegalArgumentException("User ID / Username '" + cleanUsername + "' is already taken.");
+        }
+        if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
+            throw new IllegalArgumentException("Email address '" + cleanEmail + "' is already in use.");
+        }
+
+        User user = new User();
+        user.setName(request.getName().trim());
+        user.setUsername(cleanUsername);
+        user.setEmail(cleanEmail);
+        user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        user.setRole(request.getRole());
+
+        String cName = request.getClassName() != null ? request.getClassName().trim() : null;
+        if (cName != null && !cName.isBlank()) {
+            user.setClassName(cName);
+        }
+
+        // Admin-issued credentials: mark email verified and active immediately, require password change on first login
+        user.setVerified(true);
+        user.setEnabled(true);
+        user.setMustChangePassword(true);
+        user.setSecurityPin(String.format("%04d", new java.security.SecureRandom().nextInt(10000)));
+
+        user = userRepository.save(user);
+
+        // Enrol student or assign teacher to selected class using existing class/enrollment logic
+        if (cName != null && !cName.isBlank()) {
+            if (user.getRole() == Role.STUDENT) {
+                final User studentRef = user;
+                List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                        .filter(c -> !c.isDeleted() && c.getClassName() != null && c.getClassName().equalsIgnoreCase(cName))
+                        .toList();
+                for (ClassCourse course : matchingCourses) {
+                    if (!enrollmentRepository.existsByStudentAndClassCourse(studentRef, course)) {
+                        Enrollment enrollment = new Enrollment(studentRef, course, java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+                        enrollmentRepository.save(enrollment);
+                    }
+                }
+            } else if (user.getRole() == Role.TEACHER) {
+                final User teacherRef = user;
+                List<ClassCourse> matchingCourses = classCourseRepository.findAll().stream()
+                        .filter(c -> !c.isDeleted() && c.getClassName() != null && c.getClassName().equalsIgnoreCase(cName))
+                        .toList();
+                for (ClassCourse course : matchingCourses) {
+                    if (course.getTeacher() == null || course.getTeacher().getRole() == Role.ADMIN) {
+                        course.setTeacher(teacherRef);
+                        classCourseRepository.save(course);
+                    }
+                }
+                if (matchingCourses.isEmpty()) {
+                    ClassCourse course = new ClassCourse();
+                    course.setTeacher(teacherRef);
+                    course.setClassName(cName);
+                    course.setSubject("General");
+                    String prefix = cName.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                    if (prefix.length() > 4) prefix = prefix.substring(0, 4);
+                    if (prefix.isEmpty()) prefix = "CLS";
+                    course.setClassCode(prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase());
+                    course.setIsDeleted(false);
+                    classCourseRepository.save(course);
+                }
+            }
+        }
+
+        User admin = userRepository.findByUsernameIgnoreCase(adminUsername)
+                .or(() -> userRepository.findByEmailIgnoreCase(adminUsername)).orElse(null);
+        String adminEmail = admin != null ? admin.getEmail() : adminUsername;
+
+        auditLogService.logAction(adminEmail, "CREATE_USER", "User #" + user.getId() + " (" + user.getUsername() + ")",
+                "Admin created account with role=" + user.getRole() + ", class=" + (user.getClassName() != null ? user.getClassName() : "N/A") + ", active=true, verified=true, mustChangePassword=true", ipAddress);
+        logger.info("Admin '{}' successfully created user '{}' (ID {}, Role {})", adminUsername, user.getUsername(), user.getId(), user.getRole());
+
+        return new AdminDTOs.UserSummaryDTO(
+                user.getId(),
+                user.getName(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getClassName(),
+                user.isEnabled()
+        );
     }
 
     @Transactional

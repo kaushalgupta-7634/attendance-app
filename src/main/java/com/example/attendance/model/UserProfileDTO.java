@@ -8,6 +8,7 @@ public class UserProfileDTO {
     private String email;
     private Role role;
     private String className;
+    private Boolean mustChangePassword;
 
     public UserProfileDTO() {
     }
@@ -19,6 +20,17 @@ public class UserProfileDTO {
         this.email = email;
         this.role = role;
         this.className = className;
+        this.mustChangePassword = false;
+    }
+
+    public UserProfileDTO(Long id, String name, String username, String email, Role role, String className, Boolean mustChangePassword) {
+        this.id = id;
+        this.name = name;
+        this.username = username;
+        this.email = email;
+        this.role = role;
+        this.className = className;
+        this.mustChangePassword = mustChangePassword;
     }
 
     public Long getId() {
@@ -67,5 +79,13 @@ public class UserProfileDTO {
 
     public void setClassName(String className) {
         this.className = className;
+    }
+
+    public Boolean getMustChangePassword() {
+        return Boolean.TRUE.equals(mustChangePassword);
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword != null ? mustChangePassword : false;
     }
 }

@@ -524,7 +524,10 @@
                 <span class="role-badge">TEACHER</span>
             </div>
         </div>
-        <button class="btn-secondary" onclick="logout()">Logout</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="/change-password.html" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">🔑 Change Password</a>
+            <button class="btn-secondary" onclick="logout()">Logout</button>
+        </div>
     </div>
 
 
@@ -1354,10 +1357,16 @@
         fetch('/auth/me', {
             headers: { 'Authorization': 'Bearer ' + token }
         }).then(res => res.ok ? res.json() : null).then(profile => {
-            if (profile && profile.name) {
-                localStorage.setItem('userName', profile.name);
-                if (teacherHeader) {
-                    teacherHeader.textContent = `Hello, ${profile.name}`;
+            if (profile) {
+                if (profile.mustChangePassword) {
+                    window.location.href = '/change-password.html?required=true';
+                    return;
+                }
+                if (profile.name) {
+                    localStorage.setItem('userName', profile.name);
+                    if (teacherHeader) {
+                        teacherHeader.textContent = `Hello, ${profile.name}`;
+                    }
                 }
             }
         }).catch(err => console.log("Profile fetch failed:", err));

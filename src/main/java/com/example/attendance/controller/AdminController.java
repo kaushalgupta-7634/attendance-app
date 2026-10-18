@@ -56,6 +56,19 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getUsers(role, query));
     }
 
+    @PostMapping("/users")
+    public ResponseEntity<Map<String, Object>> createUser(
+            @RequestBody AdminDTOs.CreateUserRequest request,
+            Principal principal,
+            HttpServletRequest httpRequest) {
+        String ipAddress = AuditLogService.extractClientIp(httpRequest);
+        AdminDTOs.UserSummaryDTO created = adminService.createUser(request, principal.getName(), ipAddress);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(Map.of(
+                "message", "User account created successfully.",
+                "user", created
+        ));
+    }
+
     @PutMapping("/users/{id}/status")
     public ResponseEntity<Map<String, String>> toggleUserStatus(
             @PathVariable Long id,

@@ -447,6 +447,10 @@
                         style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #eab308;"
                         title="PIN Status"></span>
                 </button>
+                <a href="/change-password.html" class="btn-sm"
+                    style="text-decoration: none; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); color: #f8fafc; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.8rem; border-radius: 8px;">
+                    🔑 <span>Change Password</span>
+                </a>
                 <button class="logout-btn" onclick="handleLogout()">Logout</button>
             </div>
         </header>
@@ -516,6 +520,9 @@
                     <button class="btn-sm"
                         style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
                         onclick="exportUsersCSV()">📥 Export Roster (CSV)</button>
+                    <button class="btn-sm"
+                        style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"
+                        onclick="openCreateUserModal()">➕ Create User</button>
                 </div>
 
                 <div class="table-responsive">
@@ -988,6 +995,67 @@
         </div>
     </div>
 
+    <!-- MODAL: CREATE USER (ADMIN-ISSUED CREDENTIALS) -->
+    <div id="createUserModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 520px;">
+            <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                👤 <span>Create User Account</span>
+            </h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.4;">
+                Issue new credentials for a student or teacher. Accounts are activated immediately with mandatory password change on first login.
+            </p>
+
+            <form id="adminCreateUserForm" onsubmit="handleCreateUser(event)">
+                <div style="margin-bottom: 0.9rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Full Name *</label>
+                    <input type="text" id="createUserFullName" class="search-input" style="width: 100%;" placeholder="e.g. John Doe" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.9rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">User ID / Username *</label>
+                        <input type="text" id="createUserId" class="search-input" style="width: 100%;" placeholder="e.g. STU101 or prof.john" required>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Email Address *</label>
+                        <input type="email" id="createUserEmail" class="search-input" style="width: 100%;" placeholder="e.g. john@attendx.com" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.9rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Role *</label>
+                        <select id="createUserRole" class="select-input" style="width: 100%;" required>
+                            <option value="STUDENT">Student</option>
+                            <option value="TEACHER">Teacher</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Class / Course *</label>
+                        <select id="createUserClass" class="select-input" style="width: 100%;" required>
+                            <option value="">Loading classes...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Temporary Password *</label>
+                        <button type="button" class="btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; background: rgba(37,99,235,0.2); color: #93c5fd; border: 1px solid rgba(37,99,235,0.4); cursor: pointer;" onclick="generateRandomTempPassword()">⚡ Auto Generate</button>
+                    </div>
+                    <input type="text" id="createUserTempPassword" class="search-input" style="width: 100%; font-family: monospace; font-weight: 600;" placeholder="Temporary Password (min 6 chars)" minlength="6" required>
+                </div>
+
+                <div id="createUserModalMsg" style="display: none; font-size: 0.85rem; padding: 0.6rem 0.8rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-sm" onclick="closeModal('createUserModal')">Cancel</button>
+                    <button type="submit" id="createUserSubmitBtn" class="btn-sm" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; font-weight: 600; cursor: pointer;">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function parseJwtPayload(token) {
             try {
@@ -1119,6 +1187,15 @@
             loadStats();
             loadUsers();
             checkMasterPinStatus();
+
+            // Check if admin is required to change password
+            fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.ok ? r.json() : null)
+                .then(profile => {
+                    if (profile && profile.mustChangePassword) {
+                        window.location.href = '/change-password.html?required=true';
+                    }
+                }).catch(() => {});
         });
 
         function handleLogout() {
@@ -1401,6 +1478,105 @@
                 }
             );
         }
+
+        async function openCreateUserModal() {
+            document.getElementById('createUserFullName').value = '';
+            document.getElementById('createUserId').value = '';
+            document.getElementById('createUserEmail').value = '';
+            document.getElementById('createUserRole').value = 'STUDENT';
+            generateRandomTempPassword();
+
+            const msgBox = document.getElementById('createUserModalMsg');
+            msgBox.style.display = 'none';
+
+            const classSelect = document.getElementById('createUserClass');
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+
+            try {
+                const res = await fetch('/classes/available-classes', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const classes = await res.json();
+                    if (classes && classes.length > 0) {
+                        classSelect.innerHTML = classes.map(c => `<option value="${escapeHtml(c.className)}">${escapeHtml(c.className)}</option>`).join('');
+                    } else {
+                        classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                    }
+                } else {
+                    classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+                }
+            } catch (e) {
+                classSelect.innerHTML = '<option value="BCA">BCA</option><option value="BBA">BBA</option><option value="CS101">CS101</option>';
+            }
+
+            document.getElementById('createUserModal').style.display = 'flex';
+        }
+
+        function generateRandomTempPassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+            let pwd = '';
+            for (let i = 0; i < 10; i++) {
+                pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('createUserTempPassword').value = pwd;
+        }
+
+        async function handleCreateUser(e) {
+            e.preventDefault();
+            const btn = document.getElementById('createUserSubmitBtn');
+            const msgBox = document.getElementById('createUserModalMsg');
+
+            const name = document.getElementById('createUserFullName').value.trim();
+            const username = document.getElementById('createUserId').value.trim();
+            const email = document.getElementById('createUserEmail').value.trim();
+            const role = document.getElementById('createUserRole').value;
+            const className = document.getElementById('createUserClass').value.trim();
+            const password = document.getElementById('createUserTempPassword').value.trim();
+
+            if (!name || !username || !email || !password || !className) {
+                msgBox.textContent = 'Please fill in all required fields.';
+                msgBox.style.display = 'block';
+                msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                msgBox.style.color = '#fca5a5';
+                msgBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            try {
+                const res = await fetch('/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ name, username, email, role, className, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.message || 'Failed to create user account.');
+                }
+
+                alert(`✅ User created successfully!\n\nUser ID: ${username}\nTemporary Password: ${password}\nRole: ${role}\nClass: ${className}\n\nAccount is active and verified.`);
+                closeModal('createUserModal');
+                loadStats();
+                loadUsers();
+            } catch (err) {
+                msgBox.textContent = err.message || 'Failed to create account.';
+                msgBox.style.display = 'block';
+                msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                msgBox.style.color = '#fca5a5';
+                msgBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+
 
         async function loadSubjectsManager() {
             const container = document.getElementById('subjectManagerBadges');
