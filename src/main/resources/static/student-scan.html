@@ -510,11 +510,145 @@
         /* 3. Desktop & Large Screens (769px+) */
         @media (min-width: 769px) {
             .navbar, .card, .portal-tabs, .tab-content-section {
-                max-width: 540px;
+                max-width: 580px;
+            }
+
+            #sectionMonthly, #sectionMonthly .card, #sectionMonthly .tab-content-section {
+                max-width: 1040px !important;
+            }
+
+            .portal-tabs {
+                max-width: 760px;
             }
 
             .card {
                 padding: 1.5rem;
+            }
+        }
+
+        /* ─── MONTHLY ATTENDANCE MATRIX REPORT STYLES (MATCHES COLLEGE PORTAL) ─── */
+        .btn-green-action {
+            background: #059669;
+            color: #ffffff;
+            border: 1px solid #10b981;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-green-action:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        .monthly-matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .monthly-matrix-table th, .monthly-matrix-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.4rem;
+        }
+
+        .monthly-matrix-table thead th {
+            background: rgba(30, 41, 59, 0.95);
+            font-weight: 700;
+            color: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .monthly-matrix-table th.sticky-col, .monthly-matrix-table td.sticky-col {
+            position: sticky;
+            left: 0;
+            background: #1e293b;
+            z-index: 2;
+            text-align: left;
+            font-weight: 700;
+            min-width: 140px;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.25);
+        }
+
+        .monthly-matrix-table thead th.sticky-col {
+            z-index: 3;
+            background: #1e293b;
+        }
+
+        .monthly-matrix-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .monthly-matrix-table tr:hover td.sticky-col {
+            background: #243248;
+        }
+
+        .matrix-badge-p {
+            color: #4ade80;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .matrix-badge-a {
+            color: #f87171;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .matrix-badge-h {
+            color: #c084fc;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .matrix-badge-dash {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #monthlyReportCard, #monthlyReportCard * {
+                visibility: visible;
+            }
+            #monthlyReportCard {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .monthly-matrix-table th, .monthly-matrix-table td {
+                border-color: #cbd5e1 !important;
+                color: #0f172a !important;
+            }
+            .monthly-matrix-table th.sticky-col, .monthly-matrix-table td.sticky-col {
+                background: white !important;
+                color: #0f172a !important;
+                box-shadow: none !important;
             }
         }
     </style>
@@ -544,6 +678,10 @@
         <button id="studentTabStats" class="portal-tab-btn" onclick="switchStudentTab('stats')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
             Attendance Stats
+        </button>
+        <button id="studentTabMonthly" class="portal-tab-btn" onclick="switchStudentTab('monthly')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Monthly Report
         </button>
         <button id="studentTabClasses" class="portal-tab-btn" onclick="switchStudentTab('classes')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
@@ -711,6 +849,88 @@
         </div>
     </div>
 
+    <!-- TAB 5: MONTHLY ATTENDANCE MATRIX REPORT (COLLEGE PORTAL FORMAT) -->
+    <div id="sectionMonthly" class="tab-content-section">
+        <!-- 1. Filter Card (Matches College Portal Filter Window) -->
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="card-title" style="margin: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Attendance Percentage of Class (Subject Wise)
+                </h3>
+                <button type="button" class="btn-green-action no-print" onclick="toggleMonthlyFilterCard()" id="btnToggleMonthlyFilter">
+                    Hide Filter
+                </button>
+            </div>
+
+            <div id="monthlyFilterBody" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                    Class Attendance Filter
+                </h4>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <label for="monthlyReportMonthSelect" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">
+                        Select Month:
+                    </label>
+                    <select id="monthlyReportMonthSelect" class="form-input" style="width: auto; min-width: 200px; margin-bottom: 0; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+                        <!-- Options generated dynamically -->
+                    </select>
+                    <button type="button" class="btn-action" style="width: auto; margin-bottom: 0; padding: 0.5rem 1.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;" onclick="loadMonthlyAttendanceReport()">
+                        🔍 View Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Matrix Report Card (Matches College Portal Report Matrix) -->
+        <div class="card" id="monthlyReportCard">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+                <div>
+                    <h3 class="card-title" style="margin: 0; font-size: 1.15rem; color: #f8fafc;">Class Attendance Report</h3>
+                    <div id="monthlyReportPeriodLabel" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; font-weight: 600;">
+                        Period: October, 2026
+                    </div>
+                </div>
+                <div class="no-print" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <button type="button" class="btn-green-action" onclick="printMonthlyReport()" title="Print Matrix">
+                        🖨️ Print
+                    </button>
+                    <button type="button" class="btn-green-action" onclick="copyMonthlyReportToClipboard()" title="Copy to Clipboard">
+                        📋 Copy
+                    </button>
+                    <button type="button" class="btn-green-action" onclick="exportMonthlyReportCSV()" title="Export CSV">
+                        📥 Export
+                    </button>
+                    <button type="button" class="btn-green-action" onclick="exportMonthlyReportPDF()" title="Print / Save to PDF">
+                        📄 to PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Matrix Container -->
+            <div id="monthlyMatrixContainer" style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border-color); max-height: 550px; overflow-y: auto;">
+                <p style="text-align: center; color: var(--text-secondary); padding: 2rem 1rem; font-size: 0.85rem;">
+                    Please select a month and click "View Report".
+                </p>
+            </div>
+
+            <!-- Report Legend & Notes -->
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; font-size: 0.75rem; color: var(--text-secondary); padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="matrix-badge-p" style="font-size: 0.85rem;">P</span> = Present / Attended
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="matrix-badge-a" style="font-size: 0.85rem;">A</span> = Absent
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="matrix-badge-h" style="font-size: 0.85rem;">H</span> = Sunday / Holiday
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="matrix-badge-dash" style="font-size: 0.85rem;">-</span> = No Class Scheduled
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function switchStudentTab(tabId) {
             if (tabId !== 'scan') {
@@ -727,6 +947,10 @@
                 document.getElementById('studentTabStats').classList.add('active');
                 document.getElementById('sectionStats').classList.add('active');
                 fetchStudentAttendanceSummary();
+            } else if (tabId === 'monthly') {
+                document.getElementById('studentTabMonthly').classList.add('active');
+                document.getElementById('sectionMonthly').classList.add('active');
+                initMonthlyAttendanceReport();
             } else if (tabId === 'classes') {
                 document.getElementById('studentTabClasses').classList.add('active');
                 document.getElementById('sectionClasses').classList.add('active');
@@ -1833,6 +2057,482 @@
                     </div>`;
                 }
             }
+        }
+
+        /* ─── MONTHLY ATTENDANCE MATRIX REPORT (COLLEGE PORTAL FORMAT) ─── */
+        const MATRIX_MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const MATRIX_SHORT_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+        let cachedMonthlyMatrixData = null;
+
+        function showMatrixToast(msg) {
+            let toast = document.getElementById('matrixToastNotification');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'matrixToastNotification';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '24px';
+                toast.style.right = '24px';
+                toast.style.background = '#059669';
+                toast.style.color = '#ffffff';
+                toast.style.padding = '0.75rem 1.25rem';
+                toast.style.borderRadius = '8px';
+                toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+                toast.style.fontSize = '0.85rem';
+                toast.style.fontWeight = '600';
+                toast.style.zIndex = '99999';
+                toast.style.transition = 'all 0.3s ease';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => { toast.style.display = 'none'; }, 300);
+            }, 3000);
+        }
+
+        function toggleMonthlyFilterCard() {
+            const body = document.getElementById('monthlyFilterBody');
+            const btn = document.getElementById('btnToggleMonthlyFilter');
+            if (!body || !btn) return;
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                btn.textContent = 'Hide Filter';
+            } else {
+                body.style.display = 'none';
+                btn.textContent = 'Show Filter';
+            }
+        }
+
+        function initMonthlyAttendanceReport() {
+            const select = document.getElementById('monthlyReportMonthSelect');
+            if (!select) return;
+
+            // Populate months dropdown if empty
+            if (select.options.length <= 1) {
+                select.innerHTML = '';
+                const now = new Date();
+                const curY = now.getFullYear();
+                const curM = now.getMonth(); // 0 - 11
+
+                // Generate last 18 months in reverse chronological order
+                for (let i = 0; i < 18; i++) {
+                    const d = new Date(curY, curM - i, 1);
+                    const y = d.getFullYear();
+                    const m = d.getMonth() + 1; // 1 - 12
+                    const val = `${y}-${String(m).padStart(2, '0')}`;
+                    const label = `${MATRIX_MONTH_NAMES[d.getMonth()]}, ${y}`;
+                    
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = label;
+                    select.appendChild(opt);
+                }
+            }
+
+            loadMonthlyAttendanceReport();
+        }
+
+        async function loadMonthlyAttendanceReport() {
+            const select = document.getElementById('monthlyReportMonthSelect');
+            const container = document.getElementById('monthlyMatrixContainer');
+            const periodLabel = document.getElementById('monthlyReportPeriodLabel');
+            if (!select || !container) return;
+
+            const selectedVal = select.value;
+            if (!selectedVal) return;
+
+            const [yearStr, monthStr] = selectedVal.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10); // 1 - 12
+            const monthName = MATRIX_MONTH_NAMES[month - 1];
+            const shortMonth = MATRIX_SHORT_MONTHS[month - 1];
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            if (periodLabel) {
+                periodLabel.textContent = `Period: ${monthName}, ${year}`;
+            }
+
+            container.innerHTML = `
+                <div style="padding: 2.5rem 1rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.15); border-radius: 50%; border-top-color: #10b981; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
+                    <div>Fetching monthly attendance data for <strong>${monthName}, ${year}</strong>...</div>
+                </div>
+            `;
+
+            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+            const endDate = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+            try {
+                // Fetch attendance summary and enrolled courses in parallel
+                const authHeader = { 'Authorization': 'Bearer ' + token };
+                const [summaryRes, coursesRes] = await Promise.all([
+                    fetch(`/students/me/attendance-summary?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`, { headers: authHeader }),
+                    fetch('/classes/my-courses', { headers: authHeader }).catch(() => null)
+                ]);
+
+                if (!summaryRes.ok) {
+                    throw new Error('Failed to load attendance records');
+                }
+
+                const summaryData = await summaryRes.json();
+                let myCourses = [];
+                if (coursesRes && coursesRes.ok) {
+                    try { myCourses = await coursesRes.json(); } catch(e){}
+                }
+
+                // Collect unique subjects
+                const subjectSet = new Set();
+                if (summaryData && Array.isArray(summaryData.subjectBreakdown)) {
+                    summaryData.subjectBreakdown.forEach(s => {
+                        if (s.subject && s.subject.trim()) subjectSet.add(s.subject.trim());
+                    });
+                }
+                if (summaryData && Array.isArray(summaryData.recentRecords)) {
+                    summaryData.recentRecords.forEach(r => {
+                        if (r.subject && r.subject.trim()) subjectSet.add(r.subject.trim());
+                    });
+                }
+                if (Array.isArray(myCourses)) {
+                    myCourses.forEach(c => {
+                        if (c.subject && c.subject.trim()) subjectSet.add(c.subject.trim());
+                    });
+                }
+
+                const subjects = Array.from(subjectSet).sort();
+
+                if (subjects.length === 0) {
+                    container.innerHTML = `
+                        <div style="padding: 2.5rem 1rem; text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                            No course subjects or attendance records found for <strong>${monthName}, ${year}</strong>.<br>
+                            If you recently joined a class, attend a session or join using a class code.
+                        </div>
+                    `;
+                    cachedMonthlyMatrixData = null;
+                    return;
+                }
+
+                // Map records by subject and day: { [subject]: { [day]: { present: X, total: Y } } }
+                const matrixMap = {};
+                subjects.forEach(sub => {
+                    matrixMap[sub] = {};
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        matrixMap[sub][d] = { present: 0, total: 0 };
+                    }
+                });
+
+                if (summaryData && Array.isArray(summaryData.recentRecords)) {
+                    summaryData.recentRecords.forEach(rec => {
+                        const sub = (rec.subject || '').trim();
+                        if (!matrixMap[sub]) return;
+                        if (!rec.markedAt || rec.markedAt.length < 10) return;
+
+                        const [ry, rm, rd] = rec.markedAt.substring(0, 10).split('-').map(Number);
+                        if (ry === year && rm === month && rd >= 1 && rd <= daysInMonth) {
+                            matrixMap[sub][rd].total++;
+                            if (rec.status === 'PRESENT' || rec.status === 'LATE') {
+                                matrixMap[sub][rd].present++;
+                            }
+                        }
+                    });
+                }
+
+                // Cache data for Export CSV / Copy / Print
+                cachedMonthlyMatrixData = {
+                    year,
+                    month,
+                    monthName,
+                    shortMonth,
+                    daysInMonth,
+                    subjects,
+                    matrixMap
+                };
+
+                // Build Table HTML
+                let tableHtml = `<table class="monthly-matrix-table">`;
+
+                // 1. Table Header
+                tableHtml += `<thead><tr>`;
+                tableHtml += `<th class="sticky-col">SUBJECT / PAPER</th>`;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                    const dayBg = isSunday ? 'background: rgba(192, 132, 252, 0.15);' : '';
+                    tableHtml += `
+                        <th style="min-width: 34px; padding: 6px 3px; font-size: 0.72rem; ${dayBg}">
+                            ${String(d).padStart(2, '0')}<br>
+                            <span style="font-size: 0.62rem; color: #94a3b8; font-weight: 600;">${shortMonth}</span>
+                        </th>
+                    `;
+                }
+                tableHtml += `<th style="background: #1e293b; color: #4ade80; font-weight: 800; min-width: 50px;">PRESENT</th>`;
+                tableHtml += `<th style="background: #1e293b; color: #f8fafc; font-weight: 800; min-width: 50px;">TOTAL</th>`;
+                tableHtml += `<th style="background: #1e293b; color: #38bdf8; font-weight: 800; min-width: 60px;">% PERCENT</th>`;
+                tableHtml += `</tr></thead>`;
+
+                // 2. Table Body (Subject Rows)
+                tableHtml += `<tbody>`;
+                let grandPresent = 0;
+                let grandTotal = 0;
+                const dailyPresents = new Array(daysInMonth + 1).fill(0);
+                const dailyTotals = new Array(daysInMonth + 1).fill(0);
+
+                subjects.forEach(sub => {
+                    let subPresent = 0;
+                    let subTotal = 0;
+
+                    tableHtml += `<tr>`;
+                    tableHtml += `<td class="sticky-col" title="${escapeHtml(sub)}">${escapeHtml(sub)}</td>`;
+
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                        const cell = matrixMap[sub][d];
+                        subPresent += cell.present;
+                        subTotal += cell.total;
+                        dailyPresents[d] += cell.present;
+                        dailyTotals[d] += cell.total;
+
+                        let badgeHtml = '';
+                        if (cell.total > 0) {
+                            if (cell.present === cell.total) {
+                                badgeHtml = `<span class="matrix-badge-p" title="Present: ${cell.present}/${cell.total}">P</span>`;
+                            } else if (cell.present === 0) {
+                                badgeHtml = `<span class="matrix-badge-a" title="Absent: ${cell.total} class(es)">A</span>`;
+                            } else {
+                                badgeHtml = `<span class="matrix-badge-p" title="Present: ${cell.present}/${cell.total}">P (${cell.present})</span>`;
+                            }
+                        } else if (isSunday) {
+                            badgeHtml = `<span class="matrix-badge-h" title="Sunday / Holiday">H</span>`;
+                        } else {
+                            badgeHtml = `<span class="matrix-badge-dash">-</span>`;
+                        }
+
+                        const dayBg = isSunday ? 'style="background: rgba(192, 132, 252, 0.04);"' : '';
+                        tableHtml += `<td ${dayBg}>${badgeHtml}</td>`;
+                    }
+
+                    grandPresent += subPresent;
+                    grandTotal += subTotal;
+                    const subPercent = subTotal > 0 ? ((subPresent / subTotal) * 100).toFixed(1) + '%' : '0.0%';
+
+                    tableHtml += `<td style="font-weight: 800; color: #4ade80;">${subPresent}</td>`;
+                    tableHtml += `<td style="font-weight: 800; color: #f8fafc;">${subTotal}</td>`;
+                    tableHtml += `<td style="font-weight: 800; color: #38bdf8;">${subPercent}</td>`;
+                    tableHtml += `</tr>`;
+                });
+
+                // 3. Table Footer (Summary Row across all subjects)
+                const grandPercent = grandTotal > 0 ? ((grandPresent / grandTotal) * 100).toFixed(1) + '%' : '0.0%';
+                tableHtml += `<tfoot>`;
+                tableHtml += `<tr style="background: rgba(30, 41, 59, 0.95); font-weight: 800;">`;
+                tableHtml += `<td class="sticky-col" style="background: #1e293b; color: #f8fafc; font-weight: 800;">TOTAL</td>`;
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                    const pres = dailyPresents[d];
+                    const tot = dailyTotals[d];
+
+                    let daySummaryHtml = '';
+                    if (tot > 0) {
+                        daySummaryHtml = `<span class="matrix-badge-p" style="font-size: 0.8rem;">${pres}</span>`;
+                    } else if (isSunday) {
+                        daySummaryHtml = `<span class="matrix-badge-h" style="font-size: 0.8rem;">H</span>`;
+                    } else {
+                        daySummaryHtml = `<span class="matrix-badge-dash">-</span>`;
+                    }
+                    tableHtml += `<td>${daySummaryHtml}</td>`;
+                }
+
+                tableHtml += `<td style="font-weight: 800; color: #4ade80; font-size: 0.9rem;">${grandPresent}</td>`;
+                tableHtml += `<td style="font-weight: 800; color: #f8fafc; font-size: 0.9rem;">${grandTotal}</td>`;
+                tableHtml += `<td style="font-weight: 800; color: #38bdf8; font-size: 0.9rem;">${grandPercent}</td>`;
+                tableHtml += `</tr></tfoot>`;
+
+                tableHtml += `</table>`;
+                container.innerHTML = tableHtml;
+
+            } catch (err) {
+                console.error("Error loading monthly attendance report:", err);
+                container.innerHTML = `
+                    <div style="padding: 2rem 1rem; text-align: center; color: #fca5a5; font-size: 0.85rem;">
+                        ⚠️ Could not load monthly attendance report. Please check your network and try again.<br><br>
+                        <button type="button" class="btn-action" style="width: auto; padding: 0.4rem 1rem; font-size: 0.8rem; background: #2563eb;" onclick="loadMonthlyAttendanceReport()">🔄 Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function copyMonthlyReportToClipboard() {
+            if (!cachedMonthlyMatrixData) {
+                alert("Please load a monthly report first before copying.");
+                return;
+            }
+
+            const { year, month, monthName, shortMonth, daysInMonth, subjects, matrixMap } = cachedMonthlyMatrixData;
+
+            // Header line (TSV)
+            const headers = ['SUBJECT / PAPER'];
+            for (let d = 1; d <= daysInMonth; d++) {
+                headers.push(`${String(d).padStart(2, '0')} ${shortMonth}`);
+            }
+            headers.push('PRESENT', 'TOTAL', '% PERCENT');
+
+            const rows = [headers.join('\t')];
+
+            let grandPresent = 0;
+            let grandTotal = 0;
+            const dailyPresents = new Array(daysInMonth + 1).fill(0);
+            const dailyTotals = new Array(daysInMonth + 1).fill(0);
+
+            subjects.forEach(sub => {
+                let subPresent = 0;
+                let subTotal = 0;
+                const row = [sub];
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                    const cell = matrixMap[sub][d];
+                    subPresent += cell.present;
+                    subTotal += cell.total;
+                    dailyPresents[d] += cell.present;
+                    dailyTotals[d] += cell.total;
+
+                    if (cell.total > 0) {
+                        row.push(cell.present === cell.total ? 'P' : (cell.present === 0 ? 'A' : `P(${cell.present})`));
+                    } else if (isSunday) {
+                        row.push('H');
+                    } else {
+                        row.push('-');
+                    }
+                }
+
+                grandPresent += subPresent;
+                grandTotal += subTotal;
+                const percent = subTotal > 0 ? ((subPresent / subTotal) * 100).toFixed(1) + '%' : '0.0%';
+                row.push(subPresent, subTotal, percent);
+                rows.push(row.join('\t'));
+            });
+
+            // Summary Row
+            const grandPercent = grandTotal > 0 ? ((grandPresent / grandTotal) * 100).toFixed(1) + '%' : '0.0%';
+            const totalRow = ['TOTAL'];
+            for (let d = 1; d <= daysInMonth; d++) {
+                const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                if (dailyTotals[d] > 0) {
+                    totalRow.push(dailyPresents[d]);
+                } else if (isSunday) {
+                    totalRow.push('H');
+                } else {
+                    totalRow.push('-');
+                }
+            }
+            totalRow.push(grandPresent, grandTotal, grandPercent);
+            rows.push(totalRow.join('\t'));
+
+            const tsvContent = rows.join('\r\n');
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                showMatrixToast(`📋 Monthly report for ${monthName}, ${year} copied to clipboard!`);
+            }).catch(err => {
+                console.error("Clipboard copy error:", err);
+                alert("Could not copy directly to clipboard. You can use 'Export' for CSV.");
+            });
+        }
+
+        function exportMonthlyReportCSV() {
+            if (!cachedMonthlyMatrixData) {
+                alert("Please load a monthly report first before exporting.");
+                return;
+            }
+
+            const { year, month, monthName, shortMonth, daysInMonth, subjects, matrixMap } = cachedMonthlyMatrixData;
+
+            function escapeCsv(val) {
+                const str = String(val === undefined || val === null ? '' : val);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }
+
+            const headers = ['SUBJECT / PAPER'];
+            for (let d = 1; d <= daysInMonth; d++) {
+                headers.push(`${String(d).padStart(2, '0')} ${shortMonth}`);
+            }
+            headers.push('PRESENT', 'TOTAL', '% PERCENT');
+
+            const rows = [headers.map(escapeCsv).join(',')];
+
+            let grandPresent = 0;
+            let grandTotal = 0;
+            const dailyPresents = new Array(daysInMonth + 1).fill(0);
+            const dailyTotals = new Array(daysInMonth + 1).fill(0);
+
+            subjects.forEach(sub => {
+                let subPresent = 0;
+                let subTotal = 0;
+                const row = [sub];
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                    const cell = matrixMap[sub][d];
+                    subPresent += cell.present;
+                    subTotal += cell.total;
+                    dailyPresents[d] += cell.present;
+                    dailyTotals[d] += cell.total;
+
+                    if (cell.total > 0) {
+                        row.push(cell.present === cell.total ? 'P' : (cell.present === 0 ? 'A' : `P(${cell.present})`));
+                    } else if (isSunday) {
+                        row.push('H');
+                    } else {
+                        row.push('-');
+                    }
+                }
+
+                grandPresent += subPresent;
+                grandTotal += subTotal;
+                const percent = subTotal > 0 ? ((subPresent / subTotal) * 100).toFixed(1) + '%' : '0.0%';
+                row.push(subPresent, subTotal, percent);
+                rows.push(row.map(escapeCsv).join(','));
+            });
+
+            // Summary Row
+            const grandPercent = grandTotal > 0 ? ((grandPresent / grandTotal) * 100).toFixed(1) + '%' : '0.0%';
+            const totalRow = ['TOTAL'];
+            for (let d = 1; d <= daysInMonth; d++) {
+                const isSunday = new Date(year, month - 1, d).getDay() === 0;
+                if (dailyTotals[d] > 0) {
+                    totalRow.push(dailyPresents[d]);
+                } else if (isSunday) {
+                    totalRow.push('H');
+                } else {
+                    totalRow.push('-');
+                }
+            }
+            totalRow.push(grandPresent, grandTotal, grandPercent);
+            rows.push(totalRow.map(escapeCsv).join(','));
+
+            const csvContent = '\uFEFF' + rows.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Class_Attendance_Report_${monthName}_${year}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showMatrixToast(`📥 Exported Class_Attendance_Report_${monthName}_${year}.csv`);
+        }
+
+        function printMonthlyReport() {
+            window.print();
+        }
+
+        function exportMonthlyReportPDF() {
+            window.print();
         }
     </script>
 </body>
