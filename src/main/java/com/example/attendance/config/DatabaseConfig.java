@@ -51,6 +51,14 @@ public class DatabaseConfig {
         basicConfig.setPassword(password);
         basicConfig.setDriverClassName("org.postgresql.Driver");
 
-        return new HikariDataSource(basicConfig);
+        HikariDataSource ds = new HikariDataSource(basicConfig);
+        try (java.sql.Connection conn = ds.getConnection();
+             java.sql.Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE");
+        } catch (Exception ex) {
+            org.slf4j.LoggerFactory.getLogger(DatabaseConfig.class).warn("Automatic column migration check note: {}", ex.getMessage());
+        }
+
+        return ds;
     }
 }

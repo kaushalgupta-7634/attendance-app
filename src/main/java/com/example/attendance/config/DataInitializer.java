@@ -19,6 +19,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     private final com.example.attendance.repository.AssignmentRepository assignmentRepository;
+    private final javax.sql.DataSource dataSource;
 
     @Value("${ADMIN_USERNAME:${ADMIN_USER:${admin.username:KaushalGupta}}}")
     private String adminDefaultUsername;
@@ -28,15 +29,27 @@ public class DataInitializer implements CommandLineRunner {
 
     public DataInitializer(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           com.example.attendance.repository.AssignmentRepository assignmentRepository) {
+                           com.example.attendance.repository.AssignmentRepository assignmentRepository,
+                           javax.sql.DataSource dataSource) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.assignmentRepository = assignmentRepository;
+        this.dataSource = dataSource;
     }
 
     @Override
     public void run(String... args) {
         try {
+            if (dataSource != null) {
+                try (java.sql.Connection conn = dataSource.getConnection();
+                     java.sql.Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE");
+                    logger.info("Auto-migration: successfully verified/added must_change_password column to users table.");
+                } catch (Exception ddlEx) {
+                    logger.info("Auto-migration note for must_change_password column: {}", ddlEx.getMessage());
+                }
+            }
+
             try {
                 userRepository.alterRoleColumnToVarchar();
                 logger.info("Successfully altered MySQL role column to VARCHAR(20)");
