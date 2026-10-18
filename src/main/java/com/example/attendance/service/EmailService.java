@@ -229,4 +229,43 @@ public class EmailService {
             logger.error("Failed to send new session alert email to {}: {}", toEmail, e.getMessage());
         }
     }
+
+    /**
+     * Sends a welcome email containing initial login credentials to a newly provisioned Student or Teacher.
+     */
+    public void sendWelcomeCredentialsEmail(String toEmail, String fullName, String username, String password, String role, String className) {
+        if (toEmail == null || toEmail.isBlank()) {
+            return;
+        }
+
+        String cleanBaseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "http://localhost:8080";
+        if (!cleanBaseUrl.startsWith("http://") && !cleanBaseUrl.startsWith("https://")) {
+            cleanBaseUrl = "https://" + cleanBaseUrl;
+        }
+        String loginLink = cleanBaseUrl + "/login.html";
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(fullName != null && !fullName.isBlank() ? fullName : "User").append(",\n\n");
+        body.append("Welcome to the ATTENDX Portal! Your account has been created by the System Administrator.\n\n");
+        body.append("Here are your official login credentials:\n");
+        body.append("--------------------------------------------------\n");
+        body.append("  👤 Username / User ID : ").append(username).append("\n");
+        body.append("  🔑 Password           : ").append(password).append("\n");
+        body.append("  🎓 Role               : ").append(role).append("\n");
+        if (className != null && !className.isBlank()) {
+            body.append("  🏫 Class / Course     : ").append(className).append("\n");
+        }
+        body.append("--------------------------------------------------\n\n");
+        body.append("🔗 Login Portal: ").append(loginLink).append("\n\n");
+        body.append("⚠️ Important Security Recommendation:\n");
+        body.append("For your security, please log in and change your password using the 'Change Password' option in your dashboard.\n\n");
+        body.append("Best regards,\n");
+        body.append("ATTENDX Administration Team");
+
+        try {
+            sendEmailViaBrevo(toEmail, "Welcome to ATTENDX - Your Login Credentials", body.toString());
+        } catch (MailException e) {
+            logger.error("Failed to send welcome credentials email to {}: {}", toEmail, e.getMessage());
+        }
+    }
 }

@@ -24,6 +24,7 @@ public class AdminService {
     private final EnrollmentRepository enrollmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     public AdminService(UserRepository userRepository,
             ClassCourseRepository classCourseRepository,
@@ -31,7 +32,8 @@ public class AdminService {
             AttendanceRecordRepository attendanceRecordRepository,
             EnrollmentRepository enrollmentRepository,
             PasswordEncoder passwordEncoder,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.classCourseRepository = classCourseRepository;
         this.classSessionRepository = classSessionRepository;
@@ -39,6 +41,7 @@ public class AdminService {
         this.enrollmentRepository = enrollmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditLogService = auditLogService;
+        this.emailService = emailService;
     }
 
     public AdminDTOs.SystemStatsDTO getSystemStats() {
@@ -365,6 +368,22 @@ public class AdminService {
         auditLogService.logAction(adminEmail, "CREATE_USER", "User #" + user.getId() + " (" + user.getUsername() + ")",
                 "Admin created account with role=" + user.getRole() + ", class=" + (user.getClassName() != null ? user.getClassName() : "N/A") + ", active=true, verified=true", ipAddress);
         logger.info("Admin '{}' successfully created user '{}' (ID {}, Role {})", adminUsername, user.getUsername(), user.getId(), user.getRole());
+
+        // Asynchronously dispatch welcome email with credentials to user inbox
+        final String userEmail = user.getEmail();
+        final String fullName = user.getName();
+        final String uName = user.getUsername();
+        final String rawPass = request.getPassword();
+        final String rName = user.getRole().name();
+        final String cNameVal = user.getClassName();
+
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                emailService.sendWelcomeCredentialsEmail(userEmail, fullName, uName, rawPass, rName, cNameVal);
+            } catch (Exception e) {
+                logger.warn("Could not dispatch welcome email to '{}': {}", userEmail, e.getMessage());
+            }
+        });
 
         return new AdminDTOs.UserSummaryDTO(
                 user.getId(),

@@ -1088,7 +1088,7 @@
                 </button>
             </div>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4;">
-                Upload a CSV spreadsheet to batch-provision student or teacher accounts. Accounts are activated immediately.
+                Upload a CSV spreadsheet to batch-provision student or teacher accounts. Accounts are activated immediately and users automatically receive a Welcome Email with their login ID and Password.
             </p>
 
             <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed var(--card-border); border-radius: 10px; padding: 0.85rem; margin-bottom: 1.25rem;">
@@ -1716,7 +1716,7 @@
                     msgBox.style.background = 'rgba(16, 185, 129, 0.2)';
                     msgBox.style.border = '1px solid rgba(16, 185, 129, 0.4)';
                     msgBox.style.color = '#6ee7b7';
-                    msgBox.innerHTML = `<strong>✅ Success!</strong> ${data.successCount} of ${data.totalProcessed} user accounts imported successfully.`;
+                    msgBox.innerHTML = `<strong>✅ Success!</strong> ${data.successCount} of ${data.totalProcessed} user accounts imported successfully. Welcome emails with login credentials have been dispatched to their inboxes.`;
                 } else {
                     msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
                     msgBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
