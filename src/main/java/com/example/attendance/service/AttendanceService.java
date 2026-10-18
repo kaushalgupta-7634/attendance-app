@@ -380,68 +380,58 @@ public class AttendanceService {
         final java.time.LocalDateTime finalStart = startDateTime;
         final java.time.LocalDateTime finalEnd = endDateTime;
 
-        java.util.Set<String> activeSubjectNames = classCourseRepository.findAll().stream()
-                .filter(c -> !c.isDeleted() && c.getSubject() != null && !c.getSubject().isBlank())
-                .map(c -> c.getSubject().trim().toLowerCase())
-                .collect(java.util.stream.Collectors.toSet());
+        final java.util.Set<String> activeSubjectNames = (classCourseRepository == null)
+                ? java.util.Collections.emptySet()
+                : classCourseRepository.findAll().stream()
+                        .filter(c -> !c.isDeleted() && c.getSubject() != null && !c.getSubject().isBlank())
+                        .map(c -> c.getSubject().trim().toLowerCase())
+                        .collect(java.util.stream.Collectors.toSet());
 
-        java.util.Set<String> deletedSubjectNames = classCourseRepository.findAll().stream()
-                .filter(ClassCourse::isDeleted)
-                .map(ClassCourse::getSubject)
-                .filter(java.util.Objects::nonNull)
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .collect(java.util.stream.Collectors.toSet());
+        final java.util.Set<String> deletedSubjectNames = (classCourseRepository == null)
+                ? java.util.Collections.emptySet()
+                : classCourseRepository.findAll().stream()
+                        .filter(ClassCourse::isDeleted)
+                        .map(ClassCourse::getSubject)
+                        .filter(java.util.Objects::nonNull)
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .collect(java.util.stream.Collectors.toSet());
 
-        List<String> rawSubjects = classSessionRepository.findDistinctSubjects();
-        List<String> subjectNames = (rawSubjects == null ? List.<String>of() : rawSubjects).stream()
-                .filter(s -> s != null && !s.isBlank())
-                .filter(s -> activeSubjectNames.contains(s.trim().toLowerCase()) && !deletedSubjectNames.contains(s.trim().toLowerCase()))
-                .collect(java.util.stream.Collectors.toList());
-        List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
+        List<com.example.attendance.model.Enrollment> enrollments = (enrollmentRepository != null) ? enrollmentRepository.findByStudent(targetStudent) : List.of();
+        java.util.Set<Long> enrolledCourseIds = new java.util.HashSet<>();
+        java.util.Set<String> enrolledSubjectNames = new java.util.HashSet<>();
 
-        List<StudentAttendanceSummaryDTO.SubjectSummaryDTO> breakdown = new java.util.ArrayList<>();
-        long totalPresentAll = 0;
-        long totalSessionsAll = 0;
-
-        for (String subject : subjectNames) {
-            long totalSessions;
-            long presentCount;
-
-            if (finalStart == null && finalEnd == null) {
-                totalSessions = classSessionRepository.countBySubjectAndCancelledFalse(subject);
-                if (totalSessions == 0) continue;
-                presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
-                        targetStudent, subject, attendedStatuses
-                );
-            } else {
-                List<ClassSession> subjectSessions = classSessionRepository.findAll().stream()
-                        .filter(s -> !s.isCancelled())
-                        .filter(s -> subject.equalsIgnoreCase(s.getSubject()))
-                        .filter(s -> finalStart == null || (s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)))
-                        .filter(s -> finalEnd == null || (s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd)))
-                        .collect(java.util.stream.Collectors.toList());
-
-                totalSessions = subjectSessions.size();
-                if (totalSessions == 0) continue;
-
-                List<Long> sessionIds = subjectSessions.stream().map(ClassSession::getId).collect(java.util.stream.Collectors.toList());
-                presentCount = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent).stream()
-                        .filter(r -> r.getSession() != null && sessionIds.contains(r.getSession().getId()))
-                        .filter(r -> attendedStatuses.contains(r.getStatus()))
-                        .count();
+        if (enrollments != null) {
+            for (com.example.attendance.model.Enrollment e : enrollments) {
+                if (e.getClassCourse() != null && !e.getClassCourse().isDeleted()) {
+                    enrolledCourseIds.add(e.getClassCourse().getId());
+                    if (e.getClassCourse().getSubject() != null && !e.getClassCourse().getSubject().isBlank()) {
+                        enrolledSubjectNames.add(e.getClassCourse().getSubject().trim().toLowerCase());
+                    }
+                }
             }
-
-            double percentage = ((double) presentCount / totalSessions) * 100.0;
-            breakdown.add(new StudentAttendanceSummaryDTO.SubjectSummaryDTO(
-                    subject, presentCount, totalSessions, Math.round(percentage * 10.0) / 10.0
-            ));
-
-            totalPresentAll += presentCount;
-            totalSessionsAll += totalSessions;
         }
 
-        List<AttendanceRecord> existingRecords = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent).stream()
+        String studentClass = (targetStudent.getClassName() != null) ? targetStudent.getClassName().trim() : "";
+        if (!studentClass.isEmpty() && classCourseRepository != null) {
+            List<ClassCourse> classCourses = classCourseRepository.findAll().stream()
+                    .filter(c -> !c.isDeleted())
+                    .filter(c -> c.getClassName() != null && c.getClassName().trim().equalsIgnoreCase(studentClass))
+                    .collect(java.util.stream.Collectors.toList());
+            for (ClassCourse cc : classCourses) {
+                enrolledCourseIds.add(cc.getId());
+                if (cc.getSubject() != null && !cc.getSubject().isBlank()) {
+                    enrolledSubjectNames.add(cc.getSubject().trim().toLowerCase());
+                }
+            }
+        }
+
+        boolean hasSpecificCourses = !enrolledCourseIds.isEmpty() || !enrolledSubjectNames.isEmpty();
+
+        List<AttendanceRecord> allStudentRecordList = attendanceRecordRepository.findByStudentOrderByMarkedAtDesc(targetStudent);
+        if (allStudentRecordList == null) allStudentRecordList = List.of();
+
+        List<AttendanceRecord> existingRecords = allStudentRecordList.stream()
                 .filter(r -> finalStart == null || (r.getMarkedAt() != null && !r.getMarkedAt().isBefore(finalStart)))
                 .filter(r -> finalEnd == null || (r.getMarkedAt() != null && !r.getMarkedAt().isAfter(finalEnd)))
                 .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
@@ -458,37 +448,128 @@ public class AttendanceService {
                 .filter(r -> r.getSession() != null && !r.getSession().isCancelled())
                 .collect(java.util.stream.Collectors.toMap(r -> r.getSession().getId(), r -> r, (r1, r2) -> r1));
 
+        List<String> rawSubjects = classSessionRepository.findDistinctSubjects();
+        if (rawSubjects == null) rawSubjects = List.of();
+
+        java.util.Map<String, String> canonicalSubjectMap = new java.util.LinkedHashMap<>();
+        for (String s : rawSubjects) {
+            if (s == null || s.isBlank()) continue;
+            String lower = s.trim().toLowerCase();
+            if (deletedSubjectNames.contains(lower)) continue;
+            if (!activeSubjectNames.isEmpty() && !activeSubjectNames.contains(lower)) continue;
+            if (hasSpecificCourses && !enrolledSubjectNames.contains(lower)) {
+                boolean hasAttendedRecord = existingRecords.stream()
+                        .anyMatch(r -> r.getSession() != null && r.getSession().getSubject() != null && r.getSession().getSubject().trim().equalsIgnoreCase(lower));
+                if (!hasAttendedRecord) continue;
+            }
+            canonicalSubjectMap.putIfAbsent(lower, s.trim());
+        }
+
+        for (String ens : enrolledSubjectNames) {
+            if (!deletedSubjectNames.contains(ens)) {
+                canonicalSubjectMap.putIfAbsent(ens, ens);
+            }
+        }
+
+        List<ClassSession> studentSessions = classSessionRepository.findAll().stream()
+                .filter(s -> !s.isCancelled())
+                .filter(s -> finalStart == null || (s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)))
+                .filter(s -> finalEnd == null || (s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd)))
+                .filter(s -> {
+                    if (s.getSubject() != null) {
+                        String subLower = s.getSubject().trim().toLowerCase();
+                        if (deletedSubjectNames.contains(subLower) && !activeSubjectNames.contains(subLower)) {
+                            return false;
+                        }
+                    }
+                    if (existingMap.containsKey(s.getId())) {
+                        return true;
+                    }
+                    if (s.getClassCourse() != null) {
+                        if (s.getClassCourse().isDeleted()) return false;
+                        if (enrolledCourseIds.contains(s.getClassCourse().getId())) return true;
+                        if (!studentClass.isEmpty() && s.getClassCourse().getClassName() != null &&
+                                s.getClassCourse().getClassName().trim().equalsIgnoreCase(studentClass)) {
+                            return true;
+                        }
+                        if (hasSpecificCourses) return false;
+                    }
+                    if (!studentClass.isEmpty() && s.getClassName() != null && !s.getClassName().isBlank()) {
+                        return s.getClassName().trim().equalsIgnoreCase(studentClass);
+                    }
+                    if (hasSpecificCourses) return false;
+                    return true;
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        List<AttendanceStatus> attendedStatuses = List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE);
+        List<StudentAttendanceSummaryDTO.SubjectSummaryDTO> breakdown = new java.util.ArrayList<>();
+        long totalPresentAll = 0;
+        long totalSessionsAll = 0;
+
+        for (java.util.Map.Entry<String, String> entry : canonicalSubjectMap.entrySet()) {
+            String subjectKey = entry.getKey();
+            String subjectDisplay = entry.getValue();
+            long totalSessions;
+            long presentCount;
+
+            if (finalStart == null && finalEnd == null && !hasSpecificCourses) {
+                totalSessions = classSessionRepository.countBySubjectAndCancelledFalse(subjectDisplay);
+                if (totalSessions == 0) continue;
+                presentCount = attendanceRecordRepository.countByStudentAndSession_SubjectAndSession_CancelledFalseAndStatusIn(
+                        targetStudent, subjectDisplay, attendedStatuses
+                );
+            } else {
+                List<ClassSession> subSessions = studentSessions.stream()
+                        .filter(s -> s.getSubject() != null && s.getSubject().trim().equalsIgnoreCase(subjectKey))
+                        .collect(java.util.stream.Collectors.toList());
+
+                totalSessions = subSessions.size();
+                if (totalSessions == 0) continue;
+
+                java.util.Set<Long> sessionIds = subSessions.stream().map(ClassSession::getId).collect(java.util.stream.Collectors.toSet());
+                presentCount = existingRecords.stream()
+                        .filter(r -> r.getSession() != null && sessionIds.contains(r.getSession().getId()))
+                        .filter(r -> attendedStatuses.contains(r.getStatus()))
+                        .count();
+            }
+
+            double percentage = ((double) presentCount / totalSessions) * 100.0;
+            breakdown.add(new StudentAttendanceSummaryDTO.SubjectSummaryDTO(
+                    subjectDisplay, presentCount, totalSessions, Math.round(percentage * 10.0) / 10.0
+            ));
+
+            totalPresentAll += presentCount;
+            totalSessionsAll += totalSessions;
+        }
+
         List<StudentAttendanceSummaryDTO.AttendanceRecordItemDTO> recentRecords = new java.util.ArrayList<>();
 
         for (AttendanceRecord r : existingRecords) {
             if (r.getSession() != null && r.getSession().isCancelled()) {
                 continue;
             }
-            String sub = r.getSession() != null ? r.getSession().getSubject() : "General";
+            String rawSub = r.getSession() != null ? r.getSession().getSubject() : "General";
+            String subDisplay = rawSub != null ? canonicalSubjectMap.getOrDefault(rawSub.trim().toLowerCase(), rawSub.trim()) : "General";
             String cls = r.getSession() != null ? r.getSession().getClassName() : "General";
             recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                     r.getId(),
-                    sub != null ? sub : "General",
+                    subDisplay,
                     cls != null ? cls : "General",
                     r.getMarkedAt() != null ? r.getMarkedAt().toString() : "",
                     r.getStatus() != null ? r.getStatus().name() : "PRESENT"
             ));
         }
 
-        List<ClassSession> allSessions = classSessionRepository.findAll().stream()
-                .filter(s -> !s.isCancelled() && !s.isActive())
-                .filter(s -> finalStart == null || (s.getStartTime() != null && !s.getStartTime().isBefore(finalStart)))
-                .filter(s -> finalEnd == null || (s.getStartTime() != null && !s.getStartTime().isAfter(finalEnd)))
-                .collect(java.util.stream.Collectors.toList());
-
-        for (ClassSession s : allSessions) {
-            if (!existingMap.containsKey(s.getId())) {
+        for (ClassSession s : studentSessions) {
+            if (!s.isActive() && !existingMap.containsKey(s.getId())) {
                 String timeStr = s.getEndTime() != null ? s.getEndTime().toString() : (s.getStartTime() != null ? s.getStartTime().toString() : "");
-                String sub = s.getSubject() != null ? s.getSubject() : "General";
+                String rawSub = s.getSubject() != null ? s.getSubject() : "General";
+                String subDisplay = rawSub != null ? canonicalSubjectMap.getOrDefault(rawSub.trim().toLowerCase(), rawSub.trim()) : "General";
                 String cls = s.getClassName() != null ? s.getClassName() : "General";
                 recentRecords.add(new StudentAttendanceSummaryDTO.AttendanceRecordItemDTO(
                         0L,
-                        sub,
+                        subDisplay,
                         cls,
                         timeStr,
                         "ABSENT"

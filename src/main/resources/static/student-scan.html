@@ -52,13 +52,13 @@
         /* ─── NAVBAR ─── */
         .navbar {
             width: 100%;
-            max-width: 540px;
+            max-width: 1060px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 0.85rem 1.25rem;
+            padding: 0.85rem 1.35rem;
             border-radius: 14px;
             margin-bottom: 1.25rem;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -306,16 +306,23 @@
         /* ─── PORTAL TABS ─── */
         .portal-tabs {
             width: 100%;
-            max-width: 540px;
+            max-width: 1060px;
             display: flex;
-            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             padding: 0.5rem;
             border-radius: 14px;
             margin-bottom: 1.25rem;
             overflow-x: auto;
-            scrollbar-width: thin;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .portal-tabs::-webkit-scrollbar {
+            display: none;
         }
 
         .portal-tab-btn {
@@ -352,7 +359,7 @@
 
         .tab-content-section {
             width: 100%;
-            max-width: 540px;
+            max-width: 1060px;
             display: none;
         }
 
@@ -484,9 +491,9 @@
                 padding: 1rem 0.75rem;
             }
 
-            .navbar, .card, .portal-tabs, .tab-content-section {
+            .navbar, .portal-tabs, .tab-content-section {
                 width: 100%;
-                max-width: 580px;
+                max-width: 100%;
             }
 
             .card {
@@ -495,6 +502,7 @@
 
             .portal-tabs {
                 gap: 0.4rem;
+                justify-content: flex-start;
             }
 
             .portal-tab-btn {
@@ -509,20 +517,36 @@
 
         /* 3. Desktop & Large Screens (769px+) */
         @media (min-width: 769px) {
-            .navbar, .card, .portal-tabs, .tab-content-section {
-                max-width: 580px;
-            }
-
-            #sectionMonthly, #sectionMonthly .card, #sectionMonthly .tab-content-section {
-                max-width: 1040px !important;
-            }
-
-            .portal-tabs {
-                max-width: 760px;
+            .navbar, .portal-tabs, .tab-content-section {
+                max-width: 1060px;
+                width: 100%;
             }
 
             .card {
+                width: 100%;
+                max-width: 100%;
                 padding: 1.5rem;
+            }
+
+            #sectionScan .card, #sectionClasses .card, #sectionAssignments .card {
+                max-width: 760px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #sectionStats .card {
+                max-width: 900px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #sectionMonthly, #sectionMonthly .card {
+                max-width: 1060px !important;
+            }
+
+            .portal-tabs {
+                max-width: 1060px;
+                justify-content: center;
             }
         }
 
@@ -2382,25 +2406,40 @@
                     try { myCourses = await coursesRes.json(); } catch(e){}
                 }
 
-                // Collect unique subjects
-                const subjectSet = new Set();
+                // Collect unique subjects deduplicated case-insensitively
+                const subjectCanonicalMap = new Map();
+                if (Array.isArray(myCourses)) {
+                    myCourses.forEach(c => {
+                        if (c.subject && c.subject.trim()) {
+                            const sub = c.subject.trim();
+                            if (!subjectCanonicalMap.has(sub.toLowerCase())) {
+                                subjectCanonicalMap.set(sub.toLowerCase(), sub);
+                            }
+                        }
+                    });
+                }
                 if (summaryData && Array.isArray(summaryData.subjectBreakdown)) {
                     summaryData.subjectBreakdown.forEach(s => {
-                        if (s.subject && s.subject.trim()) subjectSet.add(s.subject.trim());
+                        if (s.subject && s.subject.trim()) {
+                            const sub = s.subject.trim();
+                            if (!subjectCanonicalMap.has(sub.toLowerCase())) {
+                                subjectCanonicalMap.set(sub.toLowerCase(), sub);
+                            }
+                        }
                     });
                 }
                 if (summaryData && Array.isArray(summaryData.recentRecords)) {
                     summaryData.recentRecords.forEach(r => {
-                        if (r.subject && r.subject.trim()) subjectSet.add(r.subject.trim());
-                    });
-                }
-                if (Array.isArray(myCourses)) {
-                    myCourses.forEach(c => {
-                        if (c.subject && c.subject.trim()) subjectSet.add(c.subject.trim());
+                        if (r.subject && r.subject.trim()) {
+                            const sub = r.subject.trim();
+                            if (!subjectCanonicalMap.has(sub.toLowerCase())) {
+                                subjectCanonicalMap.set(sub.toLowerCase(), sub);
+                            }
+                        }
                     });
                 }
 
-                const subjects = Array.from(subjectSet).sort();
+                const subjects = Array.from(subjectCanonicalMap.values()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
                 if (subjects.length === 0) {
                     container.innerHTML = `
@@ -2442,20 +2481,21 @@
 
                 if (summaryData && Array.isArray(summaryData.recentRecords)) {
                     summaryData.recentRecords.forEach(rec => {
-                        const sub = (rec.subject || '').trim();
-                        if (!matrixMap[sub]) return;
+                        const rawSub = (rec.subject || '').trim();
+                        const canonicalSub = subjectCanonicalMap.get(rawSub.toLowerCase());
+                        if (!canonicalSub || !matrixMap[canonicalSub]) return;
                         if (!rec.markedAt || rec.markedAt.length < 10) return;
 
                         const [ry, rm, rd] = rec.markedAt.substring(0, 10).split('-').map(Number);
                         if (ry === year && rm === month && rd >= 1 && rd <= daysInMonth) {
-                            matrixMap[sub][rd].total++;
+                            matrixMap[canonicalSub][rd].total++;
                             const st = (rec.status || '').toUpperCase();
                             if (st === 'PRESENT' || st === 'LATE') {
-                                matrixMap[sub][rd].present++;
+                                matrixMap[canonicalSub][rd].present++;
                             } else if (st === 'LEAVE' || st === 'ON_DUTY') {
-                                matrixMap[sub][rd].leave++;
+                                matrixMap[canonicalSub][rd].leave++;
                             } else {
-                                matrixMap[sub][rd].absent++;
+                                matrixMap[canonicalSub][rd].absent++;
                             }
                         }
                     });
@@ -2523,13 +2563,23 @@
                         let badgeHtml = '';
                         if (cell.total > 0) {
                             if (cell.present > 0 && cell.absent === 0 && cell.leave === 0) {
-                                badgeHtml = `<span class="matrix-badge-p" title="Present: ${cell.present}">P</span>`;
+                                badgeHtml = cell.present === 1
+                                    ? `<span class="matrix-badge-p" title="Present: 1">P</span>`
+                                    : `<span class="matrix-badge-p" title="Present: ${cell.present}">P(${cell.present})</span>`;
                             } else if (cell.absent > 0 && cell.present === 0 && cell.leave === 0) {
-                                badgeHtml = `<span class="matrix-badge-a" title="Absent: ${cell.absent}">A</span>`;
+                                badgeHtml = cell.absent === 1
+                                    ? `<span class="matrix-badge-a" title="Absent: 1">A</span>`
+                                    : `<span class="matrix-badge-a" title="Absent: ${cell.absent}">A(${cell.absent})</span>`;
                             } else if (cell.leave > 0 && cell.present === 0 && cell.absent === 0) {
-                                badgeHtml = `<span class="matrix-badge-l" title="Leave: ${cell.leave}">L</span>`;
+                                badgeHtml = cell.leave === 1
+                                    ? `<span class="matrix-badge-l" title="Leave: 1">L</span>`
+                                    : `<span class="matrix-badge-l" title="Leave: ${cell.leave}">L(${cell.leave})</span>`;
                             } else {
-                                badgeHtml = `<span class="matrix-badge-p" title="P: ${cell.present}, A: ${cell.absent}">P(${cell.present})</span>`;
+                                const parts = [];
+                                if (cell.present > 0) parts.push(`P(${cell.present})`);
+                                if (cell.absent > 0) parts.push(`A(${cell.absent})`);
+                                if (cell.leave > 0) parts.push(`L(${cell.leave})`);
+                                badgeHtml = `<span class="matrix-badge-p" style="font-size: 0.72rem; padding: 2px 4px;" title="${parts.join(', ')}">${parts.join('/')}</span>`;
                             }
                         } else if (hol.isHoliday) {
                             badgeHtml = `<span class="matrix-badge-h" title="${escapeHtml(hol.name)}">H</span>`;
